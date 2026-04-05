@@ -814,6 +814,16 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
 .dash-daily-round { color: var(--text-light); }
 .dash-daily-info { font-weight: 500; }
 
+.intel-link {
+  color: var(--green);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--green-light);
+  text-underline-offset: 2px;
+  transition: color 0.15s;
+}
+.intel-link:hover { color: var(--green-mid); text-decoration-color: var(--green-mid); }
+
 /* RESPONSIVE */
 @media(max-width:600px){
   /* Login */
@@ -1164,6 +1174,23 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
     </div>
 
   </main>
+</div>
+
+<!-- INTEL MODAL -->
+<div id="intel-modal-overlay" onclick="closeIntelModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;backdrop-filter:blur(2px)"></div>
+<div id="intel-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(560px,94vw);max-height:85vh;overflow-y:auto;background:white;border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,0.3);z-index:501">
+  <div id="intel-modal-header" style="background:linear-gradient(140deg,var(--green) 0%,#1f5c38 50%,var(--green-mid) 100%);color:white;padding:20px 24px;border-radius:16px 16px 0 0;position:sticky;top:0;z-index:1">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+      <div style="flex:1;min-width:0">
+        <div id="intel-modal-label" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;opacity:0.7;margin-bottom:6px"></div>
+        <div id="intel-modal-name" style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;line-height:1.2"></div>
+        <div id="intel-modal-odds" style="font-size:13px;color:var(--gold-light);margin-top:5px"></div>
+      </div>
+      <button onclick="closeIntelModal()" style="background:rgba(255,255,255,0.15);border:none;color:white;font-size:20px;width:36px;height:36px;border-radius:50%;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;line-height:1">×</button>
+    </div>
+    <div id="intel-modal-members" style="margin-top:10px"></div>
+  </div>
+  <div id="intel-modal-body" style="padding:20px 24px 24px"></div>
 </div>
 
 <script>
@@ -1981,7 +2008,7 @@ function renderAuction() {
       return `<tr>
         <td class="pos">${lot.lot}</td>
         <td>${typeBadge}</td>
-        <td class="player-name">${lot.player}</td>
+        <td class="player-name"><span class="intel-link" onclick="showIntelModal(${lot.lot})">${lot.player}</span></td>
         <td><select style="min-width:110px" onchange="pendingLots[${idx}].buyerId=this.value;renderStandings();scheduleAutoSave()">
           <option value="">— Unassigned —</option>${opts}
         </select></td>
@@ -1994,7 +2021,7 @@ function renderAuction() {
       return `<tr>
         <td class="pos">${lot.lot}</td>
         <td>${typeBadge}</td>
-        <td class="player-name">${lot.player}</td>
+        <td class="player-name"><span class="intel-link" onclick="showIntelModal(${lot.lot})">${lot.player}</span></td>
         <td>${buyers.find(b=>b.id===lot.buyerId)?.name||'—'}</td>
         <td style="text-align:right">${lot.price?'$'+lot.price.toLocaleString():'—'}</td>
         <td style="text-align:right;font-weight:600;color:var(--gold)">${oddsDisplay}</td>
@@ -3105,6 +3132,78 @@ function renderDashboard() {
       Total distributed: ${Math.round(totalPct*100)}% of pot
     </div>`;
 }
+
+/* ═══════════════════════════════════════════
+   INTEL MODAL
+   ═══════════════════════════════════════════ */
+function showIntelModal(lotNum) {
+  const lot   = pendingLots.find(l => Number(l.lot) === Number(lotNum));
+  if (!lot) return;
+
+  const intel   = getIntelForLot(lot);
+  const isGroup = (lot.type||'').toLowerCase() === 'group';
+  const odds    = lotOddsDisplay(lot);
+  const winPct  = lotWinPct(lot);
+
+  // Header
+  document.getElementById('intel-modal-label').textContent =
+    (isGroup ? 'Group Lot ' : 'Lot ') + lot.lot;
+  document.getElementById('intel-modal-name').textContent =
+    isGroup ? 'Group Lot ' + lot.lot : lot.player;
+  document.getElementById('intel-modal-odds').textContent =
+    [odds !== '—' ? odds : null, winPct ? winPct + ' win probability' : null]
+      .filter(Boolean).join(' · ');
+
+  // Group members
+  const membersEl = document.getElementById('intel-modal-members');
+  if (isGroup) {
+    membersEl.innerHTML = lot.player.split(' / ')
+      .map(m => `<div style="font-size:14px;opacity:0.88;margin-top:3px">⛳ ${m.trim()}</div>`)
+      .join('');
+  } else {
+    membersEl.innerHTML = '';
+  }
+
+  // Body — intel grid + note
+  const body = document.getElementById('intel-modal-body');
+  if (!intel) {
+    body.innerHTML = '<div style="color:var(--text-light);font-style:italic;font-size:14px">No intel on file for this lot.</div>';
+  } else {
+    const items = [];
+    if (intel.augusta)    items.push(['Best Finish',  intel.augusta]);
+    if (intel.form)       items.push(['2026 Form',    intel.form]);
+    if (intel.sgTotal)    items.push(['SG: Total',    intel.sgTotal]);
+    if (intel.sgApproach) items.push(['SG: Approach', intel.sgApproach]);
+    if (intel.sgPutting)  items.push(['SG: Putting',  intel.sgPutting]);
+
+    const grid = items.map(([k,v]) => `
+      <div style="padding:10px 0;border-bottom:1px solid #f0ece6;display:flex;flex-direction:column;gap:3px">
+        <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:var(--text-light)">${k}</div>
+        <div style="font-size:14px;font-weight:500;color:var(--text);line-height:1.4">${v}</div>
+      </div>`).join('');
+
+    const note = intel.note
+      ? `<div style="font-size:14px;color:var(--text-mid);font-style:italic;line-height:1.7;margin-top:16px;padding:14px 16px;background:var(--off-white);border-radius:8px;border-left:3px solid var(--gold)">${intel.note}</div>`
+      : '';
+
+    body.innerHTML = (items.length ? `<div>${grid}</div>` : '') + note
+      || '<div style="color:var(--text-light);font-style:italic;font-size:14px">No intel details available.</div>';
+  }
+
+  // Show modal
+  document.getElementById('intel-modal-overlay').style.display = '';
+  document.getElementById('intel-modal').style.display = '';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeIntelModal() {
+  document.getElementById('intel-modal-overlay').style.display = 'none';
+  document.getElementById('intel-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// Close on Escape key
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeIntelModal(); });
 
 /* ═══════════════════════════════════════════
    RESET AUCTION
