@@ -2002,7 +2002,7 @@ function renderAuction() {
       ? '<span class="intel-type-badge type-group">Group</span>'
       : '<span class="intel-type-badge type-individual">Individual</span>';
     const oddsDisplay = lot.lot_odds ? String(lot.lot_odds).replace(/^'/,'') : '—';
-    const winDisplay  = lot.win_probability ? String(lot.win_probability).replace(/^'/,'') : '—';
+    const winDisplay  = lotWinPct(lot) || '—';
     if (currentRole==='admin') {
       const opts=buyers.map(b=>`<option value="${b.id}" ${b.id===lot.buyerId?'selected':''}>${b.name}</option>`).join('');
       return `<tr>
