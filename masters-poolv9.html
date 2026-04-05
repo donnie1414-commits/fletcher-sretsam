@@ -1,0 +1,3164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Masters Pool HQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green:       #1a4a2e;
+  --green-mid:   #2d6a46;
+  --green-light: #3d8a5e;
+  --green-pale:  #e8f3ec;
+  --gold:        #c9a84c;
+  --gold-light:  #e8c97a;
+  --gold-pale:   #fdf6e3;
+  --pink:        #e8748a;
+  --pink-pale:   #fdf0f2;
+  --white:       #ffffff;
+  --off-white:   #f9f7f4;
+  --border:      #d8d0c4;
+  --text:        #1c1c1c;
+  --text-mid:    #4a4a4a;
+  --text-light:  #7a7a7a;
+  --radius:      8px;
+  --shadow:      0 2px 12px rgba(26,74,46,0.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--off-white);color:var(--text);min-height:100vh;font-size:15px;-webkit-font-smoothing:antialiased}
+
+/* LOGIN */
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,var(--green) 0%,var(--green-mid) 60%,#162d1e 100%);position:relative;overflow:hidden}
+#login-screen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 72% 28%,rgba(201,168,76,.13) 0%,transparent 55%),radial-gradient(ellipse at 18% 82%,rgba(232,116,138,.09) 0%,transparent 50%);pointer-events:none}
+.login-card{background:rgba(255,255,255,.97);border-radius:18px;padding:48px 44px 40px;width:100%;max-width:400px;box-shadow:0 28px 72px rgba(0,0,0,.28);position:relative;z-index:1}
+.login-logo{text-align:center;margin-bottom:32px}
+.login-logo .flag{font-size:38px;display:block;margin-bottom:10px}
+.login-logo h1{font-family:'Playfair Display',serif;font-size:26px;color:var(--green);line-height:1.2}
+.login-logo p{font-size:11.5px;color:var(--text-light);letter-spacing:.14em;text-transform:uppercase;margin-top:5px}
+.login-tabs{display:flex;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);margin-bottom:24px}
+.login-tab{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:500;cursor:pointer;background:var(--off-white);color:var(--text-mid);border:none;transition:all .2s;font-family:inherit}
+.login-tab.active{background:var(--green);color:white}
+.login-field{margin-bottom:16px}
+.login-field label{display:block;font-size:11.5px;font-weight:600;color:var(--text-mid);margin-bottom:6px;text-transform:uppercase;letter-spacing:.09em}
+.login-field input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;font-size:15px;outline:none;transition:border-color .2s;background:var(--white);color:var(--text)}
+.login-field input:focus{border-color:var(--green)}
+.btn-login{width:100%;padding:13px;background:var(--green);color:white;border:none;border-radius:var(--radius);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:background .2s;margin-top:8px}
+.btn-login:hover{background:var(--green-mid)}
+.login-error{color:#c0392b;font-size:13px;text-align:center;margin-top:10px;min-height:18px}
+
+/* APP SHELL */
+#app{display:none;min-height:100vh;flex-direction:column}
+header{background:var(--green);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 14px rgba(0,0,0,.22)}
+.header-left{display:flex;align-items:center;gap:12px}
+.header-logo{font-family:'Playfair Display',serif;font-size:18px;font-weight:700}
+.badge-role{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.09em;text-transform:uppercase}
+.badge-admin{background:var(--gold);color:var(--green)}
+.badge-viewer{background:rgba(255,255,255,.18);color:white}
+.header-right{display:flex;align-items:center;gap:10px}
+.sync-pill{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border-radius:20px;padding:4px 10px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#4caf50}
+.sync-dot.live{animation:blink 2.4s ease-in-out infinite}
+.sync-dot.offline{background:#e57373}
+.sync-dot.loading{background:var(--gold-light);animation:blink .7s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.sync-label{font-size:11px;color:rgba(255,255,255,.75);white-space:nowrap}
+.btn-logout{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:white;padding:6px 13px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;transition:background .2s}
+.btn-logout:hover{background:rgba(255,255,255,.2)}
+
+/* NAV */
+nav{background:white;border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;position:sticky;top:56px;z-index:90;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+nav::-webkit-scrollbar{display:none}
+.nav-tab{padding:13px 17px;font-size:13px;font-weight:500;color:var(--text-mid);cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;transition:all .18s;user-select:none;flex-shrink:0}
+.nav-tab:hover{color:var(--green)}
+.nav-tab.active{color:var(--green);border-bottom-color:var(--green);font-weight:600}
+.nav-tab.admin-only{color:var(--gold)}
+.nav-tab.admin-only.active{color:var(--green-mid);border-bottom-color:var(--gold)}
+
+/* LAYOUT */
+main{flex:1;padding:20px 16px;max-width:1200px;margin:0 auto;width:100%}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.section-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.section-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--green)}
+.section-sub{font-size:12px;color:var(--text-light);margin-top:3px}
+
+/* CARDS */
+.card{background:white;border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow);padding:20px;margin-bottom:16px}
+.card-title{font-family:'Playfair Display',serif;font-size:16px;color:var(--green);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+/* TABLES */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;padding:9px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-mid);border-bottom:2px solid var(--border);background:var(--off-white)}
+td{padding:10px 12px;border-bottom:1px solid #f0ece6;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--green-pale)}
+.pos{font-weight:700;color:var(--green);min-width:40px}
+.player-name{font-weight:500}
+.to-par{font-weight:700}
+.to-par.under{color:#c0392b}
+.to-par.over{color:var(--green-mid)}
+.to-par.even{color:var(--text-mid)}
+.am-badge{font-size:10px;font-weight:700;background:var(--pink-pale);color:var(--pink);padding:2px 6px;border-radius:4px;margin-left:6px}
+.owner-tag{font-size:12px;font-weight:600;color:var(--green);background:var(--green-pale);padding:2px 8px;border-radius:10px;white-space:nowrap}
+.cut-row td{color:var(--text-light);font-style:italic;background:#fffdf5}
+.loading-row td{text-align:center;color:var(--text-light);font-style:italic;padding:28px}
+
+/* BUTTONS & INPUTS */
+.btn{padding:9px 16px;border-radius:var(--radius);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+.btn-primary{background:var(--green);color:white}
+.btn-primary:hover{background:var(--green-mid)}
+.btn-gold{background:var(--gold);color:var(--green);font-weight:600}
+.btn-gold:hover{background:var(--gold-light)}
+.btn-danger{background:#fdf0f0;color:#c0392b;border:1px solid #f5c6c6}
+.btn-danger:hover{background:#fce0e0}
+.btn-outline{background:white;border:1px solid var(--border);color:var(--text)}
+.btn-outline:hover{border-color:var(--green);color:var(--green)}
+.btn-sm{padding:6px 12px;font-size:12px}
+input[type="text"],input[type="number"],input[type="password"],select,textarea{font-family:inherit;font-size:14px;border:1px solid var(--border);border-radius:6px;padding:7px 10px;outline:none;background:white;transition:border-color .2s;color:var(--text)}
+input:focus,select:focus,textarea:focus{border-color:var(--green)}
+.flex-gap{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* PAYOUT HERO */
+.payout-hero{background:linear-gradient(135deg,var(--green) 0%,var(--green-mid) 100%);color:white;border-radius:12px;padding:22px 24px;margin-bottom:16px;display:flex;align-items:center;gap:18px}
+.payout-hero .trophy{font-size:44px;flex-shrink:0}
+.payout-hero-label{font-size:11px;text-transform:uppercase;letter-spacing:.13em;opacity:.72}
+.payout-hero-name{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-top:3px}
+.payout-hero-score{font-size:30px;font-weight:700;color:var(--gold-light);margin-top:5px;line-height:1}
+.payout-hero-meta{font-size:12.5px;opacity:.78;margin-top:7px}
+
+/* AUCTION */
+.standings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:10px;margin-top:4px}
+.standing-item{background:var(--green-pale);border-radius:var(--radius);padding:13px 15px;border-left:3px solid var(--green-light)}
+.standing-name{font-size:13px;font-weight:600;color:var(--green)}
+.standing-amt{font-size:20px;font-weight:700;color:var(--text);margin-top:1px}
+.standing-lots{font-size:11px;color:var(--text-light)}
+.buyer-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.buyer-chip{display:flex;align-items:center;gap:6px;background:var(--off-white);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:13px}
+.buyer-chip button{background:none;border:none;cursor:pointer;color:#c0392b;font-size:16px;line-height:1;padding:0 2px}
+
+/* DAY FILTER */
+.day-filter-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.day-btn{padding:7px 15px;border-radius:20px;font-family:inherit;font-size:12.5px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:white;color:var(--text-mid);transition:all .15s}
+.day-btn:hover{border-color:var(--green);color:var(--green)}
+.day-btn.active{background:var(--green);color:white;border-color:var(--green)}
+
+/* PLAYER INTEL */
+.intel-search{width:100%;max-width:340px;padding:9px 14px;border:1px solid var(--border);border-radius:20px;font-family:inherit;font-size:14px;outline:none;margin-bottom:16px}
+.intel-search:focus{border-color:var(--green)}
+.intel-filter-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.intel-filter-btn{padding:6px 14px;border-radius:20px;font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:white;color:var(--text-mid);transition:all .15s}
+.intel-filter-btn:hover{border-color:var(--green);color:var(--green)}
+.intel-filter-btn.active{background:var(--green);color:white;border-color:var(--green)}
+.intel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.intel-card{background:white;border-radius:10px;border:1px solid var(--border);padding:16px;box-shadow:var(--shadow);transition:box-shadow .2s}
+.intel-card:hover{box-shadow:var(--shadow-md,0 4px 24px rgba(26,74,46,.14))}
+.intel-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.intel-card-name{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:var(--green)}
+.intel-card-odds{font-size:13px;font-weight:700;color:var(--gold);background:var(--gold-pale);padding:3px 8px;border-radius:6px;white-space:nowrap}
+.intel-row{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid #f0ece6;gap:8px}
+.intel-row:last-of-type{border-bottom:none}
+.intel-key{color:var(--text-light);flex-shrink:0}
+.intel-val{font-weight:500;text-align:right}
+.intel-note{font-size:12px;color:var(--text-mid);font-style:italic;margin-top:8px;padding-top:8px;border-top:1px solid #f0ece6;line-height:1.5}
+.intel-type-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle}
+.type-individual{background:#e8f3ec;color:var(--green)}
+.type-group{background:#fdf6e3;color:#7a5a1a}
+.type-amateur{background:var(--pink-pale);color:var(--pink)}
+
+/* RULES */
+.rules-content{font-size:14px;line-height:1.78;color:var(--text-mid)}
+.rules-content h3{font-family:'Playfair Display',serif;color:var(--green);font-size:16px;margin:18px 0 8px}
+.rules-content h3:first-child{margin-top:0}
+.rules-content ul{padding-left:20px}
+.rules-content li{margin-bottom:6px}
+textarea.rules-editor{width:100%;min-height:340px;resize:vertical;font-size:13.5px;line-height:1.65;padding:14px}
+
+/* SETUP */
+.setup-section{background:white;border-radius:10px;border:1px solid var(--border);padding:18px 20px;margin-bottom:14px}
+.setup-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-light);margin-bottom:10px}
+.status-box{margin-top:12px;padding:10px 14px;border-radius:var(--radius);font-size:13px;font-weight:500}
+.status-ok{background:#edf7ed;color:#2e7d32;border:1px solid #c3e6c3}
+.status-err{background:#fdf0f0;color:#c0392b;border:1px solid #f5c6c6}
+.status-info{background:var(--gold-pale);color:#7a5a1a;border:1px solid var(--gold-light)}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:10px;margin-top:4px}
+.info-item{background:var(--off-white);border-radius:var(--radius);padding:12px 14px;border:1px solid var(--border)}
+.info-item-label{font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.08em}
+.info-item-val{font-size:15px;font-weight:600;color:var(--text);margin-top:3px}
+.espn-badge{display:inline-flex;align-items:center;gap:5px;background:#cc0000;color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px;letter-spacing:.04em}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .75s linear infinite;vertical-align:middle;margin-right:5px}
+@keyframes spin{to{transform:rotate(360deg)}}
+code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
+
+/* ── ON THE BLOCK ─────────────────────────────────────────────── */
+
+/* Hero card — large current lot */
+.hero-card {
+  background: white;
+  border-radius: 16px;
+  border: 2px solid var(--gold);
+  box-shadow: 0 6px 32px rgba(201,168,76,0.18);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.hero-header {
+  background: linear-gradient(140deg, var(--green) 0%, #1f5c38 50%, var(--green-mid) 100%);
+  color: white;
+  padding: 24px 28px 28px;
+}
+.hero-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+.hero-lot-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  opacity: 0.72;
+}
+.hero-odds-wrap { text-align: right; flex-shrink: 0; }
+.hero-odds {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--gold-light);
+  line-height: 1;
+}
+.hero-winpct {
+  font-size: 11px;
+  opacity: 0.62;
+  margin-top: 4px;
+}
+.hero-identity {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+}
+.hero-name-block { flex: 1; min-width: 0; }
+.hero-type-pill {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.18);
+  color: white;
+  margin-bottom: 8px;
+}
+.hero-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: white;
+}
+@media(max-width:600px){ .hero-name { font-size: 20px; } }
+.hero-members {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 8px;
+}
+.hero-member {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.88);
+  line-height: 1.4;
+}
+
+/* Body */
+.hero-body {
+  padding: 24px 28px 24px;
+}
+.hero-sold-banner {
+  background: var(--green-pale);
+  border: 1px solid var(--green-light);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 15px;
+  color: var(--green);
+  font-weight: 600;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hero-intel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 24px;
+  margin-bottom: 4px;
+}
+@media(max-width:600px){ .hero-intel-grid { grid-template-columns: 1fr; } }
+.hero-intel-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #f0ece6;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.hero-intel-key {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-light);
+}
+.hero-intel-val {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.4;
+}
+.hero-note {
+  font-size: 14px;
+  color: var(--text-mid);
+  font-style: italic;
+  line-height: 1.7;
+  margin-top: 18px;
+  padding: 14px 16px;
+  background: var(--off-white);
+  border-radius: 8px;
+  border-left: 3px solid var(--gold);
+}
+
+/* Admin bid entry panel inside the hero card */
+.hero-bid-panel {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 2px solid var(--border);
+}
+.hero-bid-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-light);
+  margin-bottom: 10px;
+}
+.hero-bid-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.hero-bid-row select {
+  flex: 1;
+  min-width: 130px;
+  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 2px solid var(--border);
+  background: white;
+  font-family: inherit;
+}
+.hero-bid-row select:focus { border-color: var(--green); outline: none; }
+.hero-bid-price {
+  width: 110px;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 2px solid var(--border);
+  text-align: right;
+  font-family: inherit;
+}
+.hero-bid-price:focus { border-color: var(--green); outline: none; }
+.hero-bid-price::placeholder { font-weight: 400; }
+.btn-sell {
+  background: var(--gold);
+  color: var(--green);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.btn-sell:hover { background: var(--gold-light); }
+.btn-sell:disabled { opacity: 0.45; cursor: not-allowed; }
+.hero-bid-status {
+  font-size: 12.5px;
+  margin-top: 8px;
+  min-height: 18px;
+  color: var(--text-light);
+}
+
+/* Next strip — compact */
+.next-strip {
+  background: white;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.next-strip-label {
+  background: var(--off-white);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-light);
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.next-strip-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  gap: 12px;
+}
+.next-strip-left { flex: 1; min-width: 0; }
+.next-strip-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--green);
+  margin-top: 4px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media(max-width:600px){ .next-strip-name { font-size: 14px; white-space: normal; } }
+.next-strip-right { text-align: right; flex-shrink: 0; }
+.next-strip-odds {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gold);
+}
+.next-strip-pct {
+  font-size: 11px;
+  color: var(--text-light);
+  margin-top: 3px;
+}
+
+/* Progress bar */
+.onblock-progress {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.onblock-progress-info { flex: 1; min-width: 180px; }
+.onblock-progress-label { font-size: 12px; color: var(--text-light); margin-bottom: 6px; }
+.onblock-progress-bar-wrap {
+  background: var(--off-white);
+  border-radius: 20px;
+  height: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.onblock-progress-bar {
+  height: 100%;
+  border-radius: 20px;
+  background: linear-gradient(90deg, var(--green) 0%, var(--green-light) 100%);
+  transition: width 0.5s ease;
+}
+.onblock-progress-text { font-size: 13px; font-weight: 600; color: var(--green); margin-top: 6px; }
+.onblock-nav-btns { display: flex; gap: 8px; flex-shrink: 0; }
+
+/* type pill reuse */
+.onblock-type-pill {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-bottom: 6px;
+}
+
+/* nav highlight */
+.nav-tab[data-tab="onblock"] { color: var(--gold); font-weight: 600; }
+.nav-tab[data-tab="onblock"].active { color: var(--green); border-bottom-color: var(--gold); }
+
+/* Sold state card */
+.sold-card {
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  background: linear-gradient(140deg, #1a3a1a 0%, #2d6a2d 50%, #1a4a1a 100%);
+  border: 2px solid #4caf50;
+  box-shadow: 0 8px 40px rgba(76,175,80,0.25);
+}
+.sold-card-inner {
+  padding: 36px 28px 32px;
+  text-align: center;
+  color: white;
+}
+.sold-badge {
+  display: inline-block;
+  background: #4caf50;
+  color: white;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  padding: 6px 20px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+}
+.sold-lot-label {
+  font-size: 12px;
+  opacity: 0.65;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 10px;
+}
+.sold-player-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+@media(max-width:600px){ .sold-player-name { font-size: 22px; } }
+.sold-members {
+  margin: 8px 0 16px;
+  opacity: 0.85;
+}
+.sold-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 20px auto 0;
+  background: rgba(255,255,255,0.1);
+  border-radius: 12px;
+  max-width: 380px;
+  overflow: hidden;
+}
+.sold-meta-item {
+  flex: 1;
+  padding: 14px 20px;
+}
+.sold-meta-label {
+  font-size: 11px;
+  opacity: 0.65;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 4px;
+}
+.sold-meta-val {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #a5d6a7;
+}
+.sold-divider {
+  width: 1px;
+  height: 48px;
+  background: rgba(255,255,255,0.2);
+  flex-shrink: 0;
+}
+.sold-countdown {
+  margin-top: 20px;
+  font-size: 13px;
+  opacity: 0.55;
+  letter-spacing: 0.06em;
+}
+
+.mylots-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.buyer-filter-btn {
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--text-mid);
+  transition: all 0.15s;
+}
+.buyer-filter-btn:hover { border-color: var(--green); color: var(--green); }
+.buyer-filter-btn.active { background: var(--green); color: white; border-color: var(--green); }
+
+.mylots-summary {
+  background: linear-gradient(135deg, var(--green) 0%, var(--green-mid) 100%);
+  color: white;
+  border-radius: 12px;
+  padding: 18px 22px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.mylots-summary-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  flex: 1;
+}
+.mylots-stat { text-align: center; }
+.mylots-stat-val { font-size: 22px; font-weight: 700; color: var(--gold-light); }
+.mylots-stat-label { font-size: 11px; opacity: 0.72; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+
+.mylots-lot-card {
+  background: white;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.mylots-lot-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid #f0ece6;
+  flex-wrap: wrap;
+}
+.mylots-lot-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  min-width: 38px;
+}
+.mylots-lot-player {
+  font-family: 'Playfair Display', serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--green);
+  flex: 1;
+  min-width: 150px;
+}
+.mylots-lot-price {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+.mylots-lot-odds {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold);
+  background: var(--gold-pale);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.mylots-lot-intel {
+  padding: 10px 16px 12px;
+  background: var(--off-white);
+}
+.mylots-lot-intel .intel-row { padding: 3px 0; font-size: 12px; }
+.mylots-lot-intel .intel-note { font-size: 12px; margin-top: 6px; padding-top: 6px; }
+.mylots-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-light);
+  font-style: italic;
+}
+
+/* ── ON THE BLOCK nav highlight ─────────────────────────────── */
+.nav-tab[data-tab="onblock"] { color: var(--gold); font-weight: 600; }
+.nav-tab[data-tab="onblock"].active { color: var(--green); border-bottom-color: var(--gold); }
+
+/* ── DASHBOARD ───────────────────────────────────────────────── */
+.dash-pot {
+  background: linear-gradient(135deg, var(--green) 0%, #1f5c38 100%);
+  color: white;
+  border-radius: 16px;
+  padding: 28px 32px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.dash-pot-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.72;
+  margin-bottom: 6px;
+}
+.dash-pot-amount {
+  font-family: 'Playfair Display', serif;
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--gold-light);
+  line-height: 1;
+}
+.dash-pot-sub {
+  font-size: 13px;
+  opacity: 0.62;
+  margin-top: 6px;
+}
+.dash-pot-stats {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+.dash-pot-stat { text-align: center; }
+.dash-pot-stat-val { font-size: 22px; font-weight: 700; color: var(--gold-light); }
+.dash-pot-stat-label { font-size: 11px; opacity: 0.65; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px; }
+
+.dash-payouts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.dash-payout-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.dash-payout-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid #f0ece6;
+}
+.dash-payout-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+}
+.dash-payout-icon { font-size: 18px; }
+.dash-payout-pct {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-light);
+  background: var(--off-white);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.dash-payout-body { padding: 14px 18px; }
+.dash-payout-amount {
+  font-family: 'Playfair Display', serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--green);
+  line-height: 1;
+  margin-bottom: 10px;
+}
+.dash-payout-winner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dash-payout-winner-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.dash-payout-winner-score {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.dash-payout-winner-score.under { background: #e8f5e9; color: #2e7d32; }
+.dash-payout-winner-score.over  { background: #fce4ec; color: #c62828; }
+.dash-payout-winner-score.even  { background: var(--off-white); color: var(--text-mid); }
+.dash-payout-owner {
+  font-size: 12px;
+  color: var(--text-light);
+  margin-top: 4px;
+}
+.dash-no-data {
+  font-size: 13px;
+  color: var(--text-light);
+  font-style: italic;
+}
+.dash-daily-sub {
+  margin-top: 10px;
+  border-top: 1px solid #f0ece6;
+  padding-top: 10px;
+}
+.dash-daily-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 13px;
+}
+.dash-daily-round { color: var(--text-light); }
+.dash-daily-info { font-weight: 500; }
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  /* Login */
+  .login-card{padding:28px 18px 24px;margin:12px}
+
+  /* Header */
+  header{height:50px;padding:0 12px}
+  .header-logo{font-size:14px}
+  .sync-label{display:none}
+  .badge-role{display:none}
+  .btn-logout{padding:5px 10px;font-size:11px}
+  .sync-pill{padding:4px 8px}
+
+  /* Nav — horizontally scrollable, larger touch targets */
+  nav{top:50px}
+  .nav-tab{padding:11px 13px;font-size:12px}
+
+  /* Main padding */
+  main{padding:12px 10px}
+
+  /* Section header */
+  .section-title{font-size:17px}
+
+  /* Cards */
+  .card{padding:14px 14px;border-radius:10px}
+
+  /* Tables — make them more readable on small screens */
+  table{font-size:12px}
+  th{padding:7px 8px;font-size:10px}
+  td{padding:8px 8px}
+  .pos{min-width:28px}
+
+  /* Leaderboard — hide R1-R4 individual columns on mobile */
+  .lb-r1,.lb-r2,.lb-r3,.lb-r4{display:none}
+
+  /* Payout hero */
+  .payout-hero{padding:14px 14px;gap:10px;flex-wrap:wrap}
+  .payout-hero .trophy{font-size:30px}
+  .payout-hero-name{font-size:16px}
+  .payout-hero-score{font-size:22px}
+
+  /* Standings */
+  .standings-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+
+  /* Intel */
+  .intel-grid{grid-template-columns:1fr}
+  .intel-filter-bar{gap:6px}
+  .intel-filter-btn{padding:5px 10px;font-size:11px}
+
+  /* Hero card */
+  .hero-header{padding:18px 16px 20px}
+  .hero-header-top{margin-bottom:10px}
+  .hero-lot-label{font-size:10px}
+  .hero-odds{font-size:18px}
+  .hero-name{font-size:20px}
+  .hero-member{font-size:13px}
+  .hero-body{padding:16px 16px}
+  .hero-intel-grid{grid-template-columns:1fr;gap:0}
+  .hero-intel-val{font-size:13px}
+  .hero-note{font-size:13px;padding:11px 13px}
+
+  /* Bid panel */
+  .hero-bid-row{gap:8px}
+  .hero-bid-row select{min-width:0;font-size:13px;padding:9px 10px}
+  .hero-bid-price{width:90px;font-size:14px;padding:9px 10px}
+  .btn-sell{padding:9px 14px;font-size:13px}
+
+  /* On the Block strips */
+  .next-strip-name{font-size:13px;white-space:normal}
+  .onblock-progress{padding:12px 14px;gap:10px}
+
+  /* Sold card */
+  .sold-card-inner{padding:24px 16px 20px}
+  .sold-player-name{font-size:20px}
+  .sold-meta{max-width:100%}
+  .sold-meta-val{font-size:18px}
+
+  /* My Lots */
+  .mylots-summary{padding:14px 16px;gap:12px}
+  .mylots-summary-name{font-size:18px}
+  .mylots-stat-val{font-size:18px}
+  .mylots-lot-header{padding:10px 12px;gap:8px}
+
+  /* Dashboard */
+  .dash-pot{padding:20px 18px;gap:14px}
+  .dash-pot-amount{font-size:36px}
+  .dash-payouts{grid-template-columns:1fr;gap:10px}
+  .dash-payout-amount{font-size:22px}
+
+  /* Info grid */
+  .info-grid{grid-template-columns:1fr 1fr}
+
+  /* Buyer filter */
+  .buyer-filter-btn{padding:7px 12px;font-size:12px}
+
+  /* Section header — stack on mobile */
+  .section-header{flex-direction:column;align-items:flex-start;gap:8px}
+  .section-header .flex-gap{width:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <span class="flag">⛳</span>
+      <h1>Masters Pool HQ</h1>
+      <p>Augusta &bull; 2026</p>
+    </div>
+    <div class="login-tabs">
+      <button class="login-tab active" onclick="setLoginRole('viewer')">Viewer</button>
+      <button class="login-tab"        onclick="setLoginRole('admin')">Admin</button>
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="Enter password"
+             onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-login" onclick="doLogin()">Enter Pool HQ</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="header-left">
+      <div class="header-logo">⛳ Masters Pool HQ</div>
+      <span class="badge-role" id="role-badge"></span>
+    </div>
+    <div class="header-right">
+      <div class="sync-pill">
+        <div class="sync-dot loading" id="sync-dot"></div>
+        <span class="sync-label" id="sync-label">Loading…</span>
+      </div>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <nav>
+    <div class="nav-tab active"   data-tab="auction"    onclick="switchTab('auction')">Auction</div>
+    <div class="nav-tab"          data-tab="dashboard"  onclick="switchTab('dashboard')">📊 Dashboard</div>
+    <div class="nav-tab"          data-tab="onblock"    onclick="switchTab('onblock')">🔨 On the Block</div>
+    <div class="nav-tab"          data-tab="mylots"     onclick="switchTab('mylots')">My Lots</div>
+    <div class="nav-tab"          data-tab="leaderboard" onclick="switchTab('leaderboard')">Leaderboard</div>
+    <div class="nav-tab"          data-tab="winner"     onclick="switchTab('winner')">Winner</div>
+    <div class="nav-tab"          data-tab="second"     onclick="switchTab('second')">2nd</div>
+    <div class="nav-tab"          data-tab="third"      onclick="switchTab('third')">3rd</div>
+    <div class="nav-tab"          data-tab="lowam"      onclick="switchTab('lowam')">Low Am</div>
+    <div class="nav-tab"          data-tab="dailylow"   onclick="switchTab('dailylow')">Daily Low</div>
+    <div class="nav-tab"          data-tab="deadlast"   onclick="switchTab('deadlast')">Dead Last</div>
+    <div class="nav-tab"          data-tab="intel"      onclick="switchTab('intel')">Player Intel</div>
+    <div class="nav-tab"          data-tab="rules"      onclick="switchTab('rules')">Rules</div>
+    <div class="nav-tab admin-only" id="admin-nav-tab"
+         data-tab="setup" onclick="switchTab('setup')" style="display:none">⚙ Admin</div>
+  </nav>
+
+  <main>
+
+    <!-- DASHBOARD -->
+    <div class="tab-panel" id="tab-dashboard">
+      <div id="dashboard-content"></div>
+    </div>
+
+    <!-- AUCTION -->
+    <div class="tab-panel active" id="tab-auction">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Live Auction</div>
+          <div class="section-sub" id="auction-sub">—</div>
+        </div>
+        <div class="flex-gap" id="auction-admin-bar" style="display:none">
+          <button class="btn btn-primary" onclick="saveAuction()">💾 Save Changes</button>
+          <button class="btn btn-outline btn-sm" onclick="fetchAuction()">↻ Sync</button>
+        </div>
+      </div>
+      <div class="card" id="buyer-card" style="display:none">
+        <div class="card-title">👤 Buyers</div>
+        <div class="buyer-chips" id="buyer-chips"></div>
+        <div class="flex-gap" style="margin-top:14px">
+          <input type="text" id="new-buyer-input" placeholder="Add buyer name…" style="width:200px"
+                 onkeydown="if(event.key==='Enter')addBuyer()">
+          <button class="btn btn-gold" onclick="addBuyer()">+ Add Buyer</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Type</th><th>Player</th><th>Buyer</th><th style="text-align:right">Price</th><th style="text-align:right">Odds</th><th style="text-align:right">Win %</th></tr></thead>
+            <tbody id="auction-tbody"><tr class="loading-row"><td colspan="7"><span class="spinner"></span>Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">💰 Buyer Standings</div>
+        <div class="standings-grid" id="standings-grid"><div style="color:var(--text-light);font-size:13px">No buyers yet.</div></div>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div class="tab-panel" id="tab-leaderboard">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Masters Leaderboard</div>
+          <div class="section-sub" id="lb-meta">Connecting to ESPN…</div>
+        </div>
+        <div class="flex-gap">
+          <span class="espn-badge">&#9679; ESPN Live</span>
+          <button class="btn btn-outline btn-sm" onclick="fetchESPN()">↻ Refresh</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Pos</th><th>Player</th><th>Owner</th><th>To Par</th><th>Today</th><th>Thru</th><th class="lb-r1">R1</th><th class="lb-r2">R2</th><th class="lb-r3">R3</th><th class="lb-r4">R4</th></tr></thead>
+            <tbody id="lb-tbody"><tr class="loading-row"><td colspan="10"><span class="spinner"></span>Fetching from ESPN…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYOUT PANELS -->
+    <div class="tab-panel" id="tab-winner">  <div id="payout-winner"></div></div>
+    <div class="tab-panel" id="tab-second">  <div id="payout-second"></div></div>
+    <div class="tab-panel" id="tab-third">   <div id="payout-third"></div></div>
+    <div class="tab-panel" id="tab-lowam">   <div id="payout-lowam"></div></div>
+    <div class="tab-panel" id="tab-dailylow"><div id="payout-dailylow"></div></div>
+    <div class="tab-panel" id="tab-deadlast"><div id="payout-deadlast"></div></div>
+
+    <!-- PLAYER INTEL -->
+    <div class="tab-panel" id="tab-intel">
+      <div class="section-header">
+        <div class="section-title">Player Intel</div>
+      </div>
+      <input class="intel-search" id="intel-search" placeholder="🔍 Search players…" oninput="renderIntel()">
+      <div class="intel-filter-bar">
+        <button class="intel-filter-btn active" data-filter="all"        onclick="setIntelFilter('all')">All Players</button>
+        <button class="intel-filter-btn"         data-filter="individual" onclick="setIntelFilter('individual')">Individual</button>
+        <button class="intel-filter-btn"         data-filter="group"      onclick="setIntelFilter('group')">Group</button>
+        <button class="intel-filter-btn"         data-filter="amateur"    onclick="setIntelFilter('amateur')">Amateurs</button>
+        <button class="intel-filter-btn"         data-filter="contender"  onclick="setIntelFilter('contender')">Top Contenders</button>
+      </div>
+      <div class="intel-grid" id="intel-grid"></div>
+    </div>
+
+    <!-- RULES -->
+    <div class="tab-panel" id="tab-rules">
+      <div class="section-header">
+        <div class="section-title">Pool Rules</div>
+        <button class="btn btn-outline btn-sm" id="edit-rules-btn" onclick="toggleRulesEdit()" style="display:none">Edit Rules</button>
+      </div>
+      <div class="card">
+        <div class="rules-content" id="rules-display"></div>
+        <textarea class="rules-editor" id="rules-editor" style="display:none"></textarea>
+        <div class="flex-gap" id="rules-save-row" style="display:none;margin-top:14px">
+          <button class="btn btn-primary" onclick="saveRules()">Save Rules</button>
+          <button class="btn btn-outline" onclick="cancelRulesEdit()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ON THE BLOCK -->
+    <div class="tab-panel" id="tab-onblock">
+      <div id="onblock-content"></div>
+    </div>
+
+    <!-- MY LOTS -->
+    <div class="tab-panel" id="tab-mylots">
+      <div class="section-header">
+        <div class="section-title">My Lots</div>
+      </div>
+      <div class="mylots-filter-bar" id="mylots-filter-bar">
+        <div style="color:var(--text-light);font-size:13px">Loading buyers…</div>
+      </div>
+      <div id="mylots-content"></div>
+    </div>
+
+    <!-- ADMIN SETUP -->
+    <div class="tab-panel" id="tab-setup">
+      <div class="section-header"><div class="section-title">Admin Setup</div></div>
+
+      <div class="setup-section">
+        <div class="setup-label">Google Apps Script Backend URL</div>
+        <div class="flex-gap">
+          <!-- PASTE YOUR APPS SCRIPT /exec URL HERE -->
+          <input type="text" id="backend-url" style="flex:1;min-width:200px"
+                 placeholder="https://script.google.com/macros/s/…/exec"
+                 value="">
+          <button class="btn btn-primary" onclick="connectBackend()">Connect</button>
+          <button class="btn btn-outline"  onclick="testBackend()">Test</button>
+        </div>
+        <div id="backend-status" class="status-box" style="display:none"></div>
+      </div>
+
+      <div class="setup-section">
+        <div class="setup-label">Live Status</div>
+        <div class="info-grid">
+          <div class="info-item"><div class="info-item-label">Leaderboard</div><div class="info-item-val">🔴 ESPN (Live)</div></div>
+          <div class="info-item"><div class="info-item-label">Auction Data</div><div class="info-item-val">📊 Google Sheets</div></div>
+          <div class="info-item"><div class="info-item-label">ESPN Status</div><div class="info-item-val" id="espn-status-val">—</div></div>
+          <div class="info-item"><div class="info-item-label">Sheets Status</div><div class="info-item-val" id="sheets-status-val">—</div></div>
+          <div class="info-item"><div class="info-item-label">Last Score Sync</div><div class="info-item-val" id="last-espn-sync">—</div></div>
+          <div class="info-item"><div class="info-item-label">Last Auction Sync</div><div class="info-item-val" id="last-auction-sync">—</div></div>
+        </div>
+        <div class="flex-gap" style="margin-top:12px">
+          <button class="btn btn-primary btn-sm" onclick="fetchESPN()">↻ Refresh Scores</button>
+          <button class="btn btn-outline btn-sm" onclick="fetchAuction()">↻ Sync Auction</button>
+        </div>
+      </div>
+
+      <div class="setup-section">
+        <div class="setup-label">Required Google Sheet Tabs</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+          <span style="background:var(--green-pale);color:var(--green);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">Buyers</span>
+          <span style="background:var(--green-pale);color:var(--green);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">AuctionLots</span>
+        </div>
+        <div style="font-size:13px;color:var(--text-mid);margin-top:10px;line-height:1.6">
+          <strong>Buyers</strong> tab columns: <code>id</code> | <code>name</code><br>
+          <strong>AuctionLots</strong> tab columns: <code>lot</code> | <code>type</code> | <code>player</code> | <code>buyerId</code> | <code>price</code>
+        </div>
+      </div>
+
+      <div class="setup-section">
+        <div class="setup-label">Passwords</div>
+        <p style="font-size:13px;color:var(--text-mid);line-height:1.6">
+          Find <code>PASSWORDS</code> near the top of the <code>&lt;script&gt;</code> block and edit directly.
+        </p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════
+   PASSWORDS  ← change these
+   ═══════════════════════════════════════════ */
+const PASSWORDS = { viewer: 'Masters2026', admin: 'fletcher' };
+
+/* ═══════════════════════════════════════════
+   CONFIG
+   ═══════════════════════════════════════════ */
+const ESPN_URL   = 'https://site.web.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
+const STORAGE_BACKEND_KEY = 'mastersPool_backendUrl';
+
+// ── PASTE YOUR APPS SCRIPT URL HERE ──────────────────────────────
+// Every device will use this URL automatically — no Admin Setup needed.
+// Leave as '' to use the Admin Setup tab instead.
+const HARDCODED_BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxiAxngAU5C9NxI5izrn-OvQ4z5Ck7QTP1kpodsTrbYJVtCAhlHsB4sGS4zxcBLDN3h/exec';
+// ─────────────────────────────────────────────────────────────────
+
+// Refresh intervals
+const ESPN_REFRESH_MS    = 60000;  // 60s — live scores
+const AUCTION_REFRESH_MS = 30000;  // 30s — auction data
+
+const ROUND_LABELS = { r1:'Rd 1 — Thu', r2:'Rd 2 — Fri', r3:'Rd 3 — Sat', r4:'Rd 4 — Sun', today:'Today (Live)' };
+
+/* ═══════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════ */
+let currentRole = null;
+let loginRoleSelected = 'viewer';
+let backendUrl = HARDCODED_BACKEND_URL || localStorage.getItem(STORAGE_BACKEND_KEY) || '';
+
+let leaderboard = [];
+let buyers = [];
+let lots   = [];
+let pendingLots = [];
+
+let dailyLowDay  = 'today';
+let deadLastDay  = 'tournament'; // 'tournament' | 'friday' | 'sunday'
+let rulesEditing = false;
+let intelFilter  = 'all';
+
+let espnTimer    = null;
+let auctionTimer = null;
+let autoSaveTimer = null; // debounce timer for auto-save
+
+/* ═══════════════════════════════════════════
+   RULES TEXT  ← edit here or via UI
+   ═══════════════════════════════════════════ */
+let rulesText = `<h3>General</h3>
+<ul>
+  <li>This is a Calcutta-style auction pool for The Masters tournament.</li>
+  <li>Each participant bids on players during the live auction. Bids are final.</li>
+  <li>Players may be auctioned individually or in groups.</li>
+</ul>
+<h3>Payouts</h3>
+<ul>
+  <li><strong>Winner</strong> — 50% of the pot</li>
+  <li><strong>2nd Place</strong> — 20% of the pot</li>
+  <li><strong>3rd Place</strong> — 5% of the pot</li>
+  <li><strong>Low Amateur</strong> — 3% of the pot</li>
+  <li><strong>Daily Low Round</strong> — 5% per round</li>
+  <li><strong>Dead Last Friday</strong> — 1% of the pot (last place at conclusion of Friday's round)</li>
+  <li><strong>Dead Last Sunday</strong> — 1% of the pot (last place at conclusion of Sunday's round)</li>
+</ul>
+<h3>Tiebreaker</h3>
+<ul>
+  <li>In the event of a 4-way playoff, the winner receives 50% while the other 3 golfers split 25% amongst themselves. Tiebreaker rules adjust proportionally for any other playoff scenario.</li>
+</ul>
+<h3>Conduct</h3>
+<ul>
+  <li>If your golfer does not tee off Thursday, you receive a full refund.</li>
+</ul>`;
+
+/* ═══════════════════════════════════════════
+   2026 MASTERS PLAYER INTEL
+   Full field with real 2026 data
+   type: 'individual' | 'group' | 'amateur'
+   contender: true = top-tier pick
+   ═══════════════════════════════════════════ */
+const PLAYER_INTEL = [
+  // ── TOP CONTENDERS ──────────────────────────────────────────────
+  { name:'Scottie Scheffler',   type:'individual', amateur:false, contender:true,
+    odds:'+500', owgr:1, age:29,
+    augusta:'Champion (2022, 2024)',
+    form:'Won American Express; top-5 in next two; withdrew Houston (birth of child)',
+    sgTotal:'#1 on Tour', sgApproach:'Elite', sgPutting:'Solid',
+    note:'World No. 1 and two-time champion. The man to beat every single week.' },
+
+  { name:'Rory McIlroy',        type:'individual', amateur:false, contender:true,
+    odds:'+1100', owgr:3, age:36,
+    augusta:'Champion (2025)',
+    form:'T2 Genesis; withdrew Arnold Palmer (back); T46 Players',
+    sgTotal:'Top 5 Tour', sgApproach:'Top 5 Tour', sgPutting:'Outside top 100',
+    note:'Defending champion seeking back-to-back. Last done by Tiger in 2001-02. Long game elite; putting is the question mark.' },
+
+  { name:'Bryson DeChambeau',   type:'individual', amateur:false, contender:true,
+    odds:'+1000', owgr:8, age:32,
+    augusta:'T5 (2025)',
+    form:'Won two consecutive LIV events inc. playoff over Rahm',
+    sgTotal:'Strong', sgApproach:'Inconsistent', sgPutting:'Lag putting issues',
+    note:'LIV recruit on a hot streak into Masters week. Approach and lag putting must tighten to win.' },
+
+  { name:'Jon Rahm',            type:'individual', amateur:false, contender:true,
+    odds:'+1000', owgr:6, age:31,
+    augusta:'Champion (2023)',
+    form:'Won LIV event; runner-up to DeChambeau in back-to-back LIV',
+    sgTotal:'Strong', sgApproach:'Good', sgPutting:'Good',
+    note:'2023 champion on a resurgent LIV run. Only one top-5 in his last 10 majors — model fading him.' },
+
+  { name:'Xander Schauffele',   type:'individual', amateur:false, contender:true,
+    odds:'+1500', owgr:7, age:30,
+    augusta:'T3 (2023)',
+    form:'Consistent; chasing career Grand Slam — needs Masters',
+    sgTotal:'Top 10', sgApproach:'Elite', sgPutting:'Above average',
+    note:'Grand Slam bid adds extra motivation. Elite ball-striker who is solid at Augusta — just needs to close.' },
+
+  { name:'Tommy Fleetwood',     type:'individual', amateur:false, contender:true,
+    odds:'+2200', owgr:4, age:34,
+    augusta:'T3 (2024)',
+    form:'3 top-10s in 6 starts; slightly under the radar',
+    sgTotal:'Top 5', sgApproach:'Elite', sgPutting:'Improving',
+    note:'Best player without a major. Tour Championship win at East Lake. Augusta suits his elite iron play.' },
+
+  { name:'Ludvig Åberg',        type:'individual', amateur:false, contender:true,
+    odds:'+1600', owgr:18, age:26,
+    augusta:'T2 (2024 — debut)',
+    form:'Blew 54-hole lead at Players; recent form positive entering week',
+    sgTotal:'Strong', sgApproach:'Elite', sgPutting:'Solid',
+    note:'Runner-up on debut. Top-10 in both his Masters starts — only 4 players ever achieved that in their first three.' },
+
+  { name:'Matt Fitzpatrick',    type:'individual', amateur:false, contender:true,
+    odds:'+2000', owgr:5, age:31,
+    augusta:'T7 (2016)',
+    form:'Valspar winner; runner-up Players; red-hot entering week',
+    sgTotal:'#3 Tour TTG', sgApproach:'#7 Tour', sgPutting:'#96 Tour',
+    note:'Playing best golf of career. Has made 10 straight cuts at Augusta — third-longest active streak.' },
+
+  { name:'Cameron Young',       type:'individual', amateur:false, contender:true,
+    odds:'+2000', owgr:15, age:27,
+    augusta:'T12 (2024)',
+    form:'2026 Players Championship winner at TPC Sawgrass',
+    sgTotal:'Strong', sgApproach:'Good', sgPutting:'Good',
+    note:'Players champion coming in with momentum. Augusta debut was solid — now a genuine contender.' },
+
+  { name:'Justin Rose',         type:'individual', amateur:false, contender:true,
+    odds:'+2700', owgr:12, age:45,
+    augusta:'Runner-up (2025)',
+    form:'DP World Tour Championship win; Valspar runner-up 2026',
+    sgTotal:'Top 7', sgApproach:'Top 7 Tour', sgPutting:'Elite historically',
+    note:'Shot a final-round 66 in 2025 before McIlroy\'s miracle. 21st Masters. Unfinished business.' },
+
+  { name:'Collin Morikawa',     type:'individual', amateur:false, contender:true,
+    odds:'+2700', owgr:11, age:27,
+    augusta:'T2 (2023)',
+    form:'Chasing Grand Slam — needs Masters and US Open',
+    sgTotal:'Strong', sgApproach:'Elite irons', sgPutting:'Good',
+    note:'Grand Slam hunt adds motivation. Augusta suits his precision iron play perfectly.' },
+
+  { name:'Patrick Reed',        type:'individual', amateur:false, contender:true,
+    odds:'+2700', owgr:22, age:35,
+    augusta:'Champion (2018)',
+    form:'LIV competitor; four top-10s since his win',
+    sgTotal:'Solid', sgApproach:'Good', sgPutting:'Experienced',
+    note:'Augusta specialist — four top-10s after his 2018 win including T3 last year. Course fits his scrambling style.' },
+
+  // ── SECOND TIER ─────────────────────────────────────────────────
+  { name:'Brooks Koepka',       type:'individual', amateur:false, contender:false,
+    odds:'+4000', owgr:23, age:35,
+    augusta:'T2 (2023)',
+    form:'LIV; Grand Slam bid — needs Masters and British Open',
+    sgTotal:'Good', sgApproach:'Good', sgPutting:'Clutch',
+    note:'Slow-builds into contention at Augusta consistently. Three major titles. Major specialist mode.' },
+
+  { name:'Jordan Spieth',       type:'individual', amateur:false, contender:false,
+    odds:'+3300', owgr:27, age:32,
+    augusta:'Champion (2015)',
+    form:'Sporadic results; looking to rediscover consistency',
+    sgTotal:'Variable', sgApproach:'Good', sgPutting:'Elite historically',
+    note:'Three-time runner-up before winning in 2015. Augusta pedigree unmatched — form is the only question.' },
+
+  { name:'Hideki Matsuyama',    type:'individual', amateur:false, contender:false,
+    odds:'+3500', owgr:19, age:34,
+    augusta:'Champion (2021)',
+    form:'Consistent; celebrating 5-year anniversary of breakthrough win',
+    sgTotal:'Good', sgApproach:'Elite', sgPutting:'Variable',
+    note:'Model of Augusta consistency — made cut every year since 2015. Contender every single week.' },
+
+  { name:'Robert MacIntyre',    type:'individual', amateur:false, contender:false,
+    odds:'+3300', owgr:14, age:28,
+    augusta:'T29 (2024)',
+    form:'2025 Open Championship runner-up; strong 2026 season',
+    sgTotal:'Strong', sgApproach:'Good', sgPutting:'Good',
+    note:'Scottish left-hander with a game built for Augusta. Major pedigree developing quickly.' },
+
+  { name:'Min Woo Lee',         type:'individual', amateur:false, contender:false,
+    odds:'+3500', owgr:16, age:26,
+    augusta:'T8 (2025)',
+    form:'Multiple wins; one of the most exciting young players on Tour',
+    sgTotal:'Strong', sgApproach:'Good', sgPutting:'Good',
+    note:'Top-10 last year. Electric game — Augusta suits attacking left-handers.' },
+
+  { name:'Jason Day',           type:'individual', amateur:false, contender:false,
+    odds:'+6500', owgr:41, age:38,
+    augusta:'T2 (2011)',
+    form:'Top-10 last year; veteran competing well',
+    sgTotal:'Solid', sgApproach:'Good', sgPutting:'Strong short game',
+    note:'Best finish was runner-up in 2011. Age 38 and running out of chances — short game is still elite.' },
+
+  { name:'Corey Conners',       type:'individual', amateur:false, contender:false,
+    odds:'+6500', owgr:43, age:34,
+    augusta:'T6 (2022)',
+    form:'Consistent; shaky putter',
+    sgTotal:'Strong TTG', sgApproach:'Elite', sgPutting:'Weak link',
+    note:'Four top-10s in six Masters starts — most underrated Augusta specialist in the field.' },
+
+  { name:'Russell Henley',      type:'individual', amateur:false, contender:false,
+    odds:'+4200', owgr:31, age:35,
+    augusta:'T5 (2024)',
+    form:'Strong approach metrics; consistent results',
+    sgTotal:'Good', sgApproach:'Top 5 Tour', sgPutting:'Average',
+    note:'Georgia native playing Augusta like a home course. Elite approach play is a major weapon here.' },
+
+  { name:'Chris Gotterup',      type:'individual', amateur:false, contender:false,
+    odds:'+4300', owgr:25, age:25,
+    augusta:'First appearance',
+    form:'Won Scottish Open and Genesis Invitational',
+    sgTotal:'Strong', sgApproach:'Good', sgPutting:'Learning',
+    note:'Exciting rookie with multiple wins. Contending as a Masters debutant is uniquely difficult.' },
+
+  { name:'Viktor Hovland',      type:'individual', amateur:false, contender:false,
+    odds:'+5000', owgr:20, age:28,
+    augusta:'T4 (2023)',
+    form:'2023 FedEx Cup champion; finding form again in 2026',
+    sgTotal:'Strong', sgApproach:'Good', sgPutting:'Improving',
+    note:'T4 in 2023. Chipping and wedge work improved. Quietly dangerous when in form.' },
+
+  { name:'Shane Lowry',         type:'individual', amateur:false, contender:false,
+    odds:'+4500', owgr:28, age:38,
+    augusta:'T12 (2024)',
+    form:'Solid; Ryder Cup hero 2025',
+    sgTotal:'Good', sgApproach:'Good', sgPutting:'Solid',
+    note:'2019 Open champion. Augusta suits his patience and course management. Legitimate dark horse.' },
+
+  { name:'Adam Scott',          type:'individual', amateur:false, contender:false,
+    odds:'+6500', owgr:35, age:45,
+    augusta:'Champion (2013)',
+    form:'Making all cuts in 2026; consistent top-40 finishes',
+    sgTotal:'Good', sgApproach:'Good', sgPutting:'Solid',
+    note:'2013 champion at 45, defying time. Has five top-10s at Augusta over his career.' },
+
+  { name:'Tyrrell Hatton',      type:'individual', amateur:false, contender:false,
+    odds:'+5500', owgr:30, age:34,
+    augusta:'T10 (2024)',
+    form:'LIV competitor; volatile game',
+    sgTotal:'Volatile', sgApproach:'Good days', sgPutting:'Streaky',
+    note:'Top-10 at Augusta last year but experts are actively fading him. High variance pick.' },
+
+  { name:'Patrick Cantlay',     type:'individual', amateur:false, contender:false,
+    odds:'+5500', owgr:34, age:34,
+    augusta:'T9 (2019)',
+    form:'Winless since 2022; sliding rankings',
+    sgTotal:'Solid TTG', sgApproach:'Good', sgPutting:'Elite historically',
+    note:'Once top-10 in the world for four straight years. Still consistent but hasn\'t contended in ages.' },
+
+  { name:'Justin Thomas',       type:'individual', amateur:false, contender:false,
+    odds:'+6500', owgr:36, age:31,
+    augusta:'T12 (2023)',
+    form:'Sporadic; talented but inconsistent in 2026',
+    sgTotal:'Variable', sgApproach:'Elite on form', sgPutting:'Good',
+    note:'Former world No. 1 looking to rediscover his best. Always dangerous at Augusta when clicking.' },
+
+  { name:'Sungjae Im',          type:'individual', amateur:false, contender:false,
+    odds:'+7000', owgr:37, age:26,
+    augusta:'Runner-up (2020)',
+    form:'Consistent Tour presence in 2026',
+    sgTotal:'Good', sgApproach:'Good', sgPutting:'Good',
+    note:'Runner-up at the pandemic Masters in 2020. Quietly consistent performer.' },
+
+  { name:'Jacob Bridgeman',     type:'individual', amateur:false, contender:false,
+    odds:'+7500', owgr:17, age:26,
+    augusta:'First appearance',
+    form:'Genesis Invitational winner; #1 Tour in SG: Putting',
+    sgTotal:'Strong', sgApproach:'Steady', sgPutting:'#1 on Tour',
+    note:'Tour\'s best putter in his first Masters. Putting doesn\'t always decide Augusta but his form is real.' },
+
+  { name:'Akshay Bhatia',       type:'individual', amateur:false, contender:false,
+    odds:'+6000', owgr:20, age:24,
+    augusta:'T35 (2024)',
+    form:'Won Arnold Palmer Invitational at Bay Hill 2026',
+    sgTotal:'Good', sgApproach:'Elite irons', sgPutting:'Improved dramatically',
+    note:'Left-hander with Augusta advantage. Elite iron play. Only 24 with growing major experience.' },
+
+  { name:'Nicolai Højgaard',    type:'individual', amateur:false, contender:false,
+    odds:'+8000', owgr:38, age:24,
+    augusta:'First appearance',
+    form:'Qualified via OWGR top 50; solid DP World Tour form',
+    sgTotal:'Good', sgApproach:'Good', sgPutting:'Good',
+    note:'Danish talent on the rise. First Masters debut — excitement could work either way.' },
+
+  { name:'Sepp Straka',         type:'individual', amateur:false, contender:false,
+    odds:'+6000', owgr:29, age:31,
+    augusta:'T18 (2024)',
+    form:'Two Tour wins in 2025 inc. Truist Championship',
+    sgTotal:'Consistent', sgApproach:'Good', sgPutting:'Solid',
+    note:'Five straight Augusta starts building course familiarity. Two wins last year.' },
+
+  { name:'Sam Burns',           type:'individual', amateur:false, contender:false,
+    odds:'+6500', owgr:33, age:29,
+    augusta:'T29 (2023)',
+    form:'Elite putting; underwhelming results in 2026',
+    sgTotal:'Average', sgApproach:'Average', sgPutting:'Elite',
+    note:'Great putter but putting is the least rewarded skill at Augusta. Results here haven\'t matched his ability.' },
+
+  { name:'Daniel Berger',       type:'individual', amateur:false, contender:false,
+    odds:'+8000', owgr:38, age:33,
+    augusta:'T10 (2016)',
+    form:'Finger injury recovery; runner-up Arnold Palmer 2026',
+    sgTotal:'Solid', sgApproach:'#6 Tour', sgPutting:'Average',
+    note:'Best finish was his debut top-10 in 2016. Elite approach play (6th on Tour) bodes well.' },
+
+  { name:'Ben Griffin',         type:'individual', amateur:false, contender:false,
+    odds:'+5500', owgr:16, age:29,
+    augusta:'First appearance',
+    form:'Three wins in 2025; slow start to 2026',
+    sgTotal:'Down from 2025', sgApproach:'102nd Tour 2026', sgPutting:'Variable',
+    note:'Three wins last year but ball-striking has dropped sharply in 2026. Form a significant concern.' },
+
+  { name:'Gary Woodland',       type:'individual', amateur:false, contender:false,
+    odds:'+7500', owgr:55, age:41,
+    augusta:'T12 (2019)',
+    form:'Won Houston Open — first win since brain surgery in 2023',
+    sgTotal:'Good', sgApproach:'Good', sgPutting:'Good',
+    note:'The feel-good story of the week. Won in Houston to earn his spot back at Augusta.' },
+
+  { name:'Harris English',      type:'individual', amateur:false, contender:false,
+    odds:'+10000', owgr:21, age:36,
+    augusta:'T12 (2025)',
+    form:'Runner-up at both The Open and PGA Championship in 2025',
+    sgTotal:'Solid', sgApproach:'Variable', sgPutting:'Top 20 SG',
+    note:'Georgia native with growing Augusta confidence. Runner-up at two majors last year is serious form.' },
+
+  { name:'Dustin Johnson',      type:'individual', amateur:false, contender:false,
+    odds:'+12000', owgr:42, age:41,
+    augusta:'Champion (2020)',
+    form:'LIV; limited top-level competition data available',
+    sgTotal:'Still powerful', sgApproach:'Good', sgPutting:'Variable',
+    note:'2020 champion and 2019 runner-up. LIV limits available data. Power game still fits Augusta.' },
+
+  { name:'Cameron Smith',       type:'individual', amateur:false, contender:false,
+    odds:'+8000', owgr:45, age:31,
+    augusta:'Runner-up (2022)',
+    form:'LIV; two top-3s at Augusta in career',
+    sgTotal:'Good', sgApproach:'Good', sgPutting:'Elite',
+    note:'Best putter in LIV Golf. Two top-3 finishes at Augusta. Putting + short game is the Augusta formula.' },
+
+  { name:'Si Woo Kim',          type:'individual', amateur:false, contender:false,
+    odds:'+4500', owgr:32, age:29,
+    augusta:'T16 (2024)',
+    form:'Solid Tour presence; consistent in 2026',
+    sgTotal:'Steady', sgApproach:'Good', sgPutting:'Good',
+    note:'Quietly consistent at Augusta. Solid across the board without an obvious weakness.' },
+
+  { name:'Tommy Fleetwood / Jon Rahm GROUP', type:'group', amateur:false, contender:false,
+    odds:'N/A (group lot)', owgr:'N/A', age:'N/A',
+    augusta:'Rahm: Champion (2023) | Fleetwood: T3 (2024)',
+    form:'Both in strong form entering Masters week',
+    sgTotal:'Both elite', sgApproach:'Both top-tier', sgPutting:'Both solid',
+    note:'Example group lot. A past champion and the best player without a major. Legitimate winner potential from both sides.' },
+
+  // ── AMATEURS ────────────────────────────────────────────────────
+  { name:'Ethan Fang',          type:'amateur', amateur:true, contender:false,
+    odds:'N/A', owgr:'N/A', age:20,
+    augusta:'First appearance',
+    form:'Won 2025 Amateur Championship at Royal St. George\'s — first American since 2007',
+    sgTotal:'N/A', sgApproach:'Strong for level', sgPutting:'Reliable short game',
+    note:'Oklahoma State junior. Scrappy short game could keep him in contention through the weekend.' },
+
+  { name:'Keita Nakajima',      type:'amateur', amateur:true, contender:false,
+    odds:'N/A', owgr:'N/A', age:24,
+    augusta:'T38 (2023)',
+    form:'Asia-Pacific Amateur champion; expected to turn pro soon',
+    sgTotal:'N/A', sgApproach:'Strong', sgPutting:'Good',
+    note:'Highly regarded Japanese amateur with prior Masters experience. Expected to turn pro after this event.' },
+];
+
+/* ═══════════════════════════════════════════
+   LOGIN
+   ═══════════════════════════════════════════ */
+function setLoginRole(role) {
+  loginRoleSelected = role;
+  document.querySelectorAll('.login-tab').forEach((t,i) =>
+    t.classList.toggle('active',(i===0&&role==='viewer')||(i===1&&role==='admin'))
+  );
+}
+function doLogin() {
+  const pass = document.getElementById('login-pass').value.trim();
+  const err  = document.getElementById('login-error');
+  err.textContent = '';
+  if (loginRoleSelected==='admin'  && pass===PASSWORDS.admin)  { initApp('admin');  return; }
+  if (loginRoleSelected==='viewer' && pass===PASSWORDS.viewer) { initApp('viewer'); return; }
+  err.textContent = 'Incorrect password.';
+}
+function logout() {
+  clearInterval(espnTimer); clearInterval(auctionTimer);
+  currentRole = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-pass').value = '';
+}
+
+/* ═══════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════ */
+function initApp(role) {
+  currentRole = role;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+
+  const badge = document.getElementById('role-badge');
+  badge.textContent = role==='admin' ? 'Admin' : 'Viewer';
+  badge.className = 'badge-role '+(role==='admin'?'badge-admin':'badge-viewer');
+
+  if (role==='admin') {
+    document.getElementById('admin-nav-tab').style.display = '';
+    document.getElementById('auction-admin-bar').style.display = '';
+    document.getElementById('buyer-card').style.display = '';
+    document.getElementById('edit-rules-btn').style.display = '';
+    // Show current backend URL (hardcoded takes priority)
+    const urlToShow = HARDCODED_BACKEND_URL || localStorage.getItem(STORAGE_BACKEND_KEY) || '';
+    if (urlToShow) document.getElementById('backend-url').value = urlToShow;
+  }
+
+  renderRules();
+  renderIntel();
+
+  // Start live feeds
+  fetchESPN();
+  espnTimer = setInterval(fetchESPN, ESPN_REFRESH_MS);
+
+  if (backendUrl) {
+    fetchAuction();
+    auctionTimer = setInterval(fetchAuction, AUCTION_REFRESH_MS);
+  } else {
+    loadDefaultLots();
+    renderAuction();
+    renderBuyerChips();
+    renderStandings();
+  }
+}
+
+/* ═══════════════════════════════════════════
+   TAB SWITCHING
+   ═══════════════════════════════════════════ */
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  const panel = document.getElementById('tab-'+tab);
+  if (panel) panel.classList.add('active');
+  const navEl = document.querySelector(`[data-tab="${tab}"]`);
+  if (navEl) navEl.classList.add('active');
+  const payouts=['winner','second','third','lowam','dailylow','deadlast'];
+  if (payouts.includes(tab)) renderPayoutTab(tab);
+  if (tab === 'onblock')   renderOnBlock();
+  if (tab === 'mylots')    renderMyLots();
+  if (tab === 'dashboard') renderDashboard();
+}
+
+/* ═══════════════════════════════════════════
+   ESPN — FETCH & PARSE
+   ═══════════════════════════════════════════ */
+async function fetchESPN() {
+  setSyncStatus('loading');
+  try {
+    const res  = await fetch(ESPN_URL);
+    if (!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    leaderboard = parseESPN(data);
+    setSyncStatus('live');
+    const ts = new Date().toLocaleTimeString();
+    const ev = document.getElementById('espn-status-val');
+    const sv = document.getElementById('last-espn-sync');
+    if (ev) ev.textContent = '✓ Live';
+    if (sv) sv.textContent = ts;
+    renderLeaderboard();
+    renderDashboard();
+    refreshActivePayoutTab();
+  } catch(e) {
+    setSyncStatus('offline');
+    const ev = document.getElementById('espn-status-val');
+    if (ev) ev.textContent = '✗ '+e.message;
+    if (leaderboard.length===0) { leaderboard=demoLeaderboard(); renderLeaderboard(); }
+  }
+}
+
+function parseESPN(data) {
+  try {
+    const event = data?.events?.[0];
+    if (!event) return demoLeaderboard();
+
+    // Update leaderboard sub-header
+    const metaEl = document.getElementById('lb-meta');
+    if (metaEl) {
+      const status = event.status?.type?.description || '';
+      metaEl.textContent = (event.name||'The Masters')+(status?' · '+status:'');
+    }
+
+    const competitors = event.competitions?.[0]?.competitors || [];
+    if (!competitors.length) return demoLeaderboard();
+
+    const parsed = competitors.map(c => {
+      const getStat = name => (c.statistics||[]).find(s=>s.name===name)?.displayValue ?? null;
+
+      const parseScore = val => {
+        if (val===null||val===undefined) return null;
+        const v = String(val).trim();
+        if (v==='' || v==='-' || v==='--') return null;
+        if (v==='E'||v==='Even'||v==='0') return 0;
+        const n = parseInt(v, 10);
+        return isNaN(n) ? 0 : n; // unknown string → treat as even
+      };
+
+      // Overall to-par: ESPN returns this as the competitor's score field
+      const toPar = parseScore(c.score) ?? parseScore(getStat('scoreToPar')) ?? 0;
+
+      // Today's score
+      const today = parseScore(getStat('scoreToday')) ?? 0;
+
+      // Thru — ESPN uses period or holeNumber
+      const thruRaw = getStat('holeNumber') || c.status?.period?.toString() || 'F';
+      const thru = thruRaw==='0' ? 'F' : thruRaw;
+
+      // Round linescores — ESPN gives raw strokes, Augusta par is 72
+      const lines = c.linescores || [];
+      const rndScore = i => {
+        const v = lines[i]?.displayValue;
+        if (!v || v==='-' || v==='--' || v==='') return null;
+        const trimmed = String(v).trim();
+        // Some ESPN feeds return 'E' for even-par rounds
+        if (trimmed==='E' || trimmed==='Even') return 0;
+        const s = parseInt(trimmed, 10);
+        if (isNaN(s)) return null;
+        // If value looks like raw strokes (>50), convert to to-par vs Augusta par 72
+        if (s > 50) return s - 72;
+        return s; // already to-par
+      };
+
+      return {
+        pos:       c.status?.displayValue || String(c.sortOrder||'—'),
+        player:    c.athlete?.displayName || c.athlete?.shortName || '?',
+        toPar,
+        today,
+        thru,
+        amateur:   c.athlete?.amateur===true,
+        cut:       c.status?.type?.name==='STATUS_CUT',
+        withdrawn: c.status?.type?.name==='STATUS_WITHDRAWN',
+        headshot:  c.athlete?.headshot?.href || c.athlete?.links?.find?.(l=>l.rel?.includes('headshot'))?.href || null,
+        r1: rndScore(0),
+        r2: rndScore(1),
+        r3: rndScore(2),
+        r4: rndScore(3),
+      };
+    });
+
+    return parsed.sort((a,b) => a.toPar - b.toPar);
+  } catch(e) {
+    console.warn('ESPN parse error:',e);
+    return demoLeaderboard();
+  }
+}
+
+function demoLeaderboard() {
+  const m = document.getElementById('lb-meta');
+  if (m) m.textContent = 'Demo data — ESPN unavailable';
+  return [
+    {pos:'1',  player:'Scottie Scheffler', toPar:-16, today:-5, thru:'F', amateur:false, r1:-5,r2:-4,r3:-2,r4:-5, cut:false, withdrawn:false},
+    {pos:'2',  player:'Rory McIlroy',      toPar:-12, today:-3, thru:'F', amateur:false, r1:-3,r2:-4,r3:-2,r4:-3, cut:false, withdrawn:false},
+    {pos:'3',  player:'Tommy Fleetwood',   toPar:-11, today:-4, thru:'F', amateur:false, r1:-3,r2:-2,r3:-2,r4:-4, cut:false, withdrawn:false},
+    {pos:'T4', player:'Ludvig Åberg',      toPar:-10, today:-2, thru:'F', amateur:false, r1:-3,r2:-3,r3:-2,r4:-2, cut:false, withdrawn:false},
+    {pos:'T4', player:'Matt Fitzpatrick',  toPar:-10, today:-3, thru:'F', amateur:false, r1:-2,r2:-3,r3:-2,r4:-3, cut:false, withdrawn:false},
+    {pos:'T6', player:'Jon Rahm',          toPar:-9,  today:-1, thru:'F', amateur:false, r1:-3,r2:-3,r3:-2,r4:-1, cut:false, withdrawn:false},
+    {pos:'T6', player:'Bryson DeChambeau', toPar:-9,  today:-2, thru:'F', amateur:false, r1:-2,r2:-3,r3:-2,r4:-2, cut:false, withdrawn:false},
+    {pos:'8',  player:'Xander Schauffele', toPar:-8,  today:-1, thru:'F', amateur:false, r1:-2,r2:-3,r3:-2,r4:-1, cut:false, withdrawn:false},
+    {pos:'9',  player:'Patrick Reed',      toPar:-7,  today:-2, thru:'F', amateur:false, r1:-2,r2:-2,r3:-1,r4:-2, cut:false, withdrawn:false},
+    {pos:'10', player:'Justin Rose',       toPar:-6,  today:-1, thru:'F', amateur:false, r1:-1,r2:-2,r3:-2,r4:-1, cut:false, withdrawn:false},
+    {pos:'55', player:'Sergio Garcia',     toPar:+8,  today:+4, thru:'F', amateur:false, r1:+2,r2:+1,r3:+1,r4:+4, cut:true,  withdrawn:false},
+    {pos:'60', player:'Ethan Fang',        toPar:+2,  today:+1, thru:'F', amateur:true,  r1:0, r2:+1,r3:0, r4:+1, cut:false, withdrawn:false},
+  ];
+}
+
+/* ═══════════════════════════════════════════
+   LEADERBOARD RENDER
+   ═══════════════════════════════════════════ */
+function renderLeaderboard() {
+  const tbody = document.getElementById('lb-tbody');
+  if (!leaderboard.length) {
+    tbody.innerHTML='<tr class="loading-row"><td colspan="10">No data.</td></tr>'; return;
+  }
+  tbody.innerHTML = leaderboard.map(r => {
+    const toPar = isNaN(r.toPar) ? 0 : r.toPar;
+    const cls = toPar<0?'under':toPar>0?'over':'even';
+    const amBadge = r.amateur?'<span class="am-badge">Am</span>':'';
+    const rFmt = v => v===null||v===undefined?'—':fmtPar(v);
+    const owner = findOwner(r.player);
+    const ownerCell = owner !== '—'
+      ? `<span class="owner-tag">${owner}</span>`
+      : `<span style="color:var(--text-light);font-size:12px">—</span>`;
+    return `<tr class="${r.cut?'cut-row':''}">
+      <td class="pos">${r.pos}</td>
+      <td class="player-name">${r.player}${amBadge}${r.cut?' <em style="font-size:11px;opacity:.6">(CUT)</em>':''}</td>
+      <td>${ownerCell}</td>
+      <td class="to-par ${cls}">${fmtPar(r.toPar)}</td>
+      <td>${fmtPar(r.today)}</td>
+      <td>${r.thru}</td>
+      <td class="lb-r1">${rFmt(r.r1)}</td><td class="lb-r2">${rFmt(r.r2)}</td><td class="lb-r3">${rFmt(r.r3)}</td><td class="lb-r4">${rFmt(r.r4)}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════
+   PAYOUT TABS
+   ═══════════════════════════════════════════ */
+const PAYOUT_CFG = {
+  winner:   {icon:'🏆',label:'Winner',     trophy:'🏆',heroIdx:0, sort:lb=>lb.filter(r=>!r.cut&&!r.withdrawn).sort((a,b)=>a.toPar-b.toPar)},
+  second:   {icon:'🥈',label:'2nd Place',  trophy:'🥈',heroIdx:1, sort:lb=>lb.filter(r=>!r.cut&&!r.withdrawn).sort((a,b)=>a.toPar-b.toPar)},
+  third:    {icon:'🥉',label:'3rd Place',  trophy:'🥉',heroIdx:2, sort:lb=>lb.filter(r=>!r.cut&&!r.withdrawn).sort((a,b)=>a.toPar-b.toPar)},
+  lowam:    {icon:'🎓',label:'Low Amateur',trophy:'🎓',heroIdx:0, sort:lb=>lb.filter(r=>r.amateur&&!r.cut).sort((a,b)=>a.toPar-b.toPar)},
+};
+
+function refreshActivePayoutTab() {
+  const active = document.querySelector('.tab-panel.active');
+  if (!active) return;
+  const id = active.id.replace('tab-','');
+  const pts = ['winner','second','third','lowam','dailylow','deadlast'];
+  if (pts.includes(id)) renderPayoutTab(id);
+}
+
+function renderPayoutTab(tab) {
+  if (tab==='dailylow') { renderDailyLow(); return; }
+  if (tab==='deadlast') { renderDeadLast(); return; }
+  const cfg = PAYOUT_CFG[tab];
+  const container = document.getElementById('payout-'+tab);
+  if (!cfg||!container) return;
+  const sorted = cfg.sort(leaderboard);
+  const hero   = sorted[cfg.heroIdx];
+  const owner  = findOwner(hero?.player);
+  const heroHtml = hero
+    ? `<div class="payout-hero">
+        <div class="trophy">${cfg.trophy}</div>
+        <div>
+          <div class="payout-hero-label">${cfg.label}</div>
+          <div class="payout-hero-name">${hero.player}</div>
+          <div class="payout-hero-score">${fmtPar(hero.toPar)}</div>
+          <div class="payout-hero-meta">Owner: <strong>${owner}</strong>&emsp;Thru: ${hero.thru}</div>
+        </div>
+       </div>`
+    : `<div class="card" style="color:var(--text-light)">No eligible players found.</div>`;
+  const rows = sorted.slice(0,12).map((r,i)=>{
+    const cls=r.toPar<0?'under':r.toPar>0?'over':'even';
+    const am=r.amateur?'<span class="am-badge">Am</span>':'';
+    return `<tr ${i===cfg.heroIdx?'style="background:var(--green-pale)"':''}>
+      <td class="pos">${r.pos}</td>
+      <td class="player-name">${r.player}${am}</td>
+      <td class="to-par ${cls}">${fmtPar(r.toPar)}</td>
+      <td>${fmtPar(r.today)}</td><td>${r.thru}</td>
+    </tr>`;
+  }).join('');
+  container.innerHTML=`
+    <div class="section-header"><div class="section-title">${cfg.icon} ${cfg.label}</div></div>
+    ${heroHtml}
+    <div class="card"><div class="tbl-wrap"><table>
+      <thead><tr><th>Pos</th><th>Player</th><th>To Par</th><th>Today</th><th>Thru</th></tr></thead>
+      <tbody>${rows||'<tr class="loading-row"><td colspan="5">No data.</td></tr>'}</tbody>
+    </table></div></div>`;
+}
+
+function renderDailyLow() {
+  const container = document.getElementById('payout-dailylow');
+  const key = dailyLowDay;
+
+  // Normalize score: treat null/undefined/'E'/NaN as 0
+  const normScore = (p) => {
+    const v = p[key];
+    if (v === null || v === undefined) return null; // truly missing — exclude
+    const n = Number(v);
+    return isNaN(n) ? 0 : n; // 'E' parsed as NaN → treat as 0
+  };
+
+  const valid  = leaderboard.filter(p => p[key] !== null && p[key] !== undefined);
+  const sorted = valid.slice().sort((a,b) => normScore(a) - normScore(b));
+  const hero   = sorted[0];
+  const heroScore = hero ? normScore(hero) : null;
+
+  const heroHtml = hero
+    ? `<div class="payout-hero">
+        <div class="trophy">📅</div>
+        <div>
+          <div class="payout-hero-label">Daily Low — ${ROUND_LABELS[key]}</div>
+          <div class="payout-hero-name">${hero.player}</div>
+          <div class="payout-hero-score">${fmtPar(heroScore)}</div>
+          <div class="payout-hero-meta">Owner: <strong>${findOwner(hero.player)}</strong>&emsp;Overall: ${fmtPar(hero.toPar)}</div>
+        </div>
+       </div>`
+    : `<div style="color:var(--text-light);padding:10px 0">No data for this round yet.</div>`;
+
+  const dayBtns = Object.entries(ROUND_LABELS).map(([k,label])=>
+    `<button class="day-btn ${k===key?'active':''}" onclick="setDailyLowDay('${k}')">${label}</button>`
+  ).join('');
+
+  const rows = sorted.slice(0,20).map((r,i)=>{
+    const score = normScore(r);
+    const cls   = score < 0 ? 'under' : score > 0 ? 'over' : 'even';
+    const am    = r.amateur ? '<span class="am-badge">Am</span>' : '';
+    return `<tr ${i===0?'style="background:var(--green-pale)"':''}>
+      <td class="pos">${i+1}</td>
+      <td class="player-name">${r.player}${am}</td>
+      <td class="to-par ${cls}">${fmtPar(score)}</td>
+      <td>${fmtPar(r.toPar)}</td><td>${r.thru}</td>
+    </tr>`;
+  }).join('');
+
+  container.innerHTML=`
+    <div class="section-header"><div class="section-title">📅 Daily Low Round</div></div>
+    <div class="day-filter-bar">${dayBtns}</div>
+    ${heroHtml}
+    <div class="card"><div class="tbl-wrap"><table>
+      <thead><tr><th>Rank</th><th>Player</th><th>Round Score</th><th>Overall</th><th>Thru</th></tr></thead>
+      <tbody>${rows||'<tr class="loading-row"><td colspan="5">No round data yet.</td></tr>'}</tbody>
+    </table></div></div>`;
+}
+function setDailyLowDay(day) { dailyLowDay=day; renderDailyLow(); }
+
+/* ── DEAD LAST ─────────────────────────────────────────────── */
+function renderDeadLast() {
+  const container = document.getElementById('payout-deadlast');
+
+  const safe = v => (v === null || v === undefined || isNaN(Number(v))) ? 0 : Number(v);
+
+  const filterBtns = [
+    {key:'tournament', label:'Tournament (Overall)'},
+    {key:'friday',     label:'Dead Last Friday'},
+    {key:'sunday',     label:'Dead Last Sunday'},
+  ].map(({key,label}) =>
+    `<button class="day-btn ${key===deadLastDay?'active':''}"
+       onclick="setDeadLastDay('${key}')">${label}</button>`
+  ).join('');
+
+  let sorted, heroLabel, colLabel, getScore;
+
+  if (deadLastDay === 'friday') {
+    // Cumulative through Friday = R1 + R2
+    const valid = leaderboard.filter(p => p.r1 !== null && p.r2 !== null);
+    getScore = r => safe(r.r1) + safe(r.r2);
+    sorted    = valid.slice().sort((a,b) => getScore(b) - getScore(a)); // worst first
+    heroLabel = 'Dead Last — Through Friday (R1+R2)';
+    colLabel  = 'R1+R2';
+  } else if (deadLastDay === 'sunday') {
+    // Cumulative through Sunday = R1+R2+R3+R4
+    const valid = leaderboard.filter(p => p.r1 !== null && p.r4 !== null);
+    getScore = r => safe(r.r1) + safe(r.r2) + safe(r.r3) + safe(r.r4);
+    sorted    = valid.slice().sort((a,b) => getScore(b) - getScore(a)); // worst first
+    heroLabel = 'Dead Last — Through Sunday (R1–R4)';
+    colLabel  = 'Total';
+  } else {
+    // Tournament overall — worst to-par
+    getScore  = r => isNaN(r.toPar) ? 0 : r.toPar;
+    sorted    = leaderboard.filter(r=>!r.withdrawn).slice().sort((a,b) => getScore(b) - getScore(a));
+    heroLabel = 'Dead Last (Tournament)';
+    colLabel  = 'To Par';
+  }
+
+  const hero = sorted[0];
+
+  const heroHtml = hero
+    ? `<div class="payout-hero" style="background:linear-gradient(135deg,#2c1810 0%,#4a2820 100%)">
+        <div class="trophy">💀</div>
+        <div>
+          <div class="payout-hero-label">${heroLabel}</div>
+          <div class="payout-hero-name">${hero.player}</div>
+          <div class="payout-hero-score" style="color:#f4a0b0">${fmtPar(getScore(hero))}</div>
+          <div class="payout-hero-meta">Owner: <strong>${findOwner(hero.player)}</strong>&emsp;Overall: ${fmtPar(hero.toPar)}</div>
+        </div>
+       </div>`
+    : `<div class="card" style="color:var(--text-light)">No data yet.</div>`;
+
+  const rows = sorted.slice(0,15).map((r,i) => {
+    const score = getScore(r);
+    const cls   = score < 0 ? 'under' : score > 0 ? 'over' : 'even';
+    const am    = r.amateur ? '<span class="am-badge">Am</span>' : '';
+    return `<tr ${i===0?'style="background:#fff0f0"':''}>
+      <td class="pos">${i+1}</td>
+      <td class="player-name">${r.player}${am}</td>
+      <td class="to-par ${cls}">${fmtPar(score)}</td>
+      <td>${fmtPar(r.toPar)}</td>
+      <td>${r.thru}</td>
+    </tr>`;
+  }).join('');
+
+  container.innerHTML=`
+    <div class="section-header"><div class="section-title">💀 Dead Last</div></div>
+    <div class="day-filter-bar">${filterBtns}</div>
+    ${heroHtml}
+    <div class="card"><div class="tbl-wrap"><table>
+      <thead><tr><th>Rank</th><th>Player</th><th>${colLabel}</th><th>Overall</th><th>Thru</th></tr></thead>
+      <tbody>${rows||'<tr class="loading-row"><td colspan="5">No data yet.</td></tr>'}</tbody>
+    </table></div></div>`;
+}
+function setDeadLastDay(day) { deadLastDay=day; renderDeadLast(); }
+
+/* ═══════════════════════════════════════════
+   AUCTION
+   ═══════════════════════════════════════════ */
+function renderAuction() {
+  const tbody = document.getElementById('auction-tbody');
+  const sub   = document.getElementById('auction-sub');
+  if (!pendingLots.length) {
+    tbody.innerHTML='<tr class="loading-row"><td colspan="7">No lots. Add players in Admin Setup or Google Sheet.</td></tr>';
+    sub.textContent='0 lots'; return;
+  }
+  sub.textContent=pendingLots.length+' lots';
+  tbody.innerHTML=pendingLots.map((lot,idx)=>{
+    const typeBadge = lot.type==='Group'
+      ? '<span class="intel-type-badge type-group">Group</span>'
+      : '<span class="intel-type-badge type-individual">Individual</span>';
+    const oddsDisplay = lot.lot_odds ? String(lot.lot_odds).replace(/^'/,'') : '—';
+    const winDisplay  = lot.win_probability ? String(lot.win_probability).replace(/^'/,'') : '—';
+    if (currentRole==='admin') {
+      const opts=buyers.map(b=>`<option value="${b.id}" ${b.id===lot.buyerId?'selected':''}>${b.name}</option>`).join('');
+      return `<tr>
+        <td class="pos">${lot.lot}</td>
+        <td>${typeBadge}</td>
+        <td class="player-name">${lot.player}</td>
+        <td><select style="min-width:110px" onchange="pendingLots[${idx}].buyerId=this.value;renderStandings();scheduleAutoSave()">
+          <option value="">— Unassigned —</option>${opts}
+        </select></td>
+        <td style="text-align:right"><input type="number" style="width:90px;text-align:right" value="${lot.price||''}" placeholder="0"
+          onchange="pendingLots[${idx}].price=parseInt(this.value)||0;renderStandings();scheduleAutoSave()"></td>
+        <td style="text-align:right;font-weight:600;color:var(--gold)">${oddsDisplay}</td>
+        <td style="text-align:right;color:var(--text-mid)">${winDisplay}</td>
+      </tr>`;
+    } else {
+      return `<tr>
+        <td class="pos">${lot.lot}</td>
+        <td>${typeBadge}</td>
+        <td class="player-name">${lot.player}</td>
+        <td>${buyers.find(b=>b.id===lot.buyerId)?.name||'—'}</td>
+        <td style="text-align:right">${lot.price?'$'+lot.price.toLocaleString():'—'}</td>
+        <td style="text-align:right;font-weight:600;color:var(--gold)">${oddsDisplay}</td>
+        <td style="text-align:right;color:var(--text-mid)">${winDisplay}</td>
+      </tr>`;
+    }
+  }).join('');
+}
+
+async function saveAuction() {
+  lots = pendingLots.map(l=>({...l}));
+  renderStandings();
+  renderLeaderboard();
+  renderOnBlock();
+  renderMyLots();
+  renderDashboard();
+  if (!backendUrl) { alert('No backend configured. Connect a Google Sheet in Admin Setup.'); return; }
+  try {
+    await fetch(backendUrl, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({action:'saveLots', lots})
+    });
+    flashBtn('#auction-admin-bar .btn-primary','✓ Saved!');
+  } catch(e) { alert('Save failed: '+e.message); }
+}
+
+// Auto-save: called on every dropdown/price change, debounced 2s
+function scheduleAutoSave() {
+  clearTimeout(autoSaveTimer);
+  // Show pending indicator
+  const btn = document.querySelector('#auction-admin-bar .btn-primary');
+  if (btn && btn.textContent !== '⏳ Saving…') {
+    btn.textContent = '⏳ Saving…';
+  }
+  autoSaveTimer = setTimeout(async () => {
+    lots = pendingLots.map(l=>({...l}));
+    renderStandings();
+    renderLeaderboard();
+    renderOnBlock();
+    renderMyLots();
+    renderDashboard();
+    if (!backendUrl) {
+      flashBtn('#auction-admin-bar .btn-primary','💾 Save Changes');
+      return;
+    }
+    try {
+      await fetch(backendUrl, {
+        method:'POST',
+        headers:{'Content-Type':'text/plain'},
+        body: JSON.stringify({action:'saveLots', lots})
+      });
+      flashBtn('#auction-admin-bar .btn-primary','✓ Auto-saved');
+      setTimeout(()=>{
+        const b=document.querySelector('#auction-admin-bar .btn-primary');
+        if(b)b.textContent='💾 Save Changes';
+      }, 2000);
+    } catch(e) {
+      flashBtn('#auction-admin-bar .btn-primary','⚠ Save failed');
+      setTimeout(()=>{
+        const b=document.querySelector('#auction-admin-bar .btn-primary');
+        if(b)b.textContent='💾 Save Changes';
+      }, 2000);
+    }
+  }, 2000); // 2 second debounce
+}
+
+function flashBtn(sel, msg) {
+  const btn=document.querySelector(sel);
+  if (!btn) return;
+  const orig=btn.textContent;
+  btn.textContent=msg;
+  setTimeout(()=>btn.textContent=orig,1800);
+}
+
+/* ═══════════════════════════════════════════
+   BUYERS
+   ═══════════════════════════════════════════ */
+function renderBuyerChips() {
+  const el=document.getElementById('buyer-chips');
+  if (!el) return;
+  el.innerHTML=buyers.length
+    ? buyers.map(b=>`<div class="buyer-chip"><span>${b.name}</span><button onclick="deleteBuyer('${b.id}')" title="Remove">×</button></div>`).join('')
+    : '<span style="font-size:13px;color:var(--text-light)">No buyers yet.</span>';
+}
+async function addBuyer() {
+  const input=document.getElementById('new-buyer-input');
+  const name=input.value.trim();
+  if (!name) return;
+  const id='b'+Date.now();
+  buyers.push({id,name});
+  input.value='';
+  renderBuyerChips();
+  renderAuction();
+  if (backendUrl) {
+    try { await fetch(backendUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'addBuyer',id,name})}); }
+    catch(e){}
+  }
+}
+async function deleteBuyer(id) {
+  if (!confirm('Remove this buyer? Their lots will be unassigned.')) return;
+  buyers=buyers.filter(b=>b.id!==id);
+  pendingLots.forEach(l=>{if(l.buyerId===id)l.buyerId='';});
+  lots.forEach(l=>{if(l.buyerId===id)l.buyerId='';});
+  renderBuyerChips(); renderAuction(); renderStandings();
+  if (backendUrl) {
+    try { await fetch(backendUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'deleteBuyer',id})}); }
+    catch(e){}
+  }
+}
+
+/* ═══════════════════════════════════════════
+   STANDINGS
+   ═══════════════════════════════════════════ */
+function renderStandings() {
+  const grid=document.getElementById('standings-grid');
+  if (!buyers.length) { grid.innerHTML='<div style="color:var(--text-light);font-size:13px">No buyers yet.</div>'; return; }
+  const totals={},counts={};
+  buyers.forEach(b=>{totals[b.id]=0;counts[b.id]=0;});
+  pendingLots.forEach(l=>{if(l.buyerId&&totals[l.buyerId]!==undefined){totals[l.buyerId]+=(l.price||0);counts[l.buyerId]++;}});
+  grid.innerHTML=buyers.slice().sort((a,b)=>totals[b.id]-totals[a.id]).map(b=>
+    `<div class="standing-item">
+      <div class="standing-name">${b.name}</div>
+      <div class="standing-amt">$${totals[b.id].toLocaleString()}</div>
+      <div class="standing-lots">${counts[b.id]} lot${counts[b.id]===1?'':'s'}</div>
+    </div>`).join('');
+}
+
+/* ═══════════════════════════════════════════
+   PLAYER INTEL
+   ═══════════════════════════════════════════ */
+// Extra intel rows loaded from Google Sheets PlayerIntel tab
+// Merges with PLAYER_INTEL — sheet data overrides built-in data for same name
+let sheetIntel = [];
+
+function mergedIntel() {
+  const base = PLAYER_INTEL.map(p => ({...p}));
+  sheetIntel.forEach(s => {
+    // Normalize booleans that come from sheet as strings
+    const norm = {...s};
+    if (typeof norm.amateur   === 'string') norm.amateur   = norm.amateur.toLowerCase()   === 'true';
+    if (typeof norm.contender === 'string') norm.contender = norm.contender.toLowerCase() === 'true';
+
+    const idx = base.findIndex(p => p.name.toLowerCase() === (norm.name||'').toLowerCase());
+    if (idx > -1) {
+      Object.keys(norm).forEach(k => {
+        if (norm[k] !== '' && norm[k] !== null && norm[k] !== undefined) base[idx][k] = norm[k];
+      });
+    } else {
+      base.push(norm);
+    }
+  });
+  return base;
+}
+
+function setIntelFilter(f) {
+  intelFilter = f;
+  document.querySelectorAll('.intel-filter-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.filter === f)
+  );
+  renderIntel();
+}
+
+function renderIntel() {
+  const search = (document.getElementById('intel-search')?.value || '').toLowerCase().trim();
+  let filtered = mergedIntel();
+
+  // Normalize each entry's boolean fields before filtering
+  filtered = filtered.map(p => ({
+    ...p,
+    amateur:   p.amateur   === true || p.amateur   === 'true',
+    contender: p.contender === true || p.contender === 'true',
+  }));
+
+  if      (intelFilter === 'individual') filtered = filtered.filter(p => p.type === 'individual' && !p.amateur);
+  else if (intelFilter === 'group')      filtered = filtered.filter(p => p.type === 'group');
+  else if (intelFilter === 'amateur')    filtered = filtered.filter(p => p.amateur === true);
+  else if (intelFilter === 'contender')  filtered = filtered.filter(p => p.contender === true);
+
+  if (search) filtered = filtered.filter(p =>
+    (p.name||'').toLowerCase().includes(search) ||
+    (p.note||'').toLowerCase().includes(search)
+  );
+
+  const grid = document.getElementById('intel-grid');
+  if (!filtered.length) {
+    grid.innerHTML = '<div style="color:var(--text-light);font-size:13px;padding:20px 0">No players match.</div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(p => {
+    const typeCls   = p.type === 'group' ? 'type-group' : p.amateur ? 'type-amateur' : 'type-individual';
+    const typeLabel = p.type === 'group' ? 'Group' : p.amateur ? 'Amateur' : 'Individual';
+    const oddsVal   = p.odds && p.odds !== 'N/A' ? p.odds : '—';
+    const owgrVal   = p.owgr && p.owgr !== 'N/A' ? '#' + p.owgr : null;
+    const ageVal    = p.age  && p.age  !== 'N/A' ? p.age  : null;
+    return `<div class="intel-card">
+      <div class="intel-card-header">
+        <div style="min-width:0;flex:1">
+          <div class="intel-card-name">${p.name}</div>
+          <span class="intel-type-badge ${typeCls}">${typeLabel}</span>
+          ${p.contender ? '<span class="intel-type-badge" style="background:#fdf6e3;color:var(--gold);margin-left:4px">⭐ Contender</span>' : ''}
+        </div>
+        <div class="intel-card-odds">${oddsVal}</div>
+      </div>
+      ${owgrVal ? `<div class="intel-row"><span class="intel-key">World Rank</span><span class="intel-val">${owgrVal}</span></div>` : ''}
+      ${ageVal  ? `<div class="intel-row"><span class="intel-key">Age</span><span class="intel-val">${ageVal}</span></div>` : ''}
+      ${p.augusta    ? `<div class="intel-row"><span class="intel-key">Best Finish</span><span class="intel-val" style="font-size:12px">${p.augusta}</span></div>` : ''}
+      ${p.form       ? `<div class="intel-row"><span class="intel-key">2026 Form</span><span class="intel-val" style="font-size:12px">${p.form}</span></div>` : ''}
+      ${p.sgTotal    ? `<div class="intel-row"><span class="intel-key">SG: Total</span><span class="intel-val">${p.sgTotal}</span></div>` : ''}
+      ${p.sgApproach ? `<div class="intel-row"><span class="intel-key">SG: Approach</span><span class="intel-val">${p.sgApproach}</span></div>` : ''}
+      ${p.sgPutting  ? `<div class="intel-row"><span class="intel-key">SG: Putting</span><span class="intel-val">${p.sgPutting}</span></div>` : ''}
+      ${p.note       ? `<div class="intel-note">${p.note}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════
+   RULES
+   ═══════════════════════════════════════════ */
+function renderRules(){document.getElementById('rules-display').innerHTML=rulesText;}
+function toggleRulesEdit(){
+  rulesEditing=!rulesEditing;
+  document.getElementById('rules-display').style.display=rulesEditing?'none':'';
+  document.getElementById('rules-editor').style.display=rulesEditing?'':'none';
+  document.getElementById('rules-save-row').style.display=rulesEditing?'':'none';
+  document.getElementById('edit-rules-btn').textContent=rulesEditing?'Cancel':'Edit Rules';
+  if(rulesEditing)document.getElementById('rules-editor').value=rulesText;
+}
+function saveRules(){
+  rulesText=document.getElementById('rules-editor').value;
+  renderRules();rulesEditing=false;
+  document.getElementById('rules-display').style.display='';
+  document.getElementById('rules-editor').style.display='none';
+  document.getElementById('rules-save-row').style.display='none';
+  document.getElementById('edit-rules-btn').textContent='Edit Rules';
+}
+function cancelRulesEdit(){rulesEditing=false;toggleRulesEdit();}
+
+/* ═══════════════════════════════════════════
+   GOOGLE SHEETS BACKEND
+   ═══════════════════════════════════════════ */
+async function fetchAuction() {
+  if (!backendUrl) return;
+  try {
+    const res  = await fetch(backendUrl+'?action=bootstrap');
+    const data = await res.json();
+    if (data.buyers) buyers=data.buyers;
+    if (data.lots)   { lots=data.lots; pendingLots=lots.map(l=>({...l})); }
+    if (data.intel)  { sheetIntel=data.intel; renderIntel(); }
+    const ts=new Date().toLocaleTimeString();
+    const sv=document.getElementById('last-auction-sync');
+    const ss=document.getElementById('sheets-status-val');
+    if(sv)sv.textContent=ts;
+    if(ss)ss.textContent='✓ Connected';
+    renderAuction();
+    renderBuyerChips();
+    renderStandings();
+    renderLeaderboard();
+    renderDashboard();
+    // Refresh live auction views — but preserve any in-progress bid entry
+    const activeTab = document.querySelector('.tab-panel.active');
+    if (activeTab) {
+      const tid = activeTab.id.replace('tab-','');
+      if (tid === 'onblock') {
+        // Snapshot field values before re-render, restore after
+        const savedBuyer = document.getElementById('hero-bid-buyer')?.value || '';
+        const savedPrice = document.getElementById('hero-bid-price')?.value || '';
+        // Only re-render if NOT mid-entry (empty or countdown running)
+        if (onBlockState === 'sold') {
+          // In countdown — don't touch the DOM at all
+        } else if (savedBuyer || savedPrice) {
+          // Fields are being filled — skip re-render to avoid clearing
+        } else {
+          renderOnBlock();
+        }
+      }
+      if (tid === 'mylots') renderMyLots();
+    }
+  } catch(e) {
+    const ss=document.getElementById('sheets-status-val');
+    if(ss)ss.textContent='✗ Error';
+  }
+}
+
+function connectBackend() {
+  const url=document.getElementById('backend-url').value.trim();
+  if (!url) return;
+  backendUrl=url;
+  localStorage.setItem(STORAGE_BACKEND_KEY,url);
+  clearInterval(auctionTimer);
+  fetchAuction();
+  auctionTimer=setInterval(fetchAuction,AUCTION_REFRESH_MS);
+}
+
+async function testBackend() {
+  const url=document.getElementById('backend-url').value.trim();
+  const box=document.getElementById('backend-status');
+  box.style.display='';box.className='status-box status-info';box.textContent='Testing…';
+  try {
+    const res=await fetch(url+'?action=bootstrap');
+    const data=await res.json();
+    const keys=Object.keys(data);
+    if(keys.includes('buyers')||keys.includes('lots')){
+      box.className='status-box status-ok';
+      box.textContent='✓ Connected. Keys: '+keys.join(', ');
+    } else {
+      box.className='status-box status-err';
+      box.textContent='⚠ Unexpected response: '+JSON.stringify(data).slice(0,100);
+    }
+  } catch(e){
+    box.className='status-box status-err';
+    box.textContent='✗ Failed: '+e.message;
+  }
+}
+
+function loadDefaultLots() {
+  buyers=[];
+  lots=[
+    {lot:1,type:'Individual',player:'Scottie Scheffler',  buyerId:'',price:0},
+    {lot:2,type:'Individual',player:'Rory McIlroy',       buyerId:'',price:0},
+    {lot:3,type:'Individual',player:'Bryson DeChambeau',  buyerId:'',price:0},
+    {lot:4,type:'Individual',player:'Jon Rahm',            buyerId:'',price:0},
+    {lot:5,type:'Individual',player:'Xander Schauffele',  buyerId:'',price:0},
+    {lot:6,type:'Individual',player:'Tommy Fleetwood',    buyerId:'',price:0},
+    {lot:7,type:'Individual',player:'Ludvig Åberg',       buyerId:'',price:0},
+    {lot:8,type:'Individual',player:'Matt Fitzpatrick',   buyerId:'',price:0},
+    {lot:9,type:'Individual',player:'Cameron Young',      buyerId:'',price:0},
+    {lot:10,type:'Individual',player:'Justin Rose',       buyerId:'',price:0},
+  ];
+  pendingLots=lots.map(l=>({...l}));
+}
+
+/* ═══════════════════════════════════════════
+   ON THE BLOCK
+   Auction order: all Groups first (worst→best odds),
+   then all Individuals (worst→best odds).
+   ═══════════════════════════════════════════ */
+
+// Returns lots sorted in auction order: lot #45 → #1 (descending lot number)
+function auctionOrder() {
+  return pendingLots.slice().sort((a, b) => Number(b.lot) - Number(a.lot));
+}
+
+function getIntelForLot(lot) {
+  const all = mergedIntel();
+  // Try exact name match first, then partial
+  let intel = all.find(p => p.name.toLowerCase() === (lot.player||'').toLowerCase());
+  if (!intel) {
+    const needle = (lot.player||'').toLowerCase();
+    intel = all.find(p => p.name.toLowerCase().includes(needle) || needle.includes(p.name.toLowerCase()));
+  }
+  return intel || null;
+}
+
+function intelRows(intel) {
+  if (!intel) return '<div style="color:var(--text-light);font-size:13px;font-style:italic">No intel on file.</div>';
+  const rows = [];
+  if (intel.augusta)    rows.push(`<div class="intel-row"><span class="intel-key">Best Finish</span><span class="intel-val" style="font-size:12px">${intel.augusta}</span></div>`);
+  if (intel.form)       rows.push(`<div class="intel-row"><span class="intel-key">Form</span><span class="intel-val" style="font-size:12px">${intel.form}</span></div>`);
+  if (intel.sgTotal)    rows.push(`<div class="intel-row"><span class="intel-key">SG: Total</span><span class="intel-val">${intel.sgTotal}</span></div>`);
+  if (intel.sgApproach) rows.push(`<div class="intel-row"><span class="intel-key">SG: Approach</span><span class="intel-val">${intel.sgApproach}</span></div>`);
+  if (intel.sgPutting)  rows.push(`<div class="intel-row"><span class="intel-key">SG: Putting</span><span class="intel-val">${intel.sgPutting}</span></div>`);
+  const note = intel.note ? `<div class="intel-note">${intel.note}</div>` : '';
+  return rows.join('') + note;
+}
+
+function lotOddsDisplay(lot) {
+  if (lot.lot_odds) return String(lot.lot_odds).replace(/^'/, '');
+  return '—';
+}
+
+function lotWinPct(lot) {
+  if (lot.win_probability) return String(lot.win_probability).replace(/^'/, '');
+  return '';
+}
+
+/* ═══════════════════════════════════════════
+   ON THE BLOCK — state tracking
+   ═══════════════════════════════════════════ */
+let onBlockState = 'showing';   // 'showing' | 'sold'
+let onBlockSoldLot = null;      // lot object that just sold
+let onBlockCountdown = 0;       // seconds remaining before advance
+let onBlockCountdownTimer = null;
+let onBlockPrevSoldIds = new Set(); // lot ids that were sold on last render
+
+function auctionOrderedLots() {
+  return pendingLots.slice().sort((a, b) => Number(b.lot) - Number(a.lot));
+}
+
+function buildHeroCard(lot) {
+  const intel    = getIntelForLot(lot);
+  const isGroup  = (lot.type||'').toLowerCase() === 'group';
+  const typeLabel= isGroup ? 'Group Lot' : 'Individual';
+  const odds     = lotOddsDisplay(lot);
+  const winPct   = lotWinPct(lot);
+  const owner    = lot.buyerId ? buyers.find(b=>b.id===lot.buyerId)?.name : null;
+
+  // ── Members list (groups) ────────────────────────────────────
+  const membersHtml = isGroup
+    ? `<div class="hero-members">${
+        lot.player.split(' / ').map(m =>
+          `<div class="hero-member">⛳ ${m.trim()}</div>`
+        ).join('')
+      }</div>`
+    : '';
+
+  // ── Intel ────────────────────────────────────────────────────
+  const intelItems = [];
+  if (intel) {
+    if (intel.augusta)    intelItems.push(['Best Finish',  intel.augusta]);
+    if (intel.form)       intelItems.push(['2026 Form',    intel.form]);
+    if (intel.sgTotal)    intelItems.push(['SG: Total',    intel.sgTotal]);
+    if (intel.sgApproach) intelItems.push(['SG: Approach', intel.sgApproach]);
+    if (intel.sgPutting)  intelItems.push(['SG: Putting',  intel.sgPutting]);
+  }
+  const intelGridHtml = intelItems.length
+    ? `<div class="hero-intel-grid">${
+        intelItems.map(([k,v]) =>
+          `<div class="hero-intel-item">
+            <div class="hero-intel-key">${k}</div>
+            <div class="hero-intel-val">${v}</div>
+          </div>`
+        ).join('')
+      }</div>`
+    : '<div style="color:var(--text-light);font-size:13px;font-style:italic">No intel on file.</div>';
+
+  const noteHtml = intel?.note ? `<div class="hero-note">${intel.note}</div>` : '';
+
+  // ── Sold banner ──────────────────────────────────────────────
+  const soldBanner = owner
+    ? `<div class="hero-sold-banner">✓ Sold to <strong>${owner}</strong>${lot.price ? ' — $' + Number(lot.price).toLocaleString() : ''}</div>`
+    : '';
+
+  // ── Admin bid panel ──────────────────────────────────────────
+  let bidPanel = '';
+  if (currentRole === 'admin') {
+    const buyerOpts = buyers.map(b =>
+      `<option value="${b.id}" ${b.id === lot.buyerId ? 'selected' : ''}>${b.name}</option>`
+    ).join('');
+    bidPanel = `
+      <div class="hero-bid-panel">
+        <div class="hero-bid-label">${owner ? '✏️ Edit Sale' : '🔨 Record Sale'}</div>
+        <div class="hero-bid-row">
+          <select id="hero-bid-buyer">
+            <option value="">— Select Buyer —</option>${buyerOpts}
+          </select>
+          <input type="number" class="hero-bid-price" id="hero-bid-price"
+            placeholder="$ Price" value="${lot.price || ''}"
+            onkeydown="if(event.key==='Enter')sellLotFromBlock(${lot.lot})">
+          <button class="btn-sell" onclick="sellLotFromBlock(${lot.lot})">
+            ${owner ? 'Update' : 'Sell ✓'}
+          </button>
+        </div>
+        <div class="hero-bid-status" id="hero-bid-status">
+          ${owner ? `Currently: ${owner}${lot.price ? ' — $' + Number(lot.price).toLocaleString() : ''}` : 'Select buyer and enter price, then click Sell.'}
+        </div>
+      </div>`;
+  }
+
+  return `
+    <div class="hero-card">
+      <div class="hero-header">
+        <div class="hero-header-top">
+          <div class="hero-lot-label">🔨 Now on the Block &nbsp;·&nbsp; Lot ${lot.lot}</div>
+          <div class="hero-odds-wrap">
+            <div class="hero-odds">${odds}</div>
+            ${winPct ? `<div class="hero-winpct">${winPct} win probability</div>` : ''}
+          </div>
+        </div>
+        <div class="hero-identity">
+          <div class="hero-name-block">
+            <span class="hero-type-pill">${typeLabel}</span>
+            <div class="hero-name">${isGroup ? 'Group Lot ' + lot.lot : lot.player}</div>
+            ${membersHtml}
+          </div>
+        </div>
+      </div>
+      <div class="hero-body">
+        ${soldBanner}
+        ${intelGridHtml}
+        ${noteHtml}
+        ${bidPanel}
+      </div>
+    </div>`;
+}
+
+function buildSoldCard(lot, countdown) {
+  const isGroup  = (lot.type||'').toLowerCase() === 'group';
+  const owner    = lot.buyerId ? buyers.find(b=>b.id===lot.buyerId)?.name : '—';
+  const price    = lot.price ? '$' + Number(lot.price).toLocaleString() : '—';
+  const odds     = lotOddsDisplay(lot);
+
+  const members = isGroup
+    ? lot.player.split(' / ').map(m => `<div style="font-size:16px;opacity:0.85;margin-top:4px">⛳ ${m.trim()}</div>`).join('')
+    : '';
+
+  return `
+    <div class="sold-card" id="hero-card-main">
+      <div class="sold-card-inner">
+        <div class="sold-badge">✓ SOLD</div>
+        <div class="sold-lot-label">Lot ${lot.lot} &nbsp;·&nbsp; ${isGroup ? 'Group' : 'Individual'} &nbsp;·&nbsp; ${odds}</div>
+        <div class="sold-player-name">${isGroup ? 'Group Lot ' + lot.lot : lot.player}</div>
+        ${members ? `<div class="sold-members">${members}</div>` : ''}
+        <div class="sold-meta">
+          <div class="sold-meta-item">
+            <div class="sold-meta-label">Buyer</div>
+            <div class="sold-meta-val">${owner}</div>
+          </div>
+          <div class="sold-divider"></div>
+          <div class="sold-meta-item">
+            <div class="sold-meta-label">Price</div>
+            <div class="sold-meta-val">${price}</div>
+          </div>
+        </div>
+        <div class="sold-countdown" id="sold-countdown-display">
+          Next lot in ${countdown}s…
+        </div>
+      </div>
+    </div>`;
+}
+
+function buildNextStrip(lot) {
+  if (!lot) return '';
+  const isGroup   = (lot.type||'').toLowerCase() === 'group';
+  const typeLabel = isGroup ? 'Group' : 'Individual';
+  const typeCls   = isGroup ? 'type-group' : 'type-individual';
+  const odds      = lotOddsDisplay(lot);
+  const winPct    = lotWinPct(lot);
+  const shortName = isGroup
+    ? 'Group Lot ' + lot.lot + ' — ' + lot.player.split(' / ').map(m => m.replace(/\[Am\]/gi,'').replace(/\([^)]+\)/g,'').trim()).join(', ')
+    : lot.player;
+
+  return `
+    <div class="next-strip">
+      <div class="next-strip-label">⏭ Up Next — Lot ${lot.lot}</div>
+      <div class="next-strip-body">
+        <div class="next-strip-left">
+          <span class="onblock-type-pill ${typeCls}">${typeLabel}</span>
+          <div class="next-strip-name">${shortName}</div>
+        </div>
+        <div class="next-strip-right">
+          <div class="next-strip-odds">${odds}</div>
+          ${winPct ? `<div class="next-strip-pct">${winPct} win</div>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderOnBlock() {
+  const container = document.getElementById('onblock-content');
+  if (!container) return;
+
+  if (!pendingLots.length) {
+    container.innerHTML = '<div class="card" style="color:var(--text-light);text-align:center;padding:40px">No lots configured yet.</div>';
+    return;
+  }
+
+  const ordered      = auctionOrderedLots();
+  const auctionDone  = ordered.every(l => !!l.buyerId);
+  const soldCount    = ordered.filter(l => !!l.buyerId).length;
+  const totalCount   = ordered.length;
+  const pct          = Math.round((soldCount / totalCount) * 100);
+
+  const lotsRemaining  = ordered.filter(l => !l.buyerId);
+  const allGroupsDone  = lotsRemaining.every(l => (l.type||'').toLowerCase() !== 'group');
+  const phase = auctionDone   ? 'Auction Complete 🎉'
+              : allGroupsDone ? 'Phase 2 — Individual Players'
+              : 'Phase 1 — Group Lots';
+
+  const progressHtml = `
+    <div class="onblock-progress">
+      <div class="onblock-progress-info">
+        <div class="onblock-progress-label">${phase} &nbsp;·&nbsp; ${soldCount} of ${totalCount} lots sold</div>
+        <div class="onblock-progress-bar-wrap">
+          <div class="onblock-progress-bar" style="width:${pct}%"></div>
+        </div>
+        <div class="onblock-progress-text">${pct}% complete &nbsp;·&nbsp; ${totalCount - soldCount} remaining</div>
+      </div>
+      <div class="onblock-nav-btns">
+        <button class="btn btn-outline btn-sm" onclick="switchTab('auction')">Full Auction →</button>
+      </div>
+    </div>`;
+
+  if (auctionDone) {
+    clearOnBlockCountdown();
+    container.innerHTML = progressHtml + `
+      <div class="card" style="text-align:center;padding:48px 20px">
+        <div style="font-size:48px;margin-bottom:14px">🎉</div>
+        <div style="font-family:'Playfair Display',serif;font-size:24px;color:var(--green);margin-bottom:8px">Auction Complete</div>
+        <div style="font-size:14px;color:var(--text-light)">All ${totalCount} lots have been sold. Good luck!</div>
+      </div>`;
+    return;
+  }
+
+  // Detect newly sold lots since last render
+  const currentlySoldIds = new Set(ordered.filter(l => !!l.buyerId).map(l => String(l.lot)));
+  const newlySoldIds = [...currentlySoldIds].filter(id => !onBlockPrevSoldIds.has(id));
+  onBlockPrevSoldIds = currentlySoldIds;
+
+  // Find the "display current" — either the lot we're showing in sold state,
+  // or the first unassigned lot
+  const firstUnsold = ordered.find(l => !l.buyerId);
+
+  // If a lot just sold and we're not already counting down, trigger sold state
+  if (newlySoldIds.length > 0 && onBlockState !== 'sold') {
+    // The lot that just sold is the one we were showing — find it
+    const justSoldLotNum = newlySoldIds[0];
+    const justSoldLot = ordered.find(l => String(l.lot) === justSoldLotNum);
+    if (justSoldLot) {
+      onBlockState   = 'sold';
+      onBlockSoldLot = justSoldLot;
+      startOnBlockCountdown(ordered, progressHtml, container);
+      return;
+    }
+  }
+
+  // Normal state — show current (first unsold) and next
+  if (onBlockState === 'sold' && onBlockSoldLot) {
+    // Still in countdown — just refresh the countdown display text
+    const cdEl = document.getElementById('sold-countdown-display');
+    if (cdEl) cdEl.textContent = `Next lot in ${onBlockCountdown}s…`;
+    return;
+  }
+
+  // Regular render
+  const curIdx = ordered.findIndex(l => !l.buyerId);
+  const current = ordered[curIdx];
+  const next    = ordered[curIdx + 1] || null;
+  container.innerHTML = progressHtml + buildHeroCard(current) + buildNextStrip(next);
+}
+
+function startOnBlockCountdown(ordered, progressHtml, container) {
+  clearOnBlockCountdown();
+  onBlockCountdown = 5;
+
+  // Find next unsold after the sold lot
+  const nextUnsoldIdx = ordered.findIndex(l => !l.buyerId);
+  const nextLot = nextUnsoldIdx > -1 ? ordered[nextUnsoldIdx] : null;
+
+  // Render sold state immediately
+  container.innerHTML = progressHtml + buildSoldCard(onBlockSoldLot, onBlockCountdown) + buildNextStrip(nextLot);
+
+  onBlockCountdownTimer = setInterval(() => {
+    onBlockCountdown--;
+    const cdEl = document.getElementById('sold-countdown-display');
+    if (cdEl) cdEl.textContent = `Next lot in ${onBlockCountdown}s…`;
+
+    if (onBlockCountdown <= 0) {
+      clearOnBlockCountdown();
+      onBlockState   = 'showing';
+      onBlockSoldLot = null;
+      // Re-render with next lot as hero
+      const freshOrdered = auctionOrderedLots();
+      const curIdx = freshOrdered.findIndex(l => !l.buyerId);
+      const freshContainer = document.getElementById('onblock-content');
+      if (!freshContainer) return;
+
+      const soldCount  = freshOrdered.filter(l => !!l.buyerId).length;
+      const totalCount = freshOrdered.length;
+      const pct        = Math.round((soldCount / totalCount) * 100);
+      const lotsRemaining = freshOrdered.filter(l => !l.buyerId);
+      const allGroupsDone = lotsRemaining.every(l => (l.type||'').toLowerCase() !== 'group');
+      const auctionDone   = freshOrdered.every(l => !!l.buyerId);
+      const phase = auctionDone   ? 'Auction Complete 🎉'
+                  : allGroupsDone ? 'Phase 2 — Individual Players'
+                  : 'Phase 1 — Group Lots';
+
+      const freshProgress = `
+        <div class="onblock-progress">
+          <div class="onblock-progress-info">
+            <div class="onblock-progress-label">${phase} &nbsp;·&nbsp; ${soldCount} of ${totalCount} lots sold</div>
+            <div class="onblock-progress-bar-wrap">
+              <div class="onblock-progress-bar" style="width:${pct}%"></div>
+            </div>
+            <div class="onblock-progress-text">${pct}% complete &nbsp;·&nbsp; ${totalCount - soldCount} remaining</div>
+          </div>
+          <div class="onblock-nav-btns">
+            <button class="btn btn-outline btn-sm" onclick="switchTab('auction')">Full Auction →</button>
+          </div>
+        </div>`;
+
+      if (auctionDone) {
+        freshContainer.innerHTML = freshProgress + `
+          <div class="card" style="text-align:center;padding:48px 20px">
+            <div style="font-size:48px;margin-bottom:14px">🎉</div>
+            <div style="font-family:'Playfair Display',serif;font-size:24px;color:var(--green);margin-bottom:8px">Auction Complete</div>
+            <div style="font-size:14px;color:var(--text-light)">All ${totalCount} lots have been sold. Good luck!</div>
+          </div>`;
+        return;
+      }
+
+      if (curIdx === -1) return;
+      const current = freshOrdered[curIdx];
+      const next    = freshOrdered[curIdx + 1] || null;
+      freshContainer.innerHTML = freshProgress + buildHeroCard(current) + buildNextStrip(next);
+    }
+  }, 1000);
+}
+
+function clearOnBlockCountdown() {
+  if (onBlockCountdownTimer) {
+    clearInterval(onBlockCountdownTimer);
+    onBlockCountdownTimer = null;
+  }
+}
+
+async function sellLotFromBlock(lotNum) {
+  const buyerEl  = document.getElementById('hero-bid-buyer');
+  const priceEl  = document.getElementById('hero-bid-price');
+  const statusEl = document.getElementById('hero-bid-status');
+
+  if (!buyerEl || !priceEl) return;
+
+  const buyerId = buyerEl.value.trim();
+  const price   = parseInt(priceEl.value, 10) || 0;
+
+  // ── Validation ──────────────────────────────────────────────
+  if (!buyerId) {
+    if (statusEl) { statusEl.style.color='#c0392b'; statusEl.textContent='⚠ Please select a buyer.'; }
+    buyerEl.style.borderColor = '#c0392b';
+    setTimeout(() => { buyerEl.style.borderColor=''; if(statusEl){statusEl.style.color='';statusEl.textContent='';} }, 2500);
+    return;
+  }
+  if (price <= 0) {
+    if (statusEl) { statusEl.style.color='#c0392b'; statusEl.textContent='⚠ Please enter a valid price.'; }
+    priceEl.style.borderColor = '#c0392b';
+    setTimeout(() => { priceEl.style.borderColor=''; if(statusEl){statusEl.style.color='';statusEl.textContent='';} }, 2500);
+    return;
+  }
+
+  // ── Show saving indicator inline without disabling a button ─
+  if (statusEl) { statusEl.style.color='var(--text-light)'; statusEl.textContent='Saving…'; }
+
+  // ── Update in-memory data ────────────────────────────────────
+  const lotIdx = pendingLots.findIndex(l => Number(l.lot) === Number(lotNum));
+  if (lotIdx > -1) {
+    pendingLots[lotIdx].buyerId = buyerId;
+    pendingLots[lotIdx].price   = price;
+  }
+  const lotsIdx = lots.findIndex(l => Number(l.lot) === Number(lotNum));
+  if (lotsIdx > -1) {
+    lots[lotsIdx].buyerId = buyerId;
+    lots[lotsIdx].price   = price;
+  }
+
+  // ── Save to backend (fire and forget — don't block UI) ───────
+  if (backendUrl) {
+    fetch(backendUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'saveLots', lots: pendingLots })
+    }).catch(e => console.warn('Backend save failed:', e));
+  }
+
+  // ── Update supporting views ──────────────────────────────────
+  renderStandings();
+  renderLeaderboard();
+  renderAuction();
+  renderMyLots();
+
+  // ── Trigger sold state directly — bypass renderOnBlock detection logic ──
+  const soldLot = { ...pendingLots[lotIdx] };
+
+  // Update prevSoldIds so renderOnBlock won't fire another transition on next poll
+  onBlockPrevSoldIds = new Set(
+    pendingLots.filter(l => !!l.buyerId).map(l => String(l.lot))
+  );
+  onBlockState   = 'sold';
+  onBlockSoldLot = soldLot;
+
+  // Build progress bar HTML for the countdown screen
+  const ordered     = auctionOrderedLots();
+  const soldCount   = ordered.filter(l => !!l.buyerId).length;
+  const totalCount  = ordered.length;
+  const pct         = Math.round((soldCount / totalCount) * 100);
+  const lotsLeft    = ordered.filter(l => !l.buyerId);
+  const groupsDone  = lotsLeft.every(l => (l.type||'').toLowerCase() !== 'group');
+  const auctionDone = ordered.every(l => !!l.buyerId);
+  const phase = auctionDone  ? 'Auction Complete 🎉'
+              : groupsDone   ? 'Phase 2 — Individual Players'
+              : 'Phase 1 — Group Lots';
+
+  const progressHtml = `
+    <div class="onblock-progress">
+      <div class="onblock-progress-info">
+        <div class="onblock-progress-label">${phase} &nbsp;·&nbsp; ${soldCount} of ${totalCount} lots sold</div>
+        <div class="onblock-progress-bar-wrap">
+          <div class="onblock-progress-bar" style="width:${pct}%"></div>
+        </div>
+        <div class="onblock-progress-text">${pct}% complete &nbsp;·&nbsp; ${totalCount - soldCount} remaining</div>
+      </div>
+      <div class="onblock-nav-btns">
+        <button class="btn btn-outline btn-sm" onclick="switchTab('auction')">Full Auction →</button>
+      </div>
+    </div>`;
+
+  const container = document.getElementById('onblock-content');
+  if (container) {
+    startOnBlockCountdown(ordered, progressHtml, container);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   MY LOTS — buyer filter view
+   ═══════════════════════════════════════════ */
+let myLotsFilter = ''; // buyer id, or '' = all
+
+function renderMyLots() {
+  renderMyLotsFilterBar();
+  renderMyLotsContent();
+}
+
+function renderMyLotsFilterBar() {
+  const bar = document.getElementById('mylots-filter-bar');
+  if (!bar) return;
+  if (!buyers.length) {
+    bar.innerHTML = '<div style="color:var(--text-light);font-size:13px">No buyers configured yet.</div>';
+    return;
+  }
+  bar.innerHTML = [
+    `<button class="buyer-filter-btn ${myLotsFilter===''?'active':''}" onclick="setMyLotsFilter('')">All Buyers</button>`,
+    ...buyers.map(b =>
+      `<button class="buyer-filter-btn ${myLotsFilter===b.id?'active':''}" onclick="setMyLotsFilter('${b.id}')">${b.name}</button>`
+    )
+  ].join('');
+}
+
+function setMyLotsFilter(buyerId) {
+  myLotsFilter = buyerId;
+  renderMyLotsFilterBar();
+  renderMyLotsContent();
+}
+
+function renderMyLotsContent() {
+  const container = document.getElementById('mylots-content');
+  if (!container) return;
+
+  if (!buyers.length || !pendingLots.length) {
+    container.innerHTML = '<div class="mylots-empty">No auction data yet.</div>';
+    return;
+  }
+
+  // Which buyers to show
+  const showBuyers = myLotsFilter
+    ? buyers.filter(b => b.id === myLotsFilter)
+    : buyers;
+
+  let html = '';
+
+  showBuyers.forEach(buyer => {
+    const buyerLots = pendingLots.filter(l => l.buyerId === buyer.id);
+    const totalSpent = buyerLots.reduce((s, l) => s + (Number(l.price)||0), 0);
+    const lotCount   = buyerLots.length;
+
+    html += `
+      <div class="mylots-summary">
+        <div class="mylots-summary-name">${buyer.name}</div>
+        <div class="mylots-stat">
+          <div class="mylots-stat-val">${lotCount}</div>
+          <div class="mylots-stat-label">Lot${lotCount===1?'':'s'}</div>
+        </div>
+        <div class="mylots-stat">
+          <div class="mylots-stat-val">$${totalSpent.toLocaleString()}</div>
+          <div class="mylots-stat-label">Spent</div>
+        </div>
+      </div>`;
+
+    if (!buyerLots.length) {
+      html += `<div class="card" style="color:var(--text-light);font-style:italic;font-size:13px;margin-bottom:16px">No lots assigned yet.</div>`;
+    } else {
+      buyerLots.forEach(lot => {
+        const intel   = getIntelForLot(lot);
+        const isGroup = (lot.type||'').toLowerCase() === 'group';
+        const odds    = lotOddsDisplay(lot);
+        const winPct  = lotWinPct(lot);
+        const typeCls = isGroup ? 'type-group' : 'type-individual';
+        const typeLabel = isGroup ? 'Group' : 'Individual';
+
+        const members = isGroup
+          ? `<div style="font-size:12px;color:var(--text-mid);margin-top:4px;line-height:1.6">
+              ${lot.player.split(' / ').map(m=>`• ${m.trim()}`).join('<br>')}
+            </div>`
+          : '';
+
+        html += `
+          <div class="mylots-lot-card">
+            <div class="mylots-lot-header">
+              <div class="mylots-lot-num">Lot ${lot.lot}</div>
+              <div style="flex:1">
+                <div class="mylots-lot-player">${isGroup ? 'Group ' + lot.lot : lot.player}</div>
+                <span class="intel-type-badge ${typeCls}">${typeLabel}</span>
+                ${members}
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+                ${lot.price ? `<div class="mylots-lot-price">$${Number(lot.price).toLocaleString()}</div>` : ''}
+                ${odds !== '—' ? `<div class="mylots-lot-odds">${odds}</div>` : ''}
+                ${winPct ? `<div style="font-size:11px;color:var(--text-light)">${winPct} win</div>` : ''}
+              </div>
+            </div>
+            ${intel ? `<div class="mylots-lot-intel">
+              ${intel.augusta ? `<div class="intel-row"><span class="intel-key">Best Finish</span><span class="intel-val" style="font-size:12px">${intel.augusta}</span></div>` : ''}
+              ${intel.form    ? `<div class="intel-row"><span class="intel-key">Form</span><span class="intel-val" style="font-size:12px">${intel.form}</span></div>` : ''}
+              ${intel.note    ? `<div class="intel-note">${intel.note}</div>` : ''}
+            </div>` : ''}
+          </div>`;
+      });
+    }
+
+    // Separator between buyers when showing all
+    if (!myLotsFilter) html += '<div style="margin-bottom:24px"></div>';
+  });
+
+  container.innerHTML = html || '<div class="mylots-empty">No lots found.</div>';
+}
+
+/* ═══════════════════════════════════════════
+   DASHBOARD
+   ═══════════════════════════════════════════ */
+function renderDashboard() {
+  const container = document.getElementById('dashboard-content');
+  if (!container) return;
+
+  // ── Pool pot ────────────────────────────────────────────────
+  const totalPot   = pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
+  const soldLots   = pendingLots.filter(l => l.buyerId && Number(l.price) > 0).length;
+  const totalLots  = pendingLots.length;
+  const unsoldPot  = totalPot === 0;
+
+  // Payout percentages (from rules)
+  const PAYOUTS = [
+    { key:'winner',   icon:'🏆', label:'Winner',           pct:0.50 },
+    { key:'second',   icon:'🥈', label:'2nd Place',        pct:0.20 },
+    { key:'third',    icon:'🥉', label:'3rd Place',        pct:0.05 },
+    { key:'lowam',    icon:'🎓', label:'Low Amateur',      pct:0.03 },
+    { key:'dlr1',     icon:'📅', label:'Daily Low — Thu',  pct:0.05, round:'r1' },
+    { key:'dlr2',     icon:'📅', label:'Daily Low — Fri',  pct:0.05, round:'r2' },
+    { key:'dlr3',     icon:'📅', label:'Daily Low — Sat',  pct:0.05, round:'r3' },
+    { key:'dlr4',     icon:'📅', label:'Daily Low — Sun',  pct:0.05, round:'r4' },
+    { key:'deadfri',  icon:'💀', label:'Dead Last — Fri',  pct:0.01 },
+    { key:'deadsun',  icon:'💀', label:'Dead Last — Sun',  pct:0.01 },
+  ];
+  // Note: Daily Low is 5% total split into 4 rounds at 1.25% each? Actually rules say 5%/round.
+  // Let's keep them as individual 5% each per rules. Adjust total note if needed.
+
+  const fmtMoney = n => '$' + Math.round(n).toLocaleString();
+  const safe = v => (v===null||v===undefined||isNaN(Number(v))) ? 0 : Number(v);
+
+  // ── Current leaders for each category ───────────────────────
+  const lb = leaderboard.filter(r => !r.withdrawn && !r.cut);
+  const lbAll = leaderboard.filter(r => !r.withdrawn);
+
+  function bestScore(arr) {
+    if (!arr.length) return null;
+    return arr.slice().sort((a,b) => safe(a.toPar) - safe(b.toPar))[0];
+  }
+  function worstCumul(arr, rounds) {
+    const valid = arr.filter(r => rounds.every(k => r[k] !== null));
+    if (!valid.length) return null;
+    return valid.slice().sort((a,b) => {
+      const sa = rounds.reduce((s,k) => s + safe(a[k]), 0);
+      const sb = rounds.reduce((s,k) => s + safe(b[k]), 0);
+      return sb - sa; // worst first
+    })[0];
+  }
+  function bestRound(arr, key) {
+    const valid = arr.filter(r => r[key] !== null && r[key] !== undefined);
+    if (!valid.length) return null;
+    return valid.slice().sort((a,b) => safe(a[key]) - safe(b[key]))[0];
+  }
+
+  const currentWinner  = bestScore(lb);
+  const current2nd     = (() => { const top=lb.slice().sort((a,b)=>safe(a.toPar)-safe(b.toPar)); return top[1]||null; })();
+  const current3rd     = (() => { const top=lb.slice().sort((a,b)=>safe(a.toPar)-safe(b.toPar)); return top[2]||null; })();
+  const currentLowAm   = bestScore(leaderboard.filter(r=>r.amateur && !r.withdrawn));
+  const currentDeadFri = worstCumul(lbAll, ['r1','r2']);
+  const currentDeadSun = worstCumul(lbAll, ['r1','r2','r3','r4']);
+
+  function winnerCard(payout, player, score, extra) {
+    const amount    = fmtMoney(totalPot * payout.pct);
+    const scoreCls  = score < 0 ? 'under' : score > 0 ? 'over' : 'even';
+    const ownerName = player ? findOwner(player.player) : null;
+    return `
+      <div class="dash-payout-card">
+        <div class="dash-payout-header">
+          <div class="dash-payout-title">
+            <span class="dash-payout-icon">${payout.icon}</span>
+            ${payout.label}
+          </div>
+          <span class="dash-payout-pct">${Math.round(payout.pct*100)}%</span>
+        </div>
+        <div class="dash-payout-body">
+          <div class="dash-payout-amount">${unsoldPot ? '—' : amount}</div>
+          ${player ? `
+            <div class="dash-payout-winner">
+              <div class="dash-payout-winner-name">${player.player}</div>
+              <div class="dash-payout-winner-score ${scoreCls}">${fmtPar(score)}</div>
+            </div>
+            ${ownerName && ownerName !== '—' ? `<div class="dash-payout-owner">Owner: <strong>${ownerName}</strong></div>` : ''}
+            ${extra||''}
+          ` : `<div class="dash-no-data">No data yet</div>`}
+        </div>
+      </div>`;
+  }
+
+  function roundCard(payout) {
+    const key    = payout.round;
+    const player = bestRound(leaderboard.filter(r=>!r.withdrawn), key);
+    const score  = player ? safe(player[key]) : null;
+    const amount = fmtMoney(totalPot * payout.pct);
+    const scoreCls = score !== null ? (score < 0 ? 'under' : score > 0 ? 'over' : 'even') : 'even';
+    const ownerName = player ? findOwner(player.player) : null;
+    return `
+      <div class="dash-payout-card">
+        <div class="dash-payout-header">
+          <div class="dash-payout-title">
+            <span class="dash-payout-icon">${payout.icon}</span>
+            ${payout.label}
+          </div>
+          <span class="dash-payout-pct">${Math.round(payout.pct*100)}%</span>
+        </div>
+        <div class="dash-payout-body">
+          <div class="dash-payout-amount">${unsoldPot ? '—' : amount}</div>
+          ${player ? `
+            <div class="dash-payout-winner">
+              <div class="dash-payout-winner-name">${player.player}</div>
+              <div class="dash-payout-winner-score ${scoreCls}">${fmtPar(score)}</div>
+            </div>
+            ${ownerName && ownerName !== '—' ? `<div class="dash-payout-owner">Owner: <strong>${ownerName}</strong></div>` : ''}
+          ` : `<div class="dash-no-data">No data yet</div>`}
+        </div>
+      </div>`;
+  }
+
+  function deadLastCard(payout, player, rounds, label) {
+    const score  = player ? rounds.reduce((s,k) => s + safe(player[k]), 0) : null;
+    const amount = fmtMoney(totalPot * payout.pct);
+    const scoreCls = score !== null ? (score < 0 ? 'under' : score > 0 ? 'over' : 'even') : 'even';
+    const ownerName = player ? findOwner(player.player) : null;
+    return `
+      <div class="dash-payout-card">
+        <div class="dash-payout-header">
+          <div class="dash-payout-title">
+            <span class="dash-payout-icon">${payout.icon}</span>
+            ${payout.label}
+          </div>
+          <span class="dash-payout-pct">${Math.round(payout.pct*100)}%</span>
+        </div>
+        <div class="dash-payout-body">
+          <div class="dash-payout-amount">${unsoldPot ? '—' : amount}</div>
+          ${player ? `
+            <div class="dash-payout-winner">
+              <div class="dash-payout-winner-name">${player.player}</div>
+              <div class="dash-payout-winner-score ${scoreCls}">${fmtPar(score)}</div>
+            </div>
+            ${ownerName && ownerName !== '—' ? `<div class="dash-payout-owner">Owner: <strong>${ownerName}</strong></div>` : ''}
+            <div class="dash-payout-owner" style="margin-top:2px;font-style:italic">${label}</div>
+          ` : `<div class="dash-no-data">No data yet</div>`}
+        </div>
+      </div>`;
+  }
+
+  // ── Total payout check ──────────────────────────────────────
+  const totalPct = PAYOUTS.reduce((s,p) => s + p.pct, 0);
+
+  container.innerHTML = `
+    <div class="section-header">
+      <div class="section-title">📊 Pool Dashboard</div>
+    </div>
+
+    <div class="dash-pot">
+      <div>
+        <div class="dash-pot-label">Total Pool Pot</div>
+        <div class="dash-pot-amount">${unsoldPot ? 'TBD' : fmtMoney(totalPot)}</div>
+        <div class="dash-pot-sub">${soldLots} of ${totalLots} lots sold${unsoldPot ? ' — pot updates as lots sell' : ''}</div>
+      </div>
+      <div class="dash-pot-stats">
+        <div class="dash-pot-stat">
+          <div class="dash-pot-stat-val">${soldLots}</div>
+          <div class="dash-pot-stat-label">Lots Sold</div>
+        </div>
+        <div class="dash-pot-stat">
+          <div class="dash-pot-stat-val">${totalLots - soldLots}</div>
+          <div class="dash-pot-stat-label">Remaining</div>
+        </div>
+        <div class="dash-pot-stat">
+          <div class="dash-pot-stat-val">${buyers.length}</div>
+          <div class="dash-pot-stat-label">Buyers</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-bottom:12px">Payout Breakdown</div>
+    <div class="dash-payouts">
+      ${winnerCard(PAYOUTS[0], currentWinner,  safe(currentWinner?.toPar))}
+      ${winnerCard(PAYOUTS[1], current2nd,     safe(current2nd?.toPar))}
+      ${winnerCard(PAYOUTS[2], current3rd,     safe(current3rd?.toPar))}
+      ${winnerCard(PAYOUTS[3], currentLowAm,   safe(currentLowAm?.toPar))}
+      ${roundCard(PAYOUTS[4])}
+      ${roundCard(PAYOUTS[5])}
+      ${roundCard(PAYOUTS[6])}
+      ${roundCard(PAYOUTS[7])}
+      ${deadLastCard(PAYOUTS[8], currentDeadFri, ['r1','r2'], 'Cumulative R1+R2')}
+      ${deadLastCard(PAYOUTS[9], currentDeadSun, ['r1','r2','r3','r4'], 'Cumulative R1–R4')}
+    </div>
+    <div style="font-size:12px;color:var(--text-light);text-align:right;margin-top:-8px">
+      Total distributed: ${Math.round(totalPct*100)}% of pot
+    </div>`;
+}
+
+/* ═══════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════ */
+function fmtPar(n){
+  if(n===null||n===undefined)return'—';
+  // Handle string 'E' or 'Even' from ESPN
+  if(typeof n==='string'){
+    const t=n.trim().toUpperCase();
+    if(t==='E'||t==='EVEN'||t==='0')return'E';
+    n=parseFloat(t);
+  }
+  if(isNaN(n))return'E'; // treat NaN as even par
+  if(n===0)return'E';
+  return(n>0?'+':'')+n;
+}
+// Look up player headshot from ESPN leaderboard data by name (fuzzy match)
+function getHeadshot(playerName) {
+  if (!playerName || !leaderboard.length) return null;
+  const needle = playerName.toLowerCase().trim();
+  const match = leaderboard.find(r => {
+    const n = (r.player||'').toLowerCase();
+    return n === needle || n.includes(needle) || needle.includes(n);
+  });
+  return match?.headshot || null;
+}
+
+function findOwner(playerName){
+  if(!playerName)return'—';
+  // Exact match first (individual lots)
+  let lot = pendingLots.find(l => l.player === playerName);
+  // Partial match for group lots — strip odds/amateur tags and check each name
+  if (!lot) {
+    const needle = playerName.toLowerCase().trim();
+    lot = pendingLots.find(l => {
+      // Split group lot player string on ' / ' and check each member
+      return l.player.split(' / ').some(member => {
+        // Strip [Am] and (+odds) annotations for matching
+        const clean = member.replace(/\[Am\]/gi,'').replace(/\([^)]+\)/g,'').trim().toLowerCase();
+        // Match if the leaderboard name contains the clean name or vice versa
+        return clean === needle || clean.includes(needle) || needle.includes(clean);
+      });
+    });
+  }
+  if(!lot||!lot.buyerId)return'—';
+  return buyers.find(b=>b.id===lot.buyerId)?.name||'—';
+}
+function setSyncStatus(state){
+  const dot=document.getElementById('sync-dot');
+  const label=document.getElementById('sync-label');
+  const ts=new Date().toLocaleTimeString();
+  if(state==='live'){dot.className='sync-dot live';label.textContent='Live · '+ts;}
+  else if(state==='offline'){dot.className='sync-dot offline';label.textContent='ESPN offline';}
+  else{dot.className='sync-dot loading';label.textContent='Refreshing…';}
+}
+</script>
+</body>
+</html>
