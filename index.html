@@ -1733,21 +1733,8 @@ function parseESPN(data) {
 
 function demoLeaderboard() {
   const m = document.getElementById('lb-meta');
-  if (m) m.textContent = 'Demo data — ESPN unavailable';
-  return [
-    {pos:'1',  player:'Scottie Scheffler', toPar:-16, today:-5, thru:'F', amateur:false, r1:-5,r2:-4,r3:-2,r4:-5, cut:false, withdrawn:false},
-    {pos:'2',  player:'Rory McIlroy',      toPar:-12, today:-3, thru:'F', amateur:false, r1:-3,r2:-4,r3:-2,r4:-3, cut:false, withdrawn:false},
-    {pos:'3',  player:'Tommy Fleetwood',   toPar:-11, today:-4, thru:'F', amateur:false, r1:-3,r2:-2,r3:-2,r4:-4, cut:false, withdrawn:false},
-    {pos:'T4', player:'Ludvig Åberg',      toPar:-10, today:-2, thru:'F', amateur:false, r1:-3,r2:-3,r3:-2,r4:-2, cut:false, withdrawn:false},
-    {pos:'T4', player:'Matt Fitzpatrick',  toPar:-10, today:-3, thru:'F', amateur:false, r1:-2,r2:-3,r3:-2,r4:-3, cut:false, withdrawn:false},
-    {pos:'T6', player:'Jon Rahm',          toPar:-9,  today:-1, thru:'F', amateur:false, r1:-3,r2:-3,r3:-2,r4:-1, cut:false, withdrawn:false},
-    {pos:'T6', player:'Bryson DeChambeau', toPar:-9,  today:-2, thru:'F', amateur:false, r1:-2,r2:-3,r3:-2,r4:-2, cut:false, withdrawn:false},
-    {pos:'8',  player:'Xander Schauffele', toPar:-8,  today:-1, thru:'F', amateur:false, r1:-2,r2:-3,r3:-2,r4:-1, cut:false, withdrawn:false},
-    {pos:'9',  player:'Patrick Reed',      toPar:-7,  today:-2, thru:'F', amateur:false, r1:-2,r2:-2,r3:-1,r4:-2, cut:false, withdrawn:false},
-    {pos:'10', player:'Justin Rose',       toPar:-6,  today:-1, thru:'F', amateur:false, r1:-1,r2:-2,r3:-2,r4:-1, cut:false, withdrawn:false},
-    {pos:'55', player:'Sergio Garcia',     toPar:+8,  today:+4, thru:'F', amateur:false, r1:+2,r2:+1,r3:+1,r4:+4, cut:true,  withdrawn:false},
-    {pos:'60', player:'Ethan Fang',        toPar:+2,  today:+1, thru:'F', amateur:true,  r1:0, r2:+1,r3:0, r4:+1, cut:false, withdrawn:false},
-  ];
+  if (m) m.textContent = 'Waiting for ESPN data…';
+  return [];
 }
 
 /* ═══════════════════════════════════════════
@@ -1756,7 +1743,7 @@ function demoLeaderboard() {
 function renderLeaderboard() {
   const tbody = document.getElementById('lb-tbody');
   if (!leaderboard.length) {
-    tbody.innerHTML='<tr class="loading-row"><td colspan="10">No data.</td></tr>'; return;
+    tbody.innerHTML='<tr class="loading-row"><td colspan="10">No leaderboard data yet — scores will appear here once the tournament begins.</td></tr>'; return;
   }
   tbody.innerHTML = leaderboard.map(r => {
     const toPar = isNaN(r.toPar) ? 0 : r.toPar;
@@ -1976,7 +1963,7 @@ function renderAuction() {
   const tbody = document.getElementById('auction-tbody');
   const sub   = document.getElementById('auction-sub');
   if (!pendingLots.length) {
-    tbody.innerHTML='<tr class="loading-row"><td colspan="7">No lots. Add players in Admin Setup or Google Sheet.</td></tr>';
+    tbody.innerHTML='<tr class="loading-row"><td colspan="7">No lots loaded yet — connecting to Google Sheet…</td></tr>';
     sub.textContent='0 lots'; return;
   }
   sub.textContent=pendingLots.length+' lots';
@@ -2322,20 +2309,9 @@ async function testBackend() {
 }
 
 function loadDefaultLots() {
-  buyers=[];
-  lots=[
-    {lot:1,type:'Individual',player:'Scottie Scheffler',  buyerId:'',price:0},
-    {lot:2,type:'Individual',player:'Rory McIlroy',       buyerId:'',price:0},
-    {lot:3,type:'Individual',player:'Bryson DeChambeau',  buyerId:'',price:0},
-    {lot:4,type:'Individual',player:'Jon Rahm',            buyerId:'',price:0},
-    {lot:5,type:'Individual',player:'Xander Schauffele',  buyerId:'',price:0},
-    {lot:6,type:'Individual',player:'Tommy Fleetwood',    buyerId:'',price:0},
-    {lot:7,type:'Individual',player:'Ludvig Åberg',       buyerId:'',price:0},
-    {lot:8,type:'Individual',player:'Matt Fitzpatrick',   buyerId:'',price:0},
-    {lot:9,type:'Individual',player:'Cameron Young',      buyerId:'',price:0},
-    {lot:10,type:'Individual',player:'Justin Rose',       buyerId:'',price:0},
-  ];
-  pendingLots=lots.map(l=>({...l}));
+  buyers = [];
+  lots = [];
+  pendingLots = [];
 }
 
 /* ═══════════════════════════════════════════
