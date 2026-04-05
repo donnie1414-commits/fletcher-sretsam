@@ -1144,6 +1144,23 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
           Find <code>PASSWORDS</code> near the top of the <code>&lt;script&gt;</code> block and edit directly.
         </p>
       </div>
+
+      <div class="setup-section" style="border:1px solid #f5c6c6;background:#fffafa">
+        <div class="setup-label" style="color:#c0392b">⚠ Danger Zone</div>
+        <p style="font-size:13px;color:var(--text-mid);line-height:1.6;margin-bottom:14px">
+          Clear all buyer assignments and prices from every lot. This resets the auction back to a blank slate.
+          <strong>This cannot be undone.</strong>
+        </p>
+        <div id="reset-confirm-box" style="display:none;background:#fdf0f0;border:1px solid #f5c6c6;border-radius:8px;padding:14px 16px;margin-bottom:12px">
+          <div style="font-size:14px;font-weight:600;color:#c0392b;margin-bottom:10px">⚠ Are you sure? This will clear ALL buyer and price data from every lot.</div>
+          <div class="flex-gap">
+            <button class="btn btn-danger" onclick="confirmResetAuction()" style="background:#c0392b;color:white;font-weight:700">Yes, Reset Everything</button>
+            <button class="btn btn-outline" onclick="cancelResetAuction()">Cancel</button>
+          </div>
+        </div>
+        <button class="btn btn-danger" id="reset-auction-btn" onclick="promptResetAuction()">🗑 Reset Auction Data</button>
+        <div id="reset-status" style="font-size:13px;color:var(--text-light);margin-top:10px;min-height:18px"></div>
+      </div>
     </div>
 
   </main>
@@ -2340,8 +2357,20 @@ function lotOddsDisplay(lot) {
 }
 
 function lotWinPct(lot) {
-  if (lot.win_probability) return String(lot.win_probability).replace(/^'/, '');
-  return '';
+  if (!lot.win_probability) return '';
+  const raw = String(lot.win_probability).replace(/^'/, '').trim();
+  if (!raw || raw === '—') return '';
+  // If already has a % sign, return as-is
+  if (raw.includes('%')) return raw;
+  // Convert decimal (e.g. 0.167) to percentage (e.g. 16.7%)
+  const n = parseFloat(raw);
+  if (isNaN(n)) return raw;
+  // If value is already > 1, treat as a percentage number (e.g. 16.7 → 16.7%)
+  if (n > 1) return n.toFixed(1) + '%';
+  // Decimal → percentage
+  const pct = n * 100;
+  // Show 1 decimal place, drop trailing zero (e.g. 16.7%, 5.0% → 5%)
+  return (pct % 1 === 0 ? pct.toFixed(0) : pct.toFixed(1)) + '%';
 }
 
 /* ═══════════════════════════════════════════
@@ -3075,6 +3104,65 @@ function renderDashboard() {
     <div style="font-size:12px;color:var(--text-light);text-align:right;margin-top:-8px">
       Total distributed: ${Math.round(totalPct*100)}% of pot
     </div>`;
+}
+
+/* ═══════════════════════════════════════════
+   RESET AUCTION
+   ═══════════════════════════════════════════ */
+function promptResetAuction() {
+  document.getElementById('reset-confirm-box').style.display = '';
+  document.getElementById('reset-auction-btn').style.display = 'none';
+  document.getElementById('reset-status').textContent = '';
+}
+
+function cancelResetAuction() {
+  document.getElementById('reset-confirm-box').style.display = 'none';
+  document.getElementById('reset-auction-btn').style.display = '';
+}
+
+async function confirmResetAuction() {
+  const statusEl = document.getElementById('reset-status');
+  statusEl.textContent = 'Resetting…';
+
+  // Clear buyer + price on every lot in memory
+  pendingLots.forEach(l => { l.buyerId = ''; l.price = 0; });
+  lots.forEach(l => { l.buyerId = ''; l.price = 0; });
+
+  // Save cleared lots to backend
+  if (backendUrl) {
+    try {
+      await fetch(backendUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'saveLots', lots: pendingLots })
+      });
+    } catch(e) {
+      statusEl.style.color = '#c0392b';
+      statusEl.textContent = '⚠ Could not save to Google Sheet — reset applied locally only.';
+      renderAuction(); renderStandings(); renderOnBlock(); renderMyLots(); renderDashboard();
+      cancelResetAuction();
+      return;
+    }
+  }
+
+  // Re-render everything
+  renderAuction();
+  renderStandings();
+  renderOnBlock();
+  renderMyLots();
+  renderDashboard();
+
+  // Reset on-block state so it starts from lot #45 again
+  onBlockState = 'showing';
+  onBlockSoldLot = null;
+  onBlockPrevSoldIds = new Set();
+  clearOnBlockCountdown();
+
+  // Hide confirm, show button, show success
+  cancelResetAuction();
+  statusEl.style.color = 'var(--green)';
+  statusEl.textContent = '✓ Auction reset successfully. All buyer and price data cleared.';
+  setTimeout(() => { statusEl.textContent = ''; statusEl.style.color = ''; }, 5000);
 }
 
 /* ═══════════════════════════════════════════
