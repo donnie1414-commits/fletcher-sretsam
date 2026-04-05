@@ -1549,17 +1549,27 @@ function doLogin() {
   const pass = document.getElementById('login-pass').value.trim();
   const err  = document.getElementById('login-error');
   err.textContent = '';
-  if (loginRoleSelected==='admin'  && pass===PASSWORDS.admin)  { initApp('admin');  return; }
-  if (loginRoleSelected==='viewer' && pass===PASSWORDS.viewer) { initApp('viewer'); return; }
+  if (loginRoleSelected==='admin'  && pass===PASSWORDS.admin)  { sessionStorage.setItem('mastersPoolRole','admin');  initApp('admin');  return; }
+  if (loginRoleSelected==='viewer' && pass===PASSWORDS.viewer) { sessionStorage.setItem('mastersPoolRole','viewer'); initApp('viewer'); return; }
   err.textContent = 'Incorrect password.';
 }
 function logout() {
   clearInterval(espnTimer); clearInterval(auctionTimer);
+  sessionStorage.removeItem('mastersPoolRole');
   currentRole = null;
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login-pass').value = '';
 }
+
+// Auto-login if session is still active (survives refresh, clears on tab close)
+(function() {
+  const saved = sessionStorage.getItem('mastersPoolRole');
+  if (saved === 'admin' || saved === 'viewer') {
+    // Wait for DOM to be ready then skip login
+    document.addEventListener('DOMContentLoaded', () => initApp(saved));
+  }
+})();
 
 /* ═══════════════════════════════════════════
    INIT
