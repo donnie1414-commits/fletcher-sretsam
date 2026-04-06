@@ -67,6 +67,14 @@ header{background:var(--green);color:white;display:flex;align-items:center;justi
 .sync-label{font-size:11px;color:rgba(255,255,255,.75);white-space:nowrap}
 .btn-logout{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:white;padding:6px 13px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;transition:background .2s}
 .btn-logout:hover{background:rgba(255,255,255,.2)}
+.pot-pill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:white;font-size:13px;font-weight:700;padding:4px 12px;border-radius:20px;white-space:nowrap}
+.btn-share{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:6px 10px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit;transition:background .2s}
+.btn-share:hover{background:rgba(255,255,255,0.2)}
+.auction-row-sold td{background:#f0faf3}
+.auction-row-sold .player-name{color:var(--green)}
+.auction-row-unsold td{color:var(--text-mid)}
+tr.auction-row-sold:hover td{background:#e4f5eb}
+tr.auction-row-unsold:hover td{background:var(--green-pale)}
 
 /* NAV */
 nav{background:white;border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;position:sticky;top:56px;z-index:90;box-shadow:0 1px 4px rgba(0,0,0,.05)}
@@ -1212,10 +1220,12 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
       <span class="badge-role" id="role-badge"></span>
     </div>
     <div class="header-right">
+      <div class="pot-pill" id="header-pot" style="display:none">💰 <span id="header-pot-amt">—</span></div>
       <div class="sync-pill">
         <div class="sync-dot loading" id="sync-dot"></div>
         <span class="sync-label" id="sync-label">Loading…</span>
       </div>
+      <button class="btn-share" onclick="shareUrl()" title="Share site URL">🔗</button>
       <button class="btn-logout" onclick="logout()">Logout</button>
     </div>
   </header>
@@ -1265,6 +1275,12 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
         </div>
       </div>
       <div class="card">
+        <div class="flex-gap" style="margin-bottom:12px;flex-wrap:wrap">
+          <input type="text" id="auction-search" placeholder="🔍 Search players or groups…"
+            style="flex:1;min-width:200px;max-width:360px"
+            oninput="renderAuction()">
+          <button class="btn btn-outline btn-sm" onclick="snapshotLeaderboard()" title="Save current leaderboard to Google Sheet">📸 Snapshot Scores</button>
+        </div>
         <div class="tbl-wrap">
           <table>
             <thead><tr><th>#</th><th>Type</th><th>Player</th><th>Buyer</th><th style="text-align:right">Price</th><th style="text-align:right">Odds</th><th style="text-align:right">Win %</th></tr></thead>
@@ -1461,12 +1477,13 @@ const STORAGE_BACKEND_KEY = 'mastersPool_backendUrl';
 // ── PASTE YOUR APPS SCRIPT URL HERE ──────────────────────────────
 // Every device will use this URL automatically — no Admin Setup needed.
 // Leave as '' to use the Admin Setup tab instead.
-const HARDCODED_BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxiAxngAU5C9NxI5izrn-OvQ4z5Ck7QTP1kpodsTrbYJVtCAhlHsB4sGS4zxcBLDN3h/exec';
+const HARDCODED_BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwe1YOOIMcAGD8VwxHC3JvApR4ZB_D9KDQmU0u3BUVp2R3NVd_66YFE3BbMgNFWnHB1/exec';
 // ─────────────────────────────────────────────────────────────────
 
 // Refresh intervals
-const ESPN_REFRESH_MS    = 60000;  // 60s — live scores
-const AUCTION_REFRESH_MS = 30000;  // 30s — auction data
+const ESPN_REFRESH_MS         = 60000;  // 60s — live scores
+const AUCTION_REFRESH_MS      = 30000;  // 30s — auction data (background)
+const AUCTION_ONBLOCK_MS      = 10000;  // 10s — faster when On the Block is active
 
 const ROUND_LABELS = { r1:'Rd 1 — Thu', r2:'Rd 2 — Fri', r3:'Rd 3 — Sat', r4:'Rd 4 — Sun' };
 
@@ -1907,6 +1924,13 @@ function switchTab(tab) {
   if (tab === 'onblock')   renderOnBlock();
   if (tab === 'mylots')    renderMyLots();
   if (tab === 'dashboard') renderDashboard();
+
+  // Speed up auction polling when On the Block is active
+  if (backendUrl) {
+    clearInterval(auctionTimer);
+    const ms = tab === 'onblock' ? AUCTION_ONBLOCK_MS : AUCTION_REFRESH_MS;
+    auctionTimer = setInterval(fetchAuction, ms);
+  }
 }
 
 /* ═══════════════════════════════════════════
@@ -2340,18 +2364,34 @@ function renderAuction() {
   const sub   = document.getElementById('auction-sub');
   if (!pendingLots.length) {
     tbody.innerHTML='<tr class="loading-row"><td colspan="7">No lots loaded yet — connecting to Google Sheet…</td></tr>';
-    sub.textContent='0 lots'; return;
+    sub.textContent='0 lots';
+    updatePotPill();
+    return;
   }
-  sub.textContent=pendingLots.length+' lots';
-  tbody.innerHTML=pendingLots.map((lot,idx)=>{
+
+  // Search filter
+  const search = (document.getElementById('auction-search')?.value || '').toLowerCase().trim();
+  const filtered = search
+    ? pendingLots.filter((l, idx) => l.player.toLowerCase().includes(search) || String(l.lot).includes(search))
+    : pendingLots;
+
+  const soldCount = pendingLots.filter(l => !!l.buyerId).length;
+  sub.textContent = `${pendingLots.length} lots · ${soldCount} sold`;
+  updatePotPill();
+
+  tbody.innerHTML = filtered.map((lot) => {
+    const idx = pendingLots.indexOf(lot);
+    const isSold = !!lot.buyerId;
     const typeBadge = lot.type==='Group'
       ? '<span class="intel-type-badge type-group">Group</span>'
       : '<span class="intel-type-badge type-individual">Individual</span>';
     const oddsDisplay = lot.lot_odds ? String(lot.lot_odds).replace(/^'/,'') : '—';
     const winDisplay  = lotWinPct(lot) || '—';
+    const rowCls = isSold ? 'auction-row-sold' : 'auction-row-unsold';
+
     if (currentRole==='admin') {
       const opts=buyers.map(b=>`<option value="${b.id}" ${b.id===lot.buyerId?'selected':''}>${b.name}</option>`).join('');
-      return `<tr>
+      return `<tr class="${rowCls}">
         <td class="pos">${lot.lot}</td>
         <td>${typeBadge}</td>
         <td class="player-name"><span class="intel-link" onclick="showIntelModal(${lot.lot})">${lot.player}</span></td>
@@ -2364,17 +2404,31 @@ function renderAuction() {
         <td style="text-align:right;color:var(--text-mid)">${winDisplay}</td>
       </tr>`;
     } else {
-      return `<tr>
+      const buyerName = buyers.find(b=>b.id===lot.buyerId)?.name || '—';
+      return `<tr class="${rowCls}">
         <td class="pos">${lot.lot}</td>
         <td>${typeBadge}</td>
         <td class="player-name"><span class="intel-link" onclick="showIntelModal(${lot.lot})">${lot.player}</span></td>
-        <td>${buyers.find(b=>b.id===lot.buyerId)?.name||'—'}</td>
+        <td>${isSold ? `<span class="owner-tag">${buyerName}</span>` : '<span style="color:var(--text-light)">—</span>'}</td>
         <td style="text-align:right">${lot.price?'$'+lot.price.toLocaleString():'—'}</td>
         <td style="text-align:right;font-weight:600;color:var(--gold)">${oddsDisplay}</td>
         <td style="text-align:right;color:var(--text-mid)">${winDisplay}</td>
       </tr>`;
     }
-  }).join('');
+  }).join('') || '<tr class="loading-row"><td colspan="7">No lots match your search.</td></tr>';
+}
+
+function updatePotPill() {
+  const pot = pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
+  const el  = document.getElementById('header-pot');
+  const amt = document.getElementById('header-pot-amt');
+  if (!el || !amt) return;
+  if (pot > 0) {
+    amt.textContent = '$' + pot.toLocaleString();
+    el.style.display = '';
+  } else {
+    el.style.display = 'none';
+  }
 }
 
 async function saveAuction() {
@@ -2384,6 +2438,7 @@ async function saveAuction() {
   renderOnBlock();
   renderMyLots();
   renderDashboard();
+  updatePotPill();
   if (!backendUrl) { alert('No backend configured. Connect a Google Sheet in Admin Setup.'); return; }
   try {
     await fetch(backendUrl, {
@@ -3487,9 +3542,55 @@ function renderDashboard() {
       ${deadLastCard(PAYOUTS[8], currentDeadFri, ['r1','r2'], 'Cumulative R1+R2')}
       ${deadLastCard(PAYOUTS[9], currentDeadSun, ['r1','r2','r3','r4'], 'Cumulative R1–R4')}
     </div>
-    <div style="font-size:12px;color:var(--text-light);text-align:right;margin-top:-8px">
+    <div style="font-size:12px;color:var(--text-light);text-align:right;margin-top:-8px;margin-bottom:24px">
       Total distributed: ${Math.round(totalPct*100)}% of pot
-    </div>`;
+    </div>
+
+    ${buyers.length ? `
+    <div class="section-title" style="margin-bottom:12px">Buyer Standings</div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table style="width:100%;border-collapse:collapse;font-size:14px">
+        <thead><tr>
+          <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-mid);border-bottom:2px solid var(--border);background:var(--off-white)">Buyer</th>
+          <th style="text-align:right;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-mid);border-bottom:2px solid var(--border);background:var(--off-white)">Lots</th>
+          <th style="text-align:right;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-mid);border-bottom:2px solid var(--border);background:var(--off-white)">Spent</th>
+          <th style="text-align:right;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-mid);border-bottom:2px solid var(--border);background:var(--off-white)">Best Score</th>
+          <th style="text-align:left;padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-mid);border-bottom:2px solid var(--border);background:var(--off-white)">Best Player</th>
+        </tr></thead>
+        <tbody>${buyers.map((b,i) => {
+          const bLots  = pendingLots.filter(l => l.buyerId === b.id);
+          const spent  = bLots.reduce((s,l) => s + (Number(l.price)||0), 0);
+          const lotCount = bLots.length;
+          // Find best performing player in leaderboard
+          let bestScore = null, bestPlayer = '—';
+          if (leaderboard.length) {
+            bLots.forEach(l => {
+              const names = l.player.split(' / ').map(m => m.replace(/\[Am\]/gi,'').replace(/\([^)]+\)/g,'').trim());
+              names.forEach(name => {
+                const entry = leaderboard.find(r => {
+                  const n = r.player.toLowerCase();
+                  const cl = name.toLowerCase();
+                  return n === cl || n.includes(cl) || cl.includes(n);
+                });
+                if (entry && !entry.cut && !entry.withdrawn) {
+                  const tp = isNaN(entry.toPar) ? 0 : entry.toPar;
+                  if (bestScore === null || tp < bestScore) { bestScore = tp; bestPlayer = entry.player; }
+                }
+              });
+            });
+          }
+          const scoreCls = bestScore === null ? '' : bestScore < 0 ? 'color:#2e7d32;font-weight:700' : bestScore > 0 ? 'color:#c62828;font-weight:700' : 'font-weight:600';
+          return `<tr style="${i%2===0?'background:white':'background:var(--off-white)'}">
+            <td style="padding:11px 16px;font-weight:600;color:var(--green)">${b.name}</td>
+            <td style="text-align:right;padding:11px 16px">${lotCount}</td>
+            <td style="text-align:right;padding:11px 16px;font-weight:600">${spent ? '$'+spent.toLocaleString() : '—'}</td>
+            <td style="text-align:right;padding:11px 16px;${scoreCls}">${bestScore !== null ? fmtPar(bestScore) : '—'}</td>
+            <td style="padding:11px 16px;font-size:13px;color:var(--text-mid)">${bestPlayer}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>` : ''}`;
+
 }
 
 /* ═══════════════════════════════════════════
@@ -3621,6 +3722,68 @@ async function confirmResetAuction() {
   statusEl.style.color = 'var(--green)';
   statusEl.textContent = '✓ Auction reset successfully. All buyer and price data cleared.';
   setTimeout(() => { statusEl.textContent = ''; statusEl.style.color = ''; }, 5000);
+}
+
+/* ═══════════════════════════════════════════
+   HELPERS
+   ═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════
+   SHARE & SNAPSHOT
+   ═══════════════════════════════════════════ */
+function shareUrl() {
+  const url = window.location.href.split('?')[0].split('#')[0];
+  if (navigator.share) {
+    navigator.share({ title: 'Masters Calcutta HQ', url })
+      .catch(() => copyToClipboard(url));
+  } else {
+    copyToClipboard(url);
+  }
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.btn-share');
+    if (btn) {
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => btn.textContent = orig, 2000);
+    }
+  }).catch(() => {
+    prompt('Copy this link:', text);
+  });
+}
+
+async function snapshotLeaderboard() {
+  if (!leaderboard.length) {
+    alert('No leaderboard data to snapshot yet.');
+    return;
+  }
+  if (!backendUrl) {
+    alert('No backend configured — cannot save snapshot.');
+    return;
+  }
+  if (!confirm(`Save a snapshot of the current leaderboard (${leaderboard.length} players) to Google Sheets?`)) return;
+
+  const btn = document.querySelector('[onclick="snapshotLeaderboard()"]');
+  if (btn) { btn.textContent = '⏳ Saving…'; btn.disabled = true; }
+
+  try {
+    const snapshot = leaderboard.map(r => ({
+      pos: r.pos, player: r.player, toPar: r.toPar, today: r.today,
+      thru: r.thru, r1: r.r1, r2: r.r2, r3: r.r3, r4: r.r4,
+      cut: r.cut, withdrawn: r.withdrawn, snapshotTime: new Date().toISOString()
+    }));
+    await fetch(backendUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'saveSnapshot', snapshot })
+    });
+    if (btn) { btn.textContent = '✓ Snapshot Saved!'; }
+    setTimeout(() => { if (btn) { btn.textContent = '📸 Snapshot Scores'; btn.disabled = false; } }, 3000);
+  } catch(e) {
+    alert('Snapshot failed: ' + e.message);
+    if (btn) { btn.textContent = '📸 Snapshot Scores'; btn.disabled = false; }
+  }
 }
 
 /* ═══════════════════════════════════════════
