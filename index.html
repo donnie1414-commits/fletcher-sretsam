@@ -1613,7 +1613,7 @@ const STORAGE_BACKEND_KEY = 'mastersPool_backendUrl';
 // ── PASTE YOUR APPS SCRIPT URL HERE ──────────────────────────────
 // Every device will use this URL automatically — no Admin Setup needed.
 // Leave as '' to use the Admin Setup tab instead.
-const HARDCODED_BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyoVM-Av1KRFMagjqOoMH2t76-QISPU1j25s1NIkRDBVwEboO5jwbrEBKvcjrEskpke/exec';
+const HARDCODED_BACKEND_URL = 'https://script.google.com/macros/s/AKfycbx9q-Gw6BGrzbY6rhgRBiCwb_68rDty2RqvzXQR0ICo3iB2P1uVPr8fXgioHpNVQzB8/exec';
 // ─────────────────────────────────────────────────────────────────
 
 // Refresh intervals
@@ -1679,32 +1679,75 @@ let rulesText = `<h3>General</h3>
    contender: true = top-tier pick
    ═══════════════════════════════════════════ */
 /* ═══════════════════════════════════════════
-   GROUP LOTS — all 23 group auction lots
+   GROUP LOTS — 22 group auction lots (Lots 23-44)
+   Individual lots 1-25 (Lots 1-22 original + Lots 46-48 Bhatia/Conners/Burns)
    ═══════════════════════════════════════════ */
 const GROUP_LOTS = [
-  { lot:23,  members:['Akshay Bhatia','Jackson Herrington','Sami Valimaki'],    amateur:[1],   note:'Bhatia won the 2026 Arnold Palmer Invitational. Herrington is the amateur finalist.' },
-  { lot:24,  members:['Corey Conners','Sam Stevens','Kristoffer Reitan'],       amateur:[],    note:'Conners is a steady Augusta performer. Stevens and Reitan bring upside on their first Masters appearances.' },
-  { lot:25,  members:['Adam Scott','Harry Hall','Michael Kim'],                 amateur:[],    note:'Scott is the 2013 champion with lifelong Augusta comfort. Hall and Kim add depth.' },
-  { lot:26,  members:['Justin Thomas','Haotong Li','Johnny Keefer'],            amateur:[],    note:'Thomas is a two-time major winner looking to rediscover top form. Keefer won on the Korn Ferry Tour.' },
-  { lot:27,  members:['Sam Burns','Max Greyserman','Aldrich Potgieter'],        amateur:[],    note:'Burns brings elite putting. Potgieter is one of the longest hitters in the field.' },
-  { lot:28,  members:['Patrick Cantlay','Matt McCarty','Brian Campbell'],       amateur:[],    note:'Cantlay is a former FedEx Cup champion. McCarty qualified via world ranking.' },
-  { lot:29,  members:['Jason Day','Jake Knapp','Brandon Holtz'],               amateur:[2],   note:'Day is a former World No. 1 with strong Augusta history. Holtz is a basketball-turned-golfer amateur.' },
-  { lot:30,  members:['Sungjae Im','Alex Noren','Naoyuki Kataoka'],             amateur:[],    note:'Im was runner-up in 2020. Noren is a steady European Tour veteran.' },
-  { lot:31,  members:['Si Woo Kim','Carlos Ortiz','Rasmus Neergaard-Petersen'], amateur:[],    note:'Kim is consistent and comfortable at Augusta. Ortiz is a LIV competitor with major experience.' },
-  { lot:32,  members:['Sepp Straka','Nico Echavarria','Mason Howell'],         amateur:[2],   note:'Straka has two PGA Tour wins in 2025. Howell is an amateur with a big game.' },
-  { lot:33,  members:['Jacob Bridgeman','Kurt Kitayama','Casey Jarvis'],        amateur:[2],   note:'Bridgeman won the Genesis and leads Tour in SG: Putting. Jarvis is the SA Amateur champion.' },
-  { lot:34,  members:['Cameron Smith','Tom McKibbin','Fifa Laopakdee'],        amateur:[2],   note:'Smith has two top-3s at Augusta. McKibbin is a promising European Tour player. Laopakdee is the first Thai amateur at the Masters.' },
-  { lot:35,  members:['Ben Griffin','Ryan Gerard','Mateo Pulcini'],            amateur:[2],   note:'Griffin had three wins in 2025. Gerard is a steady PGA Tour presence. Pulcini is the Latin America Amateur champion.' },
-  { lot:36,  members:['Gary Woodland','Davis Riley','Danny Willett'],           amateur:[],    note:'Woodland won Houston Open in emotional return from brain surgery. Willett is the 2016 Masters champion.' },
-  { lot:37,  members:['Nicolai Højgaard','Rasmus Højgaard','Sergio Garcia'],    amateur:[],    note:'Twin Danish duo — Nicolai ranked top 50, Rasmus close behind. Garcia is a Masters contender with pedigree.' },
-  { lot:38,  members:['Marco Penge','Andrew Novak','Charl Schwartzel'],         amateur:[],    note:'Schwartzel is the 2011 Masters champion. Penge is the 2025 Open Championship qualifier.' },
-  { lot:39,  members:['Dustin Johnson','Maverick McNealy','Bubba Watson'],      amateur:[],    note:'Johnson is the 2020 Masters champion. Watson is a two-time green jacket winner. McNealy adds PGA Tour experience.' },
-  { lot:40,  members:['Harris English','J.J. Spaun','Fred Couples'],            amateur:[],    note:'Spaun just won the Valero Texas Open to punch his Masters ticket. Couples is beloved at Augusta. English has two major runner-ups.' },
-  { lot:41,  members:['Max Homa','Aaron Rai','Angel Cabrera'],                  amateur:[],    note:'Homa has finished T12 at Augusta. Rai is a DP World Tour winner. Cabrera is a former Masters champion.' },
-  { lot:42,  members:['Brian Harman','Nick Taylor','Vijay Singh'],              amateur:[],    note:'Harman is the 2023 Open champion. Taylor is a two-time winner on Tour. Singh is a past Masters champion.' },
-  { lot:43,  members:['Ethan Fang','Michael Brennan','Mike Weir'],             amateur:[0],   note:'Fang won the 2025 Amateur at Royal St. George\'s. Weir is the 2003 Masters champion.' },
-  { lot:44,  members:['Keegan Bradley','Wyndham Clark','Zach Johnson'],         amateur:[],    note:'Bradley is the 2026 Ryder Cup captain. Clark is the 2023 US Open champion. Johnson is a Masters and Open champion.' },
-  { lot:45,  members:['Ryan Fox','Daniel Berger','Jose Maria Olazabal'],        amateur:[],    note:'Olazabal is a two-time Masters champion. Berger is coming back strong from injury. Fox brings DP World Tour consistency.' },
+  { lot:23,  members:['Adam Scott','Wyndham Clark','Casey Jarvis'],              amateur:[2],
+    note:'Scott is the 2013 champion defying age at 45. Clark is the 2023 US Open champion with elite irons — the live horse. Jarvis is the SA Open champion adding amateur intrigue.' },
+
+  { lot:24,  members:['Justin Thomas','Brian Harman','Brandon Holtz'],           amateur:[2],
+    note:'JT is a former World No. 1 always dangerous at Augusta when clicking. Harman is the 2023 Open champion and Valero winner entering hot. Holtz is the US Mid-Am champion.' },
+
+  { lot:25,  members:['Jason Day','J.J. Spaun','Mason Howell'],                  amateur:[2],
+    note:'Day is a former World No. 1 with T8 here last year. Spaun just won the Valero Texas Open entering Augusta hot. Howell is the US Mid-Am runner-up.' },
+
+  { lot:26,  members:['Jacob Bridgeman','Nick Taylor','Jackson Herrington'],     amateur:[2],
+    note:'Bridgeman is the Genesis winner and Tour\'s best putter. Taylor is an underrated RBC Canadian Open winner. Herrington is the US Amateur runner-up.' },
+
+  { lot:27,  members:['Sungjae Im','Ryan Fox','Mateo Pulcini'],                  amateur:[2],
+    note:'Im was runner-up here in 2020 and quietly consistent at Augusta. Fox has two PGA Tour wins in 2025 with power built for Augusta. Pulcini is the Latin America Amateur champion.' },
+
+  { lot:28,  members:['Si Woo Kim','Daniel Berger','Fifa Laopakdee'],            amateur:[2],
+    note:'Kim is a consistent Augusta performer without an obvious weakness. Berger returns strong from injury with a runner-up at Arnold Palmer. Laopakdee is the Asia-Pacific Am champion — first Thai player at Augusta.' },
+
+  { lot:29,  members:['Sepp Straka','Max Homa','Ethan Fang'],                    amateur:[2],
+    note:'Straka has two Tour wins in 2025 and five straight Augusta appearances. Homa has T12 here last year. Fang is the US Amateur champion — the biggest storyline in the amateur field.' },
+
+  { lot:30,  members:['Cameron Smith','Keegan Bradley','Sami Valimaki'],         amateur:[],
+    note:'Smith is the anchor — best putter in LIV with two Augusta top-3s. Bradley is the 2026 Ryder Cup captain. Valimaki adds DP World Tour depth.' },
+
+  { lot:31,  members:['Ben Griffin','Marco Penge','Sam Stevens'],                amateur:[],
+    note:'Griffin won three times in 2025. Penge is the Spanish Open winner earning his spot under new qualifying rules. Stevens adds PGA Tour depth.' },
+
+  { lot:32,  members:['Gary Woodland','Sergio Garcia','Kristoffer Reitan'],      amateur:[],
+    note:'Woodland won in Houston in emotional return from brain surgery. Garcia is the 2017 champion in his 28th consecutive Masters. Reitan adds young DP World Tour talent.' },
+
+  { lot:33,  members:['Harris English','Nico Echavarria','Aldrich Potgieter'],   amateur:[],
+    note:'English anchors with two major runner-ups in 2025. Echavarria won the Cognizant Classic in 2026. Potgieter is one of the longest hitters in the field at just 20.' },
+
+  { lot:34,  members:['Dustin Johnson','Tom McKibbin','Harry Hall'],             amateur:[],
+    note:'Johnson is the 2020 champion — power game still works at Augusta on a good week. McKibbin is a promising 22-year-old Northern Irish talent. Hall adds PGA Tour depth.' },
+
+  { lot:35,  members:['Nicolai Hojgaard','Rasmus Hojgaard','Max Greyserman'],   amateur:[],
+    note:'Danish twins both qualifying via OWGR — Nicolai and Rasmus bring sibling chemistry and DP World Tour form. Greyserman adds PGA Tour depth.' },
+
+  { lot:36,  members:['Patrick Cantlay','Danny Willett','Naoyuki Kataoka'],      amateur:[],
+    note:'Willett is the 2016 champion with deep Augusta DNA. Cantlay is a former FedEx Cup champion. Kataoka is the Japan Open champion making his Augusta debut.' },
+
+  { lot:37,  members:['Carlos Ortiz','Charl Schwartzel','Michael Kim'],          amateur:[],
+    note:'Schwartzel closed birdie-birdie-birdie-birdie to win in 2011. Ortiz is an experienced LIV player. Kim adds PGA Tour depth.' },
+
+  { lot:38,  members:['Maverick McNealy','Alex Noren','Brian Campbell'],         amateur:[],
+    note:'McNealy brings Stanford-level course management. Noren is a DP World Tour veteran with multiple major appearances. Campbell had two Tour wins in 2025 — surprise value.' },
+
+  { lot:39,  members:['Bubba Watson','Kurt Kitayama','Johnny Keefer'],           amateur:[],
+    note:'Watson is a two-time champion (2012, 2014) — power and creativity are Augusta legends. Kitayama is a Tour winner making his debut. Keefer was T3 at Houston.' },
+
+  { lot:40,  members:['Fred Couples','Matt McCarty','Aaron Rai'],                amateur:[],
+    note:'Couples is the 1992 champion and Augusta\'s most beloved figure. McCarty provides PGA Tour upside. Rai is a DP World Tour qualifier adding international depth.' },
+
+  { lot:41,  members:['Angel Cabrera','Rasmus Neergaard-Petersen','Ryan Gerard'],amateur:[],
+    note:'Cabrera is the 2009 champion with real Augusta history. Neergaard-Petersen is the Australian Open champion. Gerard adds PGA Tour depth.' },
+
+  { lot:42,  members:['Vijay Singh','Mike Weir','Andrew Novak'],                 amateur:[],
+    note:'Two past champions — Singh (2000) and Weir (2003) — with Novak providing live contender upside. Deep Augusta pedigree plus current-form potential.' },
+
+  { lot:43,  members:['Zach Johnson','Davis Riley','Haotong Li'],                amateur:[],
+    note:'Johnson is a two-time champion (2007, 2015). Riley is a consistent PGA Tour iron player. Li brings international major experience.' },
+
+  { lot:44,  members:['Jose Maria Olazabal','Michael Brennan','Jake Knapp'],     amateur:[],
+    note:'Olazabal is a two-time champion (1994, 1999) and a living Augusta legend. Brennan is a PGA Tour rookie with a win on his card. Knapp adds PGA Tour upside.' },
 ];
 
 // Helper: given a player name, find which group lot they belong to
