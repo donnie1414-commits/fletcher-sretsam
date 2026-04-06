@@ -588,40 +588,63 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
 
 /* Mobile — stack vertically, allow scroll */
 @media(max-width:768px) {
+  /* Tab container — scrollable on mobile */
   #tab-onblock { height: auto; overflow: visible; }
   #tab-onblock.active { display: block !important; }
-  .onblock-viewport { height: auto; overflow: visible; }
+  .onblock-viewport { height: auto; overflow: visible; display: flex; flex-direction: column; }
+
+  /* Progress bar — compact */
+  .onblock-progress { padding: 8px 12px; gap: 8px; flex-wrap: nowrap; }
+  .onblock-progress-info { flex-direction: column; gap: 4px; }
+  .onblock-progress-label { font-size: 11px; white-space: normal; }
+  .onblock-progress-text { font-size: 11px; margin-top: 0; }
+  .onblock-nav-btns { display: none; } /* hide Full Auction button on mobile, saves space */
+
+  /* Body — column, but main (hero) comes FIRST via order */
   .onblock-body { flex-direction: column; overflow: visible; }
-  .onblock-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
-  .onblock-main { padding: 14px 12px; overflow: visible; }
-  .hero-card { flex: none; }
-  .hero-header { padding: 20px 18px 24px; }
-  .hero-lot-label { font-size: 11px; }
-  .hero-odds { font-size: 22px; }
-  .hero-winpct { font-size: 12px; }
-  .hero-type-pill { font-size: 11px; padding: 3px 10px; }
-  .hero-name { font-size: 24px; }
-  .hero-member { font-size: 14px; }
-  .hero-body { overflow: visible; }
-  .hero-intel-section { padding: 18px 18px 14px; flex: none; overflow: visible; }
-  .hero-bid-section { padding: 12px 18px 16px; }
-  .hero-intel-grid { grid-template-columns: 1fr; }
-  .hero-intel-key { font-size: 11px; }
-  .hero-intel-val { font-size: 15px; }
-  .hero-note { font-size: 14px; padding: 12px 14px; }
-  .sold-card { flex: none; border-radius: 16px; }
-  .sold-card-inner { padding: 28px 18px 24px; }
-  .sold-badge { font-size: 14px; padding: 7px 20px; }
-  .sold-lot-label { font-size: 12px; }
-  .sold-player-name { font-size: 24px; }
-  .sold-members { font-size: 14px; }
+  .onblock-main { order: 1; padding: 10px 10px 0; overflow: visible; }
+  .onblock-sidebar { order: 2; width: 100%; border-right: none; border-top: 1px solid var(--border); border-bottom: none; }
+
+  /* Sidebar — compact horizontal scroll of queue items */
+  .onblock-sidebar-title { padding: 8px 14px; font-size: 10px; }
+  .onblock-queue { display: flex; overflow-x: auto; padding: 0; scrollbar-width: none; }
+  .onblock-queue::-webkit-scrollbar { display: none; }
+  .onblock-queue-item { min-width: 140px; max-width: 160px; border-bottom: none; border-right: 1px solid var(--border); padding: 10px 12px; flex-shrink: 0; }
+  .onblock-queue-item:last-child { border-right: none; }
+  .onblock-queue-item.next-up { border-left: 3px solid var(--gold); }
+  .onblock-queue-num { font-size: 9px; }
+  .onblock-queue-name { font-size: 12px; white-space: normal; }
+  .onblock-queue-meta { font-size: 10px; }
+  .onblock-queue-odds { font-size: 10px; }
+
+  /* Hero card — no flex stretch, scrollable content */
+  .hero-card { flex: none; min-height: 0; }
+  .hero-header { padding: 16px 14px 18px; }
+  .hero-lot-label { font-size: 10px; }
+  .hero-odds { font-size: 20px; }
+  .hero-winpct { font-size: 11px; }
+  .hero-type-pill { font-size: 10px; padding: 2px 8px; margin-bottom: 6px; }
+  .hero-name { font-size: 22px; }
+  .hero-member { font-size: 13px; }
+  .hero-body { overflow: visible; display: block; }
+  .hero-intel-section { padding: 14px 14px 10px; flex: none; overflow: visible; }
+  .hero-bid-section { padding: 10px 14px 14px; }
+  .hero-intel-grid { grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  .hero-intel-key { font-size: 10px; }
+  .hero-intel-val { font-size: 13px; }
+  .hero-note { font-size: 13px; padding: 10px 12px; margin-top: 14px; }
+
+  /* Sold card */
+  .sold-card { flex: none; border-radius: 14px; display: block; }
+  .sold-card-inner { padding: 24px 14px 20px; }
+  .sold-badge { font-size: 13px; padding: 6px 18px; }
+  .sold-lot-label { font-size: 11px; }
+  .sold-player-name { font-size: 22px; }
+  .sold-members { font-size: 13px; }
   .sold-meta { max-width: 100%; }
-  .sold-meta-val { font-size: 22px; }
-  .sold-meta-label { font-size: 11px; }
-  .sold-countdown { font-size: 14px; }
-  .onblock-progress { padding: 10px 12px; gap: 10px; }
-  .onblock-progress-label { font-size: 11px; }
-  .onblock-progress-text { font-size: 12px; }
+  .sold-meta-val { font-size: 20px; }
+  .sold-meta-label { font-size: 10px; }
+  .sold-countdown { font-size: 13px; margin-top: 16px; }
 }
 
 /* Admin bid entry panel — pinned at bottom of hero card */
