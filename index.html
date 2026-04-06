@@ -1331,7 +1331,10 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
           <input type="text" id="auction-search" placeholder="🔍 Search players or groups…"
             style="flex:1;min-width:200px;max-width:360px"
             oninput="renderAuction()">
-          ${currentRole === 'admin' ? `<button class="btn btn-outline btn-sm" onclick="snapshotLeaderboard()" title="Save current leaderboard to Google Sheet">📸 Snapshot Scores</button>` : ''}
+          <button class="btn btn-outline btn-sm admin-only" id="snapshot-btn"
+            onclick="snapshotLeaderboard()"
+            title="Save current leaderboard to Google Sheet"
+            style="display:none">📸 Snapshot Scores</button>
         </div>
         <div class="tbl-wrap">
           <table>
@@ -1938,6 +1941,7 @@ function initApp(role) {
     document.getElementById('auction-admin-bar').style.display = '';
     document.getElementById('buyer-card').style.display = '';
     document.getElementById('edit-rules-btn').style.display = '';
+    document.getElementById('snapshot-btn').style.display = '';
     // Show current backend URL (hardcoded takes priority)
     const urlToShow = HARDCODED_BACKEND_URL || localStorage.getItem(STORAGE_BACKEND_KEY) || '';
     if (urlToShow) document.getElementById('backend-url').value = urlToShow;
