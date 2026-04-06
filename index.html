@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Masters Calcutta HQ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -250,6 +250,34 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
 }
 .onblock-progress-text { font-size: 13px; font-weight: 600; color: var(--green); white-space: nowrap; }
 .onblock-nav-btns { display: flex; gap: 8px; flex-shrink: 0; }
+
+/* Pot display in progress bar — desktop only */
+.onblock-pot-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0 20px;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+.onblock-pot-icon { font-size: 28px; line-height: 1; }
+.onblock-pot-amount {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--green);
+  line-height: 1.1;
+  margin-top: 2px;
+}
+.onblock-pot-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-light);
+  margin-top: 2px;
+}
 
 /* Two-column body */
 .onblock-body {
@@ -598,7 +626,8 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
   .onblock-progress-info { flex-direction: column; gap: 4px; }
   .onblock-progress-label { font-size: 11px; white-space: normal; }
   .onblock-progress-text { font-size: 11px; margin-top: 0; }
-  .onblock-nav-btns { display: none; } /* hide Full Auction button on mobile, saves space */
+  .onblock-nav-btns { display: none; }
+  .onblock-pot-display { display: none; }
 
   /* Body — column, but main (hero) comes FIRST via order */
   .onblock-body { flex-direction: column; overflow: visible; }
@@ -1254,7 +1283,7 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
   </header>
 
   <nav>
-    <div class="nav-tab active"   data-tab="auction"    onclick="switchTab('auction')">Auction</div>
+    <div class="nav-tab active"   data-tab="auction"    onclick="switchTab('auction')">Players</div>
     <div class="nav-tab"          data-tab="dashboard"  onclick="switchTab('dashboard')">📊 Dashboard</div>
     <div class="nav-tab"          data-tab="intel"      onclick="switchTab('intel')">Player Intel</div>
     <div class="nav-tab"          data-tab="mylots"     onclick="switchTab('mylots')">My Lots</div>
@@ -1302,7 +1331,7 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
           <input type="text" id="auction-search" placeholder="🔍 Search players or groups…"
             style="flex:1;min-width:200px;max-width:360px"
             oninput="renderAuction()">
-          <button class="btn btn-outline btn-sm" onclick="snapshotLeaderboard()" title="Save current leaderboard to Google Sheet">📸 Snapshot Scores</button>
+          ${currentRole === 'admin' ? `<button class="btn btn-outline btn-sm" onclick="snapshotLeaderboard()" title="Save current leaderboard to Google Sheet">📸 Snapshot Scores</button>` : ''}
         </div>
         <div class="tbl-wrap">
           <table>
@@ -1676,9 +1705,9 @@ const PLAYER_INTEL = [
   { name:'Robert MacIntyre',    type:'individual', amateur:false, contender:false,
     odds:'+3300', owgr:14, age:28,
     augusta:'T29 (2024)',
-    form:'2025 Open Championship runner-up; strong 2026 season',
+    form:'Runner-up Valero Texas Open (led 54 holes); 2025 Open Championship runner-up',
     sgTotal:'Strong', sgApproach:'Good', sgPutting:'Good',
-    note:'Scottish left-hander with a game built for Augusta. Major pedigree developing quickly.' },
+    note:'Led the Valero entering Sunday before Spaun overtook him. Scottish left-hander with a game built for Augusta. Major pedigree developing fast.' },
 
   { name:'Min Woo Lee',         type:'individual', amateur:false, contender:false,
     odds:'+3500', owgr:16, age:26,
@@ -1687,14 +1716,14 @@ const PLAYER_INTEL = [
     sgTotal:'Strong', sgApproach:'Good', sgPutting:'Good',
     note:'Top-10 last year. Electric game — Augusta suits attacking left-handers.' },
 
-  { name:'Jason Day',           type:'individual', amateur:false, contender:false,
+  { name:'Jason Day',           type:'group', amateur:false, contender:false,
     odds:'+6500', owgr:41, age:38,
     augusta:'T2 (2011)',
     form:'Top-10 last year; veteran competing well',
     sgTotal:'Solid', sgApproach:'Good', sgPutting:'Strong short game',
     note:'Best finish was runner-up in 2011. Age 38 and running out of chances — short game is still elite.' },
 
-  { name:'Corey Conners',       type:'individual', amateur:false, contender:false,
+  { name:'Corey Conners',       type:'group', amateur:false, contender:false,
     odds:'+6500', owgr:43, age:34,
     augusta:'T6 (2022)',
     form:'Consistent; shaky putter',
@@ -1729,7 +1758,7 @@ const PLAYER_INTEL = [
     sgTotal:'Good', sgApproach:'Good', sgPutting:'Solid',
     note:'2019 Open champion. Augusta suits his patience and course management. Legitimate dark horse.' },
 
-  { name:'Adam Scott',          type:'individual', amateur:false, contender:false,
+  { name:'Adam Scott',          type:'group', amateur:false, contender:false,
     odds:'+6500', owgr:35, age:45,
     augusta:'Champion (2013)',
     form:'Making all cuts in 2026; consistent top-40 finishes',
@@ -1743,35 +1772,35 @@ const PLAYER_INTEL = [
     sgTotal:'Volatile', sgApproach:'Good days', sgPutting:'Streaky',
     note:'Top-10 at Augusta last year but experts are actively fading him. High variance pick.' },
 
-  { name:'Patrick Cantlay',     type:'individual', amateur:false, contender:false,
+  { name:'Patrick Cantlay',     type:'group', amateur:false, contender:false,
     odds:'+5500', owgr:34, age:34,
     augusta:'T9 (2019)',
     form:'Winless since 2022; sliding rankings',
     sgTotal:'Solid TTG', sgApproach:'Good', sgPutting:'Elite historically',
     note:'Once top-10 in the world for four straight years. Still consistent but hasn\'t contended in ages.' },
 
-  { name:'Justin Thomas',       type:'individual', amateur:false, contender:false,
+  { name:'Justin Thomas',       type:'group', amateur:false, contender:false,
     odds:'+6500', owgr:36, age:31,
     augusta:'T12 (2023)',
     form:'Sporadic; talented but inconsistent in 2026',
     sgTotal:'Variable', sgApproach:'Elite on form', sgPutting:'Good',
     note:'Former world No. 1 looking to rediscover his best. Always dangerous at Augusta when clicking.' },
 
-  { name:'Sungjae Im',          type:'individual', amateur:false, contender:false,
+  { name:'Sungjae Im',          type:'group', amateur:false, contender:false,
     odds:'+7000', owgr:37, age:26,
     augusta:'Runner-up (2020)',
     form:'Consistent Tour presence in 2026',
     sgTotal:'Good', sgApproach:'Good', sgPutting:'Good',
     note:'Runner-up at the pandemic Masters in 2020. Quietly consistent performer.' },
 
-  { name:'Jacob Bridgeman',     type:'individual', amateur:false, contender:false,
+  { name:'Jacob Bridgeman',     type:'group', amateur:false, contender:false,
     odds:'+7500', owgr:17, age:26,
     augusta:'First appearance',
     form:'Genesis Invitational winner; #1 Tour in SG: Putting',
     sgTotal:'Strong', sgApproach:'Steady', sgPutting:'#1 on Tour',
     note:'Tour\'s best putter in his first Masters. Putting doesn\'t always decide Augusta but his form is real.' },
 
-  { name:'Akshay Bhatia',       type:'individual', amateur:false, contender:false,
+  { name:'Akshay Bhatia',       type:'group', amateur:false, contender:false,
     odds:'+6000', owgr:20, age:24,
     augusta:'T35 (2024)',
     form:'Won Arnold Palmer Invitational at Bay Hill 2026',
@@ -1785,63 +1814,63 @@ const PLAYER_INTEL = [
     sgTotal:'Good', sgApproach:'Good', sgPutting:'Good',
     note:'Danish talent on the rise. First Masters debut — excitement could work either way.' },
 
-  { name:'Sepp Straka',         type:'individual', amateur:false, contender:false,
+  { name:'Sepp Straka',         type:'group', amateur:false, contender:false,
     odds:'+6000', owgr:29, age:31,
     augusta:'T18 (2024)',
     form:'Two Tour wins in 2025 inc. Truist Championship',
     sgTotal:'Consistent', sgApproach:'Good', sgPutting:'Solid',
     note:'Five straight Augusta starts building course familiarity. Two wins last year.' },
 
-  { name:'Sam Burns',           type:'individual', amateur:false, contender:false,
+  { name:'Sam Burns',           type:'group', amateur:false, contender:false,
     odds:'+6500', owgr:33, age:29,
     augusta:'T29 (2023)',
     form:'Elite putting; underwhelming results in 2026',
     sgTotal:'Average', sgApproach:'Average', sgPutting:'Elite',
     note:'Great putter but putting is the least rewarded skill at Augusta. Results here haven\'t matched his ability.' },
 
-  { name:'Daniel Berger',       type:'individual', amateur:false, contender:false,
+  { name:'Daniel Berger',       type:'group', amateur:false, contender:false,
     odds:'+8000', owgr:38, age:33,
     augusta:'T10 (2016)',
     form:'Finger injury recovery; runner-up Arnold Palmer 2026',
     sgTotal:'Solid', sgApproach:'#6 Tour', sgPutting:'Average',
     note:'Best finish was his debut top-10 in 2016. Elite approach play (6th on Tour) bodes well.' },
 
-  { name:'Ben Griffin',         type:'individual', amateur:false, contender:false,
+  { name:'Ben Griffin',         type:'group', amateur:false, contender:false,
     odds:'+5500', owgr:16, age:29,
     augusta:'First appearance',
     form:'Three wins in 2025; slow start to 2026',
     sgTotal:'Down from 2025', sgApproach:'102nd Tour 2026', sgPutting:'Variable',
     note:'Three wins last year but ball-striking has dropped sharply in 2026. Form a significant concern.' },
 
-  { name:'Gary Woodland',       type:'individual', amateur:false, contender:false,
+  { name:'Gary Woodland',       type:'group', amateur:false, contender:false,
     odds:'+7500', owgr:55, age:41,
     augusta:'T12 (2019)',
     form:'Won Houston Open — first win since brain surgery in 2023',
     sgTotal:'Good', sgApproach:'Good', sgPutting:'Good',
     note:'The feel-good story of the week. Won in Houston to earn his spot back at Augusta.' },
 
-  { name:'Harris English',      type:'individual', amateur:false, contender:false,
+  { name:'Harris English',      type:'group', amateur:false, contender:false,
     odds:'+10000', owgr:21, age:36,
     augusta:'T12 (2025)',
-    form:'Runner-up at both The Open and PGA Championship in 2025',
+    form:'Runner-up at both The Open and PGA Championship in 2025; Spaun WON Valero Texas Open',
     sgTotal:'Solid', sgApproach:'Variable', sgPutting:'Top 20 SG',
-    note:'Georgia native with growing Augusta confidence. Runner-up at two majors last year is serious form.' },
+    note:'J.J. Spaun just won the Valero Texas Open to punch his Masters ticket — hot entering Augusta. English is a Georgia native with growing confidence here. Two major runner-ups last year.' },
 
-  { name:'Dustin Johnson',      type:'individual', amateur:false, contender:false,
+  { name:'Dustin Johnson',      type:'group', amateur:false, contender:false,
     odds:'+12000', owgr:42, age:41,
     augusta:'Champion (2020)',
     form:'LIV; limited top-level competition data available',
     sgTotal:'Still powerful', sgApproach:'Good', sgPutting:'Variable',
     note:'2020 champion and 2019 runner-up. LIV limits available data. Power game still fits Augusta.' },
 
-  { name:'Cameron Smith',       type:'individual', amateur:false, contender:false,
+  { name:'Cameron Smith',       type:'group', amateur:false, contender:false,
     odds:'+8000', owgr:45, age:31,
     augusta:'Runner-up (2022)',
     form:'LIV; two top-3s at Augusta in career',
     sgTotal:'Good', sgApproach:'Good', sgPutting:'Elite',
     note:'Best putter in LIV Golf. Two top-3 finishes at Augusta. Putting + short game is the Augusta formula.' },
 
-  { name:'Si Woo Kim',          type:'individual', amateur:false, contender:false,
+  { name:'Si Woo Kim',          type:'group', amateur:false, contender:false,
     odds:'+4500', owgr:32, age:29,
     augusta:'T16 (2024)',
     form:'Solid Tour presence; consistent in 2026',
@@ -1849,7 +1878,7 @@ const PLAYER_INTEL = [
     note:'Quietly consistent at Augusta. Solid across the board without an obvious weakness.' },
 
   // ── AMATEURS ────────────────────────────────────────────────────
-  { name:'Ethan Fang',          type:'amateur', amateur:true, contender:false,
+  { name:'Ethan Fang',          type:'group', amateur:true, contender:false,
     odds:'N/A', owgr:'N/A', age:20,
     augusta:'First appearance',
     form:'Won 2025 Amateur Championship at Royal St. George\'s — first American since 2007',
@@ -3038,6 +3067,8 @@ function renderOnBlock() {
               : allGroupsDone ? 'Phase 2 — Individual Players'
               : 'Phase 1 — Group Lots';
 
+  const pot = pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
+  const potDisplay = pot > 0 ? '$' + pot.toLocaleString() : 'TBD';
   const progressHtml = `
     <div class="onblock-progress">
       <div class="onblock-progress-info">
@@ -3046,6 +3077,11 @@ function renderOnBlock() {
           <div class="onblock-progress-bar" style="width:${pct}%"></div>
         </div>
         <div class="onblock-progress-text">${pct}% &nbsp;·&nbsp; ${totalCount - soldCount} remaining</div>
+      </div>
+      <div class="onblock-pot-display">
+        <div class="onblock-pot-icon">💰</div>
+        <div class="onblock-pot-amount">${potDisplay}</div>
+        <div class="onblock-pot-label">Pool Pot</div>
       </div>
       <div class="onblock-nav-btns">
         <button class="btn btn-outline btn-sm" onclick="switchTab('auction')">Full Auction →</button>
@@ -3243,6 +3279,8 @@ async function sellLotFromBlock(lotNum) {
               : groupsDone   ? 'Phase 2 — Individual Players'
               : 'Phase 1 — Group Lots';
 
+  const pot2 = pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
+  const potDisplay2 = pot2 > 0 ? '$' + pot2.toLocaleString() : 'TBD';
   const progressHtml = `
     <div class="onblock-progress">
       <div class="onblock-progress-info">
@@ -3251,6 +3289,11 @@ async function sellLotFromBlock(lotNum) {
           <div class="onblock-progress-bar" style="width:${pct}%"></div>
         </div>
         <div class="onblock-progress-text">${pct}% complete &nbsp;·&nbsp; ${totalCount - soldCount} remaining</div>
+      </div>
+      <div class="onblock-pot-display">
+        <div class="onblock-pot-icon">💰</div>
+        <div class="onblock-pot-amount">${potDisplay2}</div>
+        <div class="onblock-pot-label">Pool Pot</div>
       </div>
       <div class="onblock-nav-btns">
         <button class="btn btn-outline btn-sm" onclick="switchTab('auction')">Full Auction →</button>
