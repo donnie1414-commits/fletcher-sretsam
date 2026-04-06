@@ -129,6 +129,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green)}
 .payout-hero-name{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-top:3px}
 .payout-hero-score{font-size:30px;font-weight:700;color:var(--gold-light);margin-top:5px;line-height:1}
 .payout-hero-meta{font-size:12.5px;opacity:.78;margin-top:7px}
+.payout-hero-payout{font-size:14px;font-weight:600;margin-top:10px;color:var(--gold-light)}
 
 /* AUCTION */
 .standings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:10px;margin-top:4px}
@@ -193,31 +194,175 @@ textarea.rules-editor{width:100%;min-height:340px;resize:vertical;font-size:13.5
 @keyframes spin{to{transform:rotate(360deg)}}
 code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
 
-/* ── ON THE BLOCK ─────────────────────────────────────────────── */
+/* ── ON THE BLOCK — full viewport, no scroll ──────────────────── */
 
-/* Hero card — large current lot */
+/* Make the tab itself fill the screen */
+#tab-onblock {
+  display: none; /* overridden when active */
+  height: calc(100vh - 56px - 45px); /* minus header and nav */
+  overflow: hidden;
+}
+#tab-onblock.active {
+  display: flex !important;
+  flex-direction: column;
+}
+.onblock-viewport {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Progress bar — compact, always at top */
+.onblock-progress {
+  background: white;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.onblock-progress-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 16px; }
+.onblock-progress-label { font-size: 13px; color: var(--text-light); white-space: nowrap; }
+.onblock-progress-bar-wrap {
+  flex: 1;
+  background: var(--off-white);
+  border-radius: 20px;
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  min-width: 80px;
+}
+.onblock-progress-bar {
+  height: 100%;
+  border-radius: 20px;
+  background: linear-gradient(90deg, var(--green) 0%, var(--green-light) 100%);
+  transition: width 0.5s ease;
+}
+.onblock-progress-text { font-size: 13px; font-weight: 600; color: var(--green); white-space: nowrap; }
+.onblock-nav-btns { display: flex; gap: 8px; flex-shrink: 0; }
+
+/* Two-column body */
+.onblock-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  gap: 0;
+}
+
+/* Left sidebar — queue of next 5 lots */
+.onblock-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--off-white);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.onblock-sidebar-title {
+  padding: 14px 18px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-light);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.onblock-queue {
+  flex: 1;
+  overflow-y: auto;
+}
+.onblock-queue-item {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  cursor: default;
+  transition: background 0.12s;
+}
+.onblock-queue-item:last-child { border-bottom: none; }
+.onblock-queue-item.next-up {
+  background: white;
+  border-left: 3px solid var(--gold);
+}
+.onblock-queue-num {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+.onblock-queue-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--green);
+  line-height: 1.3;
+}
+.onblock-queue-item.next-up .onblock-queue-name { color: var(--green); }
+.onblock-queue-meta {
+  font-size: 12px;
+  color: var(--text-light);
+  margin-top: 3px;
+}
+.onblock-queue-odds {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold);
+  background: var(--gold-pale);
+  padding: 1px 7px;
+  border-radius: 8px;
+  margin-top: 4px;
+}
+.onblock-queue-badge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-right: 4px;
+}
+
+/* Main area — hero card */
+.onblock-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Hero card fills main area */
 .hero-card {
   background: white;
-  border-radius: 16px;
-  border: 2px solid var(--gold);
-  box-shadow: 0 6px 32px rgba(201,168,76,0.18);
+  border-radius: 20px;
+  border: 3px solid var(--gold);
+  box-shadow: 0 8px 48px rgba(201,168,76,0.22);
   overflow: hidden;
-  margin-bottom: 14px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 .hero-header {
   background: linear-gradient(140deg, var(--green) 0%, #1f5c38 50%, var(--green-mid) 100%);
   color: white;
-  padding: 24px 28px 28px;
+  padding: 36px 44px 40px;
+  flex-shrink: 0;
 }
 .hero-header-top {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 16px;
-  gap: 12px;
+  margin-bottom: 22px;
+  gap: 16px;
 }
 .hero-lot-label {
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.14em;
@@ -225,119 +370,255 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
 }
 .hero-odds-wrap { text-align: right; flex-shrink: 0; }
 .hero-odds {
-  font-size: 22px;
+  font-size: 36px;
   font-weight: 800;
   color: var(--gold-light);
   line-height: 1;
 }
 .hero-winpct {
-  font-size: 11px;
-  opacity: 0.62;
-  margin-top: 4px;
+  font-size: 16px;
+  opacity: 0.65;
+  margin-top: 6px;
 }
-.hero-identity {
-  display: flex;
-  align-items: flex-start;
-  gap: 0;
-}
+.hero-identity { display: flex; align-items: flex-start; gap: 0; }
 .hero-name-block { flex: 1; min-width: 0; }
 .hero-type-pill {
   display: inline-block;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  padding: 2px 8px;
-  border-radius: 10px;
+  padding: 4px 14px;
+  border-radius: 12px;
   background: rgba(255,255,255,0.18);
   color: white;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 .hero-name {
   font-family: 'Playfair Display', serif;
-  font-size: 28px;
+  font-size: 52px;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.15;
   color: white;
 }
-@media(max-width:600px){ .hero-name { font-size: 20px; } }
 .hero-members {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  margin-top: 8px;
+  gap: 6px;
+  margin-top: 14px;
 }
 .hero-member {
-  font-size: 14px;
+  font-size: 22px;
   font-weight: 500;
-  color: rgba(255,255,255,0.88);
+  color: rgba(255,255,255,0.90);
   line-height: 1.4;
 }
 
-/* Body */
+/* Body — split: scrollable intel on top, bid panel pinned at bottom */
 .hero-body {
-  padding: 24px 28px 24px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.hero-intel-section {
+  padding: 28px 44px 20px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+.hero-bid-section {
+  flex-shrink: 0;
+  border-top: 2px solid var(--border);
+  background: white;
+  padding: 16px 44px 18px;
 }
 .hero-sold-banner {
   background: var(--green-pale);
   border: 1px solid var(--green-light);
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-size: 15px;
+  border-radius: 10px;
+  padding: 16px 20px;
+  font-size: 20px;
   color: var(--green);
   font-weight: 600;
-  margin-bottom: 20px;
+  margin-bottom: 28px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 .hero-intel-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0 24px;
+  gap: 0 40px;
   margin-bottom: 4px;
 }
-@media(max-width:600px){ .hero-intel-grid { grid-template-columns: 1fr; } }
 .hero-intel-item {
-  padding: 10px 0;
+  padding: 14px 0;
   border-bottom: 1px solid #f0ece6;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 5px;
 }
 .hero-intel-key {
-  font-size: 10.5px;
+  font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.09em;
   color: var(--text-light);
 }
 .hero-intel-val {
-  font-size: 14px;
+  font-size: 20px;
   font-weight: 500;
   color: var(--text);
   line-height: 1.4;
 }
 .hero-note {
-  font-size: 14px;
+  font-size: 20px;
   color: var(--text-mid);
   font-style: italic;
   line-height: 1.7;
-  margin-top: 18px;
-  padding: 14px 16px;
+  margin-top: 24px;
+  padding: 20px 24px;
   background: var(--off-white);
-  border-radius: 8px;
-  border-left: 3px solid var(--gold);
+  border-radius: 10px;
+  border-left: 4px solid var(--gold);
 }
 
-/* Admin bid entry panel inside the hero card */
-.hero-bid-panel {
-  margin-top: 20px;
-  padding-top: 18px;
-  border-top: 2px solid var(--border);
+/* Sold card — fullscreen version */
+.sold-card {
+  border-radius: 20px;
+  overflow: hidden;
+  flex: 1;
+  background: linear-gradient(140deg, #1a3a1a 0%, #2d6a2d 50%, #1a4a1a 100%);
+  border: 3px solid #4caf50;
+  box-shadow: 0 10px 56px rgba(76,175,80,0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+.sold-card-inner {
+  padding: 56px 48px 48px;
+  text-align: center;
+  color: white;
+  width: 100%;
+}
+.sold-badge {
+  display: inline-block;
+  background: #4caf50;
+  color: white;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  padding: 10px 32px;
+  border-radius: 28px;
+  margin-bottom: 24px;
+}
+.sold-lot-label {
+  font-size: 17px;
+  opacity: 0.65;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 14px;
+}
+.sold-player-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 52px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 10px;
+}
+.sold-members {
+  margin: 10px 0 20px;
+  opacity: 0.88;
+  font-size: 22px;
+  line-height: 1.6;
+}
+.sold-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 28px auto 0;
+  background: rgba(255,255,255,0.1);
+  border-radius: 16px;
+  max-width: 500px;
+  overflow: hidden;
+}
+.sold-meta-item { flex: 1; padding: 20px 28px; }
+.sold-meta-label {
+  font-size: 14px;
+  opacity: 0.65;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+}
+.sold-meta-val {
+  font-family: 'Playfair Display', serif;
+  font-size: 36px;
+  font-weight: 700;
+  color: #a5d6a7;
+}
+.sold-divider { width: 1px; height: 64px; background: rgba(255,255,255,0.2); flex-shrink: 0; }
+.sold-countdown { margin-top: 28px; font-size: 18px; opacity: 0.55; letter-spacing: 0.06em; }
+
+/* type pill reuse */
+.onblock-type-pill {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 4px 12px;
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+/* nav highlight */
+.nav-tab[data-tab="onblock"] { color: var(--gold); font-weight: 600; }
+.nav-tab[data-tab="onblock"].active { color: var(--green); border-bottom-color: var(--gold); }
+
+/* Mobile — stack vertically, allow scroll */
+@media(max-width:768px) {
+  #tab-onblock { height: auto; overflow: visible; }
+  #tab-onblock.active { display: block !important; }
+  .onblock-viewport { height: auto; overflow: visible; }
+  .onblock-body { flex-direction: column; overflow: visible; }
+  .onblock-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+  .onblock-main { padding: 14px 12px; overflow: visible; }
+  .hero-card { flex: none; }
+  .hero-header { padding: 20px 18px 24px; }
+  .hero-lot-label { font-size: 11px; }
+  .hero-odds { font-size: 22px; }
+  .hero-winpct { font-size: 12px; }
+  .hero-type-pill { font-size: 11px; padding: 3px 10px; }
+  .hero-name { font-size: 24px; }
+  .hero-member { font-size: 14px; }
+  .hero-body { overflow: visible; }
+  .hero-intel-section { padding: 18px 18px 14px; flex: none; overflow: visible; }
+  .hero-bid-section { padding: 12px 18px 16px; }
+  .hero-intel-grid { grid-template-columns: 1fr; }
+  .hero-intel-key { font-size: 11px; }
+  .hero-intel-val { font-size: 15px; }
+  .hero-note { font-size: 14px; padding: 12px 14px; }
+  .sold-card { flex: none; border-radius: 16px; }
+  .sold-card-inner { padding: 28px 18px 24px; }
+  .sold-badge { font-size: 14px; padding: 7px 20px; }
+  .sold-lot-label { font-size: 12px; }
+  .sold-player-name { font-size: 24px; }
+  .sold-members { font-size: 14px; }
+  .sold-meta { max-width: 100%; }
+  .sold-meta-val { font-size: 22px; }
+  .sold-meta-label { font-size: 11px; }
+  .sold-countdown { font-size: 14px; }
+  .onblock-progress { padding: 10px 12px; gap: 10px; }
+  .onblock-progress-label { font-size: 11px; }
+  .onblock-progress-text { font-size: 12px; }
+}
+
+/* Admin bid entry panel — pinned at bottom of hero card */
 .hero-bid-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -396,114 +677,13 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
   color: var(--text-light);
 }
 
-/* Next strip — compact */
-.next-strip {
-  background: white;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-  margin-bottom: 16px;
-}
-.next-strip-label {
-  background: var(--off-white);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--text-light);
-  padding: 8px 16px;
-  border-bottom: 1px solid var(--border);
-}
-.next-strip-body {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  gap: 12px;
-}
-.next-strip-left { flex: 1; min-width: 0; }
-.next-strip-name {
-  font-family: 'Playfair Display', serif;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--green);
-  margin-top: 4px;
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-@media(max-width:600px){ .next-strip-name { font-size: 14px; white-space: normal; } }
-.next-strip-right { text-align: right; flex-shrink: 0; }
-.next-strip-odds {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--gold);
-}
-.next-strip-pct {
-  font-size: 11px;
-  color: var(--text-light);
-  margin-top: 3px;
-}
-
-/* Progress bar */
-.onblock-progress {
-  background: white;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  padding: 16px 20px;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-.onblock-progress-info { flex: 1; min-width: 180px; }
-.onblock-progress-label { font-size: 12px; color: var(--text-light); margin-bottom: 6px; }
-.onblock-progress-bar-wrap {
-  background: var(--off-white);
-  border-radius: 20px;
-  height: 8px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-}
-.onblock-progress-bar {
-  height: 100%;
-  border-radius: 20px;
-  background: linear-gradient(90deg, var(--green) 0%, var(--green-light) 100%);
-  transition: width 0.5s ease;
-}
-.onblock-progress-text { font-size: 13px; font-weight: 600; color: var(--green); margin-top: 6px; }
-.onblock-nav-btns { display: flex; gap: 8px; flex-shrink: 0; }
-
-/* type pill reuse */
-.onblock-type-pill {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 2px 8px;
-  border-radius: 10px;
-  margin-bottom: 6px;
-}
 
 /* nav highlight */
 .nav-tab[data-tab="onblock"] { color: var(--gold); font-weight: 600; }
 .nav-tab[data-tab="onblock"].active { color: var(--green); border-bottom-color: var(--gold); }
 
-/* Sold state card */
-.sold-card {
-  border-radius: 16px;
-  overflow: hidden;
-  margin-bottom: 14px;
-  background: linear-gradient(140deg, #1a3a1a 0%, #2d6a2d 50%, #1a4a1a 100%);
-  border: 2px solid #4caf50;
-  box-shadow: 0 8px 40px rgba(76,175,80,0.25);
-}
 .sold-card-inner {
-  padding: 36px 28px 32px;
+  padding: 56px 48px 48px;
   text-align: center;
   color: white;
 }
@@ -511,69 +691,71 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
   display: inline-block;
   background: #4caf50;
   color: white;
-  font-size: 13px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: 0.18em;
-  padding: 6px 20px;
-  border-radius: 20px;
-  margin-bottom: 16px;
+  padding: 10px 32px;
+  border-radius: 28px;
+  margin-bottom: 24px;
 }
 .sold-lot-label {
-  font-size: 12px;
+  font-size: 17px;
   opacity: 0.65;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  margin-bottom: 10px;
+  margin-bottom: 14px;
 }
 .sold-player-name {
   font-family: 'Playfair Display', serif;
-  font-size: 30px;
+  font-size: 52px;
   font-weight: 700;
   line-height: 1.2;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
-@media(max-width:600px){ .sold-player-name { font-size: 22px; } }
+@media(max-width:600px){ .sold-player-name { font-size: 24px; } }
 .sold-members {
-  margin: 8px 0 16px;
-  opacity: 0.85;
+  margin: 10px 0 20px;
+  opacity: 0.88;
+  font-size: 22px;
+  line-height: 1.6;
 }
 .sold-meta {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0;
-  margin: 20px auto 0;
+  margin: 28px auto 0;
   background: rgba(255,255,255,0.1);
-  border-radius: 12px;
-  max-width: 380px;
+  border-radius: 16px;
+  max-width: 500px;
   overflow: hidden;
 }
 .sold-meta-item {
   flex: 1;
-  padding: 14px 20px;
+  padding: 20px 28px;
 }
 .sold-meta-label {
-  font-size: 11px;
+  font-size: 14px;
   opacity: 0.65;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 .sold-meta-val {
   font-family: 'Playfair Display', serif;
-  font-size: 22px;
+  font-size: 36px;
   font-weight: 700;
   color: #a5d6a7;
 }
 .sold-divider {
   width: 1px;
-  height: 48px;
+  height: 64px;
   background: rgba(255,255,255,0.2);
   flex-shrink: 0;
 }
 .sold-countdown {
-  margin-top: 20px;
-  font-size: 13px;
+  margin-top: 28px;
+  font-size: 18px;
   opacity: 0.55;
   letter-spacing: 0.06em;
 }
@@ -929,17 +1111,29 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
   .intel-filter-bar{gap:6px}
   .intel-filter-btn{padding:5px 10px;font-size:11px}
 
-  /* Hero card */
-  .hero-header{padding:18px 16px 20px}
-  .hero-header-top{margin-bottom:10px}
-  .hero-lot-label{font-size:10px}
-  .hero-odds{font-size:18px}
-  .hero-name{font-size:20px}
-  .hero-member{font-size:13px}
-  .hero-body{padding:16px 16px}
+  /* Hero card — scale back down for mobile */
+  .hero-header{padding:20px 18px 24px}
+  .hero-header-top{margin-bottom:12px}
+  .hero-lot-label{font-size:11px}
+  .hero-odds{font-size:22px}
+  .hero-winpct{font-size:12px}
+  .hero-type-pill{font-size:11px;padding:3px 10px}
+  .hero-name{font-size:24px}
+  .hero-member{font-size:14px}
+  .hero-body{padding:18px 18px}
   .hero-intel-grid{grid-template-columns:1fr;gap:0}
-  .hero-intel-val{font-size:13px}
-  .hero-note{font-size:13px;padding:11px 13px}
+  .hero-intel-key{font-size:11px}
+  .hero-intel-val{font-size:15px}
+  .hero-note{font-size:14px;padding:12px 14px}
+  .next-strip-label{font-size:11px;padding:8px 14px}
+  .next-strip-body{padding:12px 14px}
+  .next-strip-name{font-size:15px}
+  .next-strip-odds{font-size:16px}
+  .next-strip-pct{font-size:12px}
+  .onblock-progress{padding:13px 16px}
+  .onblock-progress-label{font-size:12px}
+  .onblock-progress-text{font-size:13px}
+  .onblock-progress-bar-wrap{height:8px}
 
   /* Bid panel */
   .hero-bid-row{gap:8px}
@@ -952,10 +1146,15 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
   .onblock-progress{padding:12px 14px;gap:10px}
 
   /* Sold card */
-  .sold-card-inner{padding:24px 16px 20px}
-  .sold-player-name{font-size:20px}
+  .sold-card-inner{padding:28px 18px 24px}
+  .sold-badge{font-size:14px;padding:7px 20px}
+  .sold-lot-label{font-size:12px}
+  .sold-player-name{font-size:24px}
+  .sold-members{font-size:14px}
   .sold-meta{max-width:100%}
-  .sold-meta-val{font-size:18px}
+  .sold-meta-val{font-size:22px}
+  .sold-meta-label{font-size:11px}
+  .sold-countdown{font-size:14px}
 
   /* My Lots */
   .mylots-summary{padding:14px 16px;gap:12px}
@@ -1030,7 +1229,7 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
     <div class="nav-tab"          data-tab="podium"     onclick="switchTab('podium')">🏆 Podium</div>
     <div class="nav-tab"          data-tab="lowam"      onclick="switchTab('lowam')">Low Am</div>
     <div class="nav-tab"          data-tab="dailylow"   onclick="switchTab('dailylow')">Daily Low</div>
-    <div class="nav-tab"          data-tab="deadlast"   onclick="switchTab('deadlast')">Dead Last</div>
+    <div class="nav-tab"          data-tab="deadlast"   onclick="switchTab('deadlast')">DFL</div>
     <div class="nav-tab"          data-tab="onblock"    onclick="switchTab('onblock')">🔨 On the Block</div>
     <div class="nav-tab"          data-tab="rules"      onclick="switchTab('rules')">Rules</div>
     <div class="nav-tab admin-only" id="admin-nav-tab"
@@ -1141,7 +1340,7 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
 
     <!-- ON THE BLOCK -->
     <div class="tab-panel" id="tab-onblock">
-      <div id="onblock-content"></div>
+      <div id="onblock-content" class="onblock-viewport"></div>
     </div>
 
     <!-- MY LOTS -->
@@ -1269,7 +1468,7 @@ const HARDCODED_BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxiAxngAU
 const ESPN_REFRESH_MS    = 60000;  // 60s — live scores
 const AUCTION_REFRESH_MS = 30000;  // 30s — auction data
 
-const ROUND_LABELS = { r1:'Rd 1 — Thu', r2:'Rd 2 — Fri', r3:'Rd 3 — Sat', r4:'Rd 4 — Sun', today:'Today (Live)' };
+const ROUND_LABELS = { r1:'Rd 1 — Thu', r2:'Rd 2 — Fri', r3:'Rd 3 — Sat', r4:'Rd 4 — Sun' };
 
 /* ═══════════════════════════════════════════
    STATE
@@ -1283,8 +1482,8 @@ let buyers = [];
 let lots   = [];
 let pendingLots = [];
 
-let dailyLowDay  = 'today';
-let deadLastDay  = 'tournament'; // 'tournament' | 'friday' | 'sunday'
+let dailyLowDay  = 'r1';
+let deadLastDay  = 'friday'; // 'friday' | 'sunday'
 let rulesEditing = false;
 let intelFilter  = 'all';
 
@@ -1308,8 +1507,8 @@ let rulesText = `<h3>General</h3>
   <li><strong>3rd Place</strong> — 5% of the pot</li>
   <li><strong>Low Amateur</strong> — 3% of the pot</li>
   <li><strong>Daily Low Round</strong> — 5% per round</li>
-  <li><strong>Dead Last Friday</strong> — 1% of the pot (last place at conclusion of Friday's round)</li>
-  <li><strong>Dead Last Sunday</strong> — 1% of the pot (last place at conclusion of Sunday's round)</li>
+  <li><strong>DFL Friday</strong> — 1% of the pot (last place at conclusion of Friday's round)</li>
+  <li><strong>DFL Sunday</strong> — 1% of the pot (last place at conclusion of Sunday's round)</li>
 </ul>
 <h3>Tiebreaker</h3>
 <ul>
@@ -1941,6 +2140,12 @@ function renderPodium() {
     </div>`;
 }
 
+function calcPayout(pct) {
+  const totalPot = pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
+  if (totalPot <= 0) return '—';
+  return '$' + Math.round(totalPot * pct).toLocaleString();
+}
+
 function renderPayoutTab(tab) {
   if (tab==='dailylow') { renderDailyLow(); return; }
   if (tab==='deadlast') { renderDeadLast(); return; }
@@ -1951,6 +2156,15 @@ function renderPayoutTab(tab) {
   const sorted = cfg.sort(leaderboard);
   const hero   = sorted[cfg.heroIdx];
   const owner  = findOwner(hero?.player);
+
+  // Payout per tab
+  const payoutPct = { lowam: 0.03 };
+  const pct = payoutPct[tab] || 0;
+  const payoutAmt = pct ? calcPayout(pct) : null;
+  const payoutBadge = payoutAmt
+    ? `<div class="payout-hero-payout">💰 Payout: <strong>${payoutAmt}</strong> &nbsp;<span style="opacity:0.6">(${Math.round(pct*100)}% of pot)</span></div>`
+    : '';
+
   const heroHtml = hero
     ? `<div class="payout-hero">
         <div class="trophy">${cfg.trophy}</div>
@@ -1959,6 +2173,7 @@ function renderPayoutTab(tab) {
           <div class="payout-hero-name">${hero.player}</div>
           <div class="payout-hero-score">${fmtPar(hero.toPar)}</div>
           <div class="payout-hero-meta">Owner: <strong>${owner}</strong>&emsp;Thru: ${hero.thru}</div>
+          ${payoutBadge}
         </div>
        </div>`
     : `<div class="card" style="color:var(--text-light)">No eligible players found.</div>`;
@@ -1988,15 +2203,19 @@ function renderDailyLow() {
   // Normalize score: treat null/undefined/'E'/NaN as 0
   const normScore = (p) => {
     const v = p[key];
-    if (v === null || v === undefined) return null; // truly missing — exclude
+    if (v === null || v === undefined) return null;
     const n = Number(v);
-    return isNaN(n) ? 0 : n; // 'E' parsed as NaN → treat as 0
+    return isNaN(n) ? 0 : n;
   };
 
   const valid  = leaderboard.filter(p => p[key] !== null && p[key] !== undefined);
   const sorted = valid.slice().sort((a,b) => normScore(a) - normScore(b));
   const hero   = sorted[0];
   const heroScore = hero ? normScore(hero) : null;
+
+  // 5% per round
+  const payoutAmt = calcPayout(0.05);
+  const payoutBadge = `<div class="payout-hero-payout">💰 Payout: <strong>${payoutAmt}</strong> &nbsp;<span style="opacity:0.6">(5% of pot per round)</span></div>`;
 
   const heroHtml = hero
     ? `<div class="payout-hero">
@@ -2006,6 +2225,7 @@ function renderDailyLow() {
           <div class="payout-hero-name">${hero.player}</div>
           <div class="payout-hero-score">${fmtPar(heroScore)}</div>
           <div class="payout-hero-meta">Owner: <strong>${findOwner(hero.player)}</strong>&emsp;Overall: ${fmtPar(hero.toPar)}</div>
+          ${payoutBadge}
         </div>
        </div>`
     : `<div style="color:var(--text-light);padding:10px 0">No data for this round yet.</div>`;
@@ -2044,39 +2264,36 @@ function renderDeadLast() {
   const safe = v => (v === null || v === undefined || isNaN(Number(v))) ? 0 : Number(v);
 
   const filterBtns = [
-    {key:'tournament', label:'Tournament (Overall)'},
-    {key:'friday',     label:'Dead Last Friday'},
-    {key:'sunday',     label:'Dead Last Sunday'},
+    {key:'friday', label:'DFL Friday'},
+    {key:'sunday', label:'DFL Sunday'},
   ].map(({key,label}) =>
     `<button class="day-btn ${key===deadLastDay?'active':''}"
        onclick="setDeadLastDay('${key}')">${label}</button>`
   ).join('');
 
-  let sorted, heroLabel, colLabel, getScore;
+  let sorted, heroLabel, colLabel, getScore, payoutPct;
 
-  if (deadLastDay === 'friday') {
-    // Cumulative through Friday = R1 + R2
-    const valid = leaderboard.filter(p => p.r1 !== null && p.r2 !== null);
-    getScore = r => safe(r.r1) + safe(r.r2);
-    sorted    = valid.slice().sort((a,b) => getScore(b) - getScore(a)); // worst first
-    heroLabel = 'Dead Last — Through Friday (R1+R2)';
-    colLabel  = 'R1+R2';
-  } else if (deadLastDay === 'sunday') {
-    // Cumulative through Sunday = R1+R2+R3+R4
+  if (deadLastDay === 'sunday') {
     const valid = leaderboard.filter(p => p.r1 !== null && p.r4 !== null);
-    getScore = r => safe(r.r1) + safe(r.r2) + safe(r.r3) + safe(r.r4);
-    sorted    = valid.slice().sort((a,b) => getScore(b) - getScore(a)); // worst first
-    heroLabel = 'Dead Last — Through Sunday (R1–R4)';
+    getScore  = r => safe(r.r1) + safe(r.r2) + safe(r.r3) + safe(r.r4);
+    sorted    = valid.slice().sort((a,b) => getScore(b) - getScore(a));
+    heroLabel = 'DFL — Through Sunday (R1–R4)';
     colLabel  = 'Total';
+    payoutPct = 0.01;
   } else {
-    // Tournament overall — worst to-par
-    getScore  = r => isNaN(r.toPar) ? 0 : r.toPar;
-    sorted    = leaderboard.filter(r=>!r.withdrawn).slice().sort((a,b) => getScore(b) - getScore(a));
-    heroLabel = 'Dead Last (Tournament)';
-    colLabel  = 'To Par';
+    // Default: friday
+    const valid = leaderboard.filter(p => p.r1 !== null && p.r2 !== null);
+    getScore  = r => safe(r.r1) + safe(r.r2);
+    sorted    = valid.slice().sort((a,b) => getScore(b) - getScore(a));
+    heroLabel = 'DFL — Through Friday (R1+R2)';
+    colLabel  = 'R1+R2';
+    payoutPct = 0.01;
   }
 
   const hero = sorted[0];
+  const payoutBadge = payoutPct
+    ? `<div class="payout-hero-payout">💰 Payout: <strong>${calcPayout(payoutPct)}</strong> &nbsp;<span style="opacity:0.6">(${Math.round(payoutPct*100)}% of pot)</span></div>`
+    : '';
 
   const heroHtml = hero
     ? `<div class="payout-hero" style="background:linear-gradient(135deg,#2c1810 0%,#4a2820 100%)">
@@ -2086,6 +2303,7 @@ function renderDeadLast() {
           <div class="payout-hero-name">${hero.player}</div>
           <div class="payout-hero-score" style="color:#f4a0b0">${fmtPar(getScore(hero))}</div>
           <div class="payout-hero-meta">Owner: <strong>${findOwner(hero.player)}</strong>&emsp;Overall: ${fmtPar(hero.toPar)}</div>
+          ${payoutBadge}
         </div>
        </div>`
     : `<div class="card" style="color:var(--text-light)">No data yet.</div>`;
@@ -2104,7 +2322,7 @@ function renderDeadLast() {
   }).join('');
 
   container.innerHTML=`
-    <div class="section-header"><div class="section-title">💀 Dead Last</div></div>
+    <div class="section-header"><div class="section-title">💀 DFL</div></div>
     <div class="day-filter-bar">${filterBtns}</div>
     ${heroHtml}
     <div class="card"><div class="tbl-wrap"><table>
@@ -2592,22 +2810,20 @@ function buildHeroCard(lot) {
       `<option value="${b.id}" ${b.id === lot.buyerId ? 'selected' : ''}>${b.name}</option>`
     ).join('');
     bidPanel = `
-      <div class="hero-bid-panel">
-        <div class="hero-bid-label">${owner ? '✏️ Edit Sale' : '🔨 Record Sale'}</div>
-        <div class="hero-bid-row">
-          <select id="hero-bid-buyer">
-            <option value="">— Select Buyer —</option>${buyerOpts}
-          </select>
-          <input type="number" class="hero-bid-price" id="hero-bid-price"
-            placeholder="$ Price" value="${lot.price || ''}"
-            onkeydown="if(event.key==='Enter')sellLotFromBlock(${lot.lot})">
-          <button class="btn-sell" onclick="sellLotFromBlock(${lot.lot})">
-            ${owner ? 'Update' : 'Sell ✓'}
-          </button>
-        </div>
-        <div class="hero-bid-status" id="hero-bid-status">
-          ${owner ? `Currently: ${owner}${lot.price ? ' — $' + Number(lot.price).toLocaleString() : ''}` : 'Select buyer and enter price, then click Sell.'}
-        </div>
+      <div class="hero-bid-label">${owner ? '✏️ Edit Sale' : '🔨 Record Sale'}</div>
+      <div class="hero-bid-row">
+        <select id="hero-bid-buyer">
+          <option value="">— Select Buyer —</option>${buyerOpts}
+        </select>
+        <input type="number" class="hero-bid-price" id="hero-bid-price"
+          placeholder="$ Price" value="${lot.price || ''}"
+          onkeydown="if(event.key==='Enter')sellLotFromBlock(${lot.lot})">
+        <button class="btn-sell" onclick="sellLotFromBlock(${lot.lot})">
+          ${owner ? 'Update' : 'Sell ✓'}
+        </button>
+      </div>
+      <div class="hero-bid-status" id="hero-bid-status">
+        ${owner ? `Currently: ${owner}${lot.price ? ' — $' + Number(lot.price).toLocaleString() : ''}` : 'Select buyer and enter price, then click Sell.'}
       </div>`;
   }
 
@@ -2630,10 +2846,12 @@ function buildHeroCard(lot) {
         </div>
       </div>
       <div class="hero-body">
-        ${soldBanner}
-        ${intelGridHtml}
-        ${noteHtml}
-        ${bidPanel}
+        <div class="hero-intel-section">
+          ${soldBanner}
+          ${intelGridHtml}
+          ${noteHtml}
+        </div>
+        ${bidPanel ? `<div class="hero-bid-section">${bidPanel}</div>` : ''}
       </div>
     </div>`;
 }
@@ -2673,30 +2891,52 @@ function buildSoldCard(lot, countdown) {
     </div>`;
 }
 
-function buildNextStrip(lot) {
-  if (!lot) return '';
-  const isGroup   = (lot.type||'').toLowerCase() === 'group';
-  const typeLabel = isGroup ? 'Group' : 'Individual';
-  const typeCls   = isGroup ? 'type-group' : 'type-individual';
-  const odds      = lotOddsDisplay(lot);
-  const winPct    = lotWinPct(lot);
-  const shortName = isGroup
-    ? 'Group Lot ' + lot.lot + ' — ' + lot.player.split(' / ').map(m => m.replace(/\[Am\]/gi,'').replace(/\([^)]+\)/g,'').trim()).join(', ')
-    : lot.player;
+function buildQueueSidebar(ordered, curIdx) {
+  // Show next 5 unsold lots after current
+  const upNext = ordered.slice(curIdx + 1).filter(l => !l.buyerId).slice(0, 5);
 
+  if (!upNext.length) {
+    return `<div class="onblock-sidebar">
+      <div class="onblock-sidebar-title">⏭ Up Next</div>
+      <div class="onblock-queue" style="padding:20px 18px;color:var(--text-light);font-style:italic;font-size:13px">Last lot — auction almost done!</div>
+    </div>`;
+  }
+
+  const items = upNext.map((lot, i) => {
+    const isGroup   = (lot.type||'').toLowerCase() === 'group';
+    const odds      = lotOddsDisplay(lot);
+    const winPct    = lotWinPct(lot);
+    const shortName = isGroup
+      ? lot.player.split(' / ').map(m => m.replace(/\[Am\]/gi,'').replace(/\([^)]+\)/g,'').trim()).join(' / ')
+      : lot.player;
+    const typeCls   = isGroup ? 'type-group' : 'type-individual';
+    const typeLabel = isGroup ? 'Group' : 'Indiv.';
+
+    return `
+      <div class="onblock-queue-item ${i === 0 ? 'next-up' : ''}">
+        <div class="onblock-queue-num">Lot ${lot.lot}${i === 0 ? ' — Up Next' : ''}</div>
+        <div class="onblock-queue-name">${isGroup ? 'Group ' + lot.lot : shortName}</div>
+        ${isGroup ? `<div class="onblock-queue-meta" style="font-size:11px;margin-top:3px;line-height:1.5">${lot.player.split(' / ').map(m=>'⛳ '+m.trim()).join('<br>')}</div>` : ''}
+        <div style="margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span class="onblock-queue-badge ${typeCls}">${typeLabel}</span>
+          ${odds !== '—' ? `<span class="onblock-queue-odds">${odds}</span>` : ''}
+          ${winPct ? `<span style="font-size:11px;color:var(--text-light)">${winPct}</span>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  return `<div class="onblock-sidebar">
+    <div class="onblock-sidebar-title">⏭ Up Next</div>
+    <div class="onblock-queue">${items}</div>
+  </div>`;
+}
+
+function buildLayout(progressHtml, mainContent, ordered, curIdx) {
   return `
-    <div class="next-strip">
-      <div class="next-strip-label">⏭ Up Next — Lot ${lot.lot}</div>
-      <div class="next-strip-body">
-        <div class="next-strip-left">
-          <span class="onblock-type-pill ${typeCls}">${typeLabel}</span>
-          <div class="next-strip-name">${shortName}</div>
-        </div>
-        <div class="next-strip-right">
-          <div class="next-strip-odds">${odds}</div>
-          ${winPct ? `<div class="next-strip-pct">${winPct} win</div>` : ''}
-        </div>
-      </div>
+    ${progressHtml}
+    <div class="onblock-body">
+      ${buildQueueSidebar(ordered, curIdx)}
+      <div class="onblock-main">${mainContent}</div>
     </div>`;
 }
 
@@ -2705,7 +2945,7 @@ function renderOnBlock() {
   if (!container) return;
 
   if (!pendingLots.length) {
-    container.innerHTML = '<div class="card" style="color:var(--text-light);text-align:center;padding:40px">No lots configured yet.</div>';
+    container.innerHTML = '<div style="padding:40px;color:var(--text-light);text-align:center">No lots configured yet.</div>';
     return;
   }
 
@@ -2714,7 +2954,6 @@ function renderOnBlock() {
   const soldCount    = ordered.filter(l => !!l.buyerId).length;
   const totalCount   = ordered.length;
   const pct          = Math.round((soldCount / totalCount) * 100);
-
   const lotsRemaining  = ordered.filter(l => !l.buyerId);
   const allGroupsDone  = lotsRemaining.every(l => (l.type||'').toLowerCase() !== 'group');
   const phase = auctionDone   ? 'Auction Complete 🎉'
@@ -2728,7 +2967,7 @@ function renderOnBlock() {
         <div class="onblock-progress-bar-wrap">
           <div class="onblock-progress-bar" style="width:${pct}%"></div>
         </div>
-        <div class="onblock-progress-text">${pct}% complete &nbsp;·&nbsp; ${totalCount - soldCount} remaining</div>
+        <div class="onblock-progress-text">${pct}% &nbsp;·&nbsp; ${totalCount - soldCount} remaining</div>
       </div>
       <div class="onblock-nav-btns">
         <button class="btn btn-outline btn-sm" onclick="switchTab('auction')">Full Auction →</button>
@@ -2737,29 +2976,23 @@ function renderOnBlock() {
 
   if (auctionDone) {
     clearOnBlockCountdown();
-    container.innerHTML = progressHtml + `
-      <div class="card" style="text-align:center;padding:48px 20px">
-        <div style="font-size:48px;margin-bottom:14px">🎉</div>
-        <div style="font-family:'Playfair Display',serif;font-size:24px;color:var(--green);margin-bottom:8px">Auction Complete</div>
-        <div style="font-size:14px;color:var(--text-light)">All ${totalCount} lots have been sold. Good luck!</div>
-      </div>`;
+    container.innerHTML = progressHtml + `<div class="onblock-body">
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:40px">
+        <div style="font-size:72px">🎉</div>
+        <div style="font-family:'Playfair Display',serif;font-size:36px;color:var(--green)">Auction Complete</div>
+        <div style="font-size:18px;color:var(--text-light)">All ${totalCount} lots have been sold. Good luck!</div>
+      </div>
+    </div>`;
     return;
   }
 
-  // Detect newly sold lots since last render
+  // Detect newly sold lots
   const currentlySoldIds = new Set(ordered.filter(l => !!l.buyerId).map(l => String(l.lot)));
   const newlySoldIds = [...currentlySoldIds].filter(id => !onBlockPrevSoldIds.has(id));
   onBlockPrevSoldIds = currentlySoldIds;
 
-  // Find the "display current" — either the lot we're showing in sold state,
-  // or the first unassigned lot
-  const firstUnsold = ordered.find(l => !l.buyerId);
-
-  // If a lot just sold and we're not already counting down, trigger sold state
   if (newlySoldIds.length > 0 && onBlockState !== 'sold') {
-    // The lot that just sold is the one we were showing — find it
-    const justSoldLotNum = newlySoldIds[0];
-    const justSoldLot = ordered.find(l => String(l.lot) === justSoldLotNum);
+    const justSoldLot = ordered.find(l => String(l.lot) === newlySoldIds[0]);
     if (justSoldLot) {
       onBlockState   = 'sold';
       onBlockSoldLot = justSoldLot;
@@ -2768,31 +3001,31 @@ function renderOnBlock() {
     }
   }
 
-  // Normal state — show current (first unsold) and next
   if (onBlockState === 'sold' && onBlockSoldLot) {
-    // Still in countdown — just refresh the countdown display text
     const cdEl = document.getElementById('sold-countdown-display');
     if (cdEl) cdEl.textContent = `Next lot in ${onBlockCountdown}s…`;
     return;
   }
 
-  // Regular render
-  const curIdx = ordered.findIndex(l => !l.buyerId);
+  const curIdx  = ordered.findIndex(l => !l.buyerId);
   const current = ordered[curIdx];
-  const next    = ordered[curIdx + 1] || null;
-  container.innerHTML = progressHtml + buildHeroCard(current) + buildNextStrip(next);
+  container.innerHTML = buildLayout(progressHtml, buildHeroCard(current), ordered, curIdx);
 }
 
 function startOnBlockCountdown(ordered, progressHtml, container) {
   clearOnBlockCountdown();
   onBlockCountdown = 5;
 
-  // Find next unsold after the sold lot
   const nextUnsoldIdx = ordered.findIndex(l => !l.buyerId);
-  const nextLot = nextUnsoldIdx > -1 ? ordered[nextUnsoldIdx] : null;
+  // For the sidebar during sold state, use the sold lot's position
+  const soldIdx = ordered.findIndex(l => String(l.lot) === String(onBlockSoldLot.lot));
 
-  // Render sold state immediately
-  container.innerHTML = progressHtml + buildSoldCard(onBlockSoldLot, onBlockCountdown) + buildNextStrip(nextLot);
+  container.innerHTML = buildLayout(
+    progressHtml,
+    buildSoldCard(onBlockSoldLot, onBlockCountdown),
+    ordered,
+    soldIdx
+  );
 
   onBlockCountdownTimer = setInterval(() => {
     onBlockCountdown--;
@@ -2803,21 +3036,18 @@ function startOnBlockCountdown(ordered, progressHtml, container) {
       clearOnBlockCountdown();
       onBlockState   = 'showing';
       onBlockSoldLot = null;
-      // Re-render with next lot as hero
-      const freshOrdered = auctionOrderedLots();
-      const curIdx = freshOrdered.findIndex(l => !l.buyerId);
+
+      const freshOrdered  = auctionOrderedLots();
       const freshContainer = document.getElementById('onblock-content');
       if (!freshContainer) return;
 
       const soldCount  = freshOrdered.filter(l => !!l.buyerId).length;
       const totalCount = freshOrdered.length;
       const pct        = Math.round((soldCount / totalCount) * 100);
-      const lotsRemaining = freshOrdered.filter(l => !l.buyerId);
-      const allGroupsDone = lotsRemaining.every(l => (l.type||'').toLowerCase() !== 'group');
-      const auctionDone   = freshOrdered.every(l => !!l.buyerId);
-      const phase = auctionDone   ? 'Auction Complete 🎉'
-                  : allGroupsDone ? 'Phase 2 — Individual Players'
-                  : 'Phase 1 — Group Lots';
+      const lotsLeft   = freshOrdered.filter(l => !l.buyerId);
+      const groupsDone = lotsLeft.every(l => (l.type||'').toLowerCase() !== 'group');
+      const done       = freshOrdered.every(l => !!l.buyerId);
+      const phase      = done ? 'Auction Complete 🎉' : groupsDone ? 'Phase 2 — Individual Players' : 'Phase 1 — Group Lots';
 
       const freshProgress = `
         <div class="onblock-progress">
@@ -2826,27 +3056,28 @@ function startOnBlockCountdown(ordered, progressHtml, container) {
             <div class="onblock-progress-bar-wrap">
               <div class="onblock-progress-bar" style="width:${pct}%"></div>
             </div>
-            <div class="onblock-progress-text">${pct}% complete &nbsp;·&nbsp; ${totalCount - soldCount} remaining</div>
+            <div class="onblock-progress-text">${pct}% &nbsp;·&nbsp; ${totalCount - soldCount} remaining</div>
           </div>
           <div class="onblock-nav-btns">
             <button class="btn btn-outline btn-sm" onclick="switchTab('auction')">Full Auction →</button>
           </div>
         </div>`;
 
-      if (auctionDone) {
-        freshContainer.innerHTML = freshProgress + `
-          <div class="card" style="text-align:center;padding:48px 20px">
-            <div style="font-size:48px;margin-bottom:14px">🎉</div>
-            <div style="font-family:'Playfair Display',serif;font-size:24px;color:var(--green);margin-bottom:8px">Auction Complete</div>
-            <div style="font-size:14px;color:var(--text-light)">All ${totalCount} lots have been sold. Good luck!</div>
-          </div>`;
+      if (done) {
+        freshContainer.innerHTML = freshProgress + `<div class="onblock-body">
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:40px">
+            <div style="font-size:72px">🎉</div>
+            <div style="font-family:'Playfair Display',serif;font-size:36px;color:var(--green)">Auction Complete</div>
+            <div style="font-size:18px;color:var(--text-light)">All ${totalCount} lots sold!</div>
+          </div>
+        </div>`;
         return;
       }
 
+      const curIdx  = freshOrdered.findIndex(l => !l.buyerId);
       if (curIdx === -1) return;
       const current = freshOrdered[curIdx];
-      const next    = freshOrdered[curIdx + 1] || null;
-      freshContainer.innerHTML = freshProgress + buildHeroCard(current) + buildNextStrip(next);
+      freshContainer.innerHTML = buildLayout(freshProgress, buildHeroCard(current), freshOrdered, curIdx);
     }
   }, 1000);
 }
@@ -3090,8 +3321,8 @@ function renderDashboard() {
     { key:'dlr2',     icon:'📅', label:'Daily Low — Fri',  pct:0.05, round:'r2' },
     { key:'dlr3',     icon:'📅', label:'Daily Low — Sat',  pct:0.05, round:'r3' },
     { key:'dlr4',     icon:'📅', label:'Daily Low — Sun',  pct:0.05, round:'r4' },
-    { key:'deadfri',  icon:'💀', label:'Dead Last — Fri',  pct:0.01 },
-    { key:'deadsun',  icon:'💀', label:'Dead Last — Sun',  pct:0.01 },
+    { key:'deadfri',  icon:'💀', label:'DFL — Fri',  pct:0.01 },
+    { key:'deadsun',  icon:'💀', label:'DFL — Sun',  pct:0.01 },
   ];
   // Note: Daily Low is 5% total split into 4 rounds at 1.25% each? Actually rules say 5%/round.
   // Let's keep them as individual 5% each per rules. Adjust total note if needed.
