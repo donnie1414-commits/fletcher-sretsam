@@ -2500,8 +2500,12 @@ function renderIntel() {
     contender: p.contender === true || p.contender === 'true',
   }));
 
+  // Exclude combined group lot rows (names like "Player A / Player B / Player C")
+  // from all individual player card views — those only appear in the Groups filter
+  filtered = filtered.filter(p => !String(p.name||'').includes(' / '));
+
   if      (intelFilter === 'individual') filtered = filtered.filter(p => p.type === 'individual' && !p.amateur);
-  else if (intelFilter === 'group')      filtered = filtered.filter(p => p.type === 'group');
+  else if (intelFilter === 'group')      filtered = filtered.filter(p => p.type === 'group' && !p.amateur);
   else if (intelFilter === 'amateur')    filtered = filtered.filter(p => p.amateur === true);
   else if (intelFilter === 'contender')  filtered = filtered.filter(p => p.contender === true);
 
