@@ -678,6 +678,62 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
   font-style: italic;
 }
 
+/* ── PODIUM ──────────────────────────────────────────────────── */
+.podium-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+@media(max-width:650px){ .podium-grid { grid-template-columns: 1fr; } }
+
+.podium-card {
+  background: white;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.podium-card.first  { border: 2px solid var(--gold); box-shadow: 0 4px 24px rgba(201,168,76,0.2); }
+.podium-card.second { border: 2px solid #b0bec5; }
+.podium-card.third  { border: 2px solid #bf8c60; }
+
+.podium-card-header {
+  padding: 16px 18px 12px;
+  color: white;
+  text-align: center;
+}
+.podium-card.first  .podium-card-header { background: linear-gradient(135deg, var(--green) 0%, #1f5c38 100%); }
+.podium-card.second .podium-card-header { background: linear-gradient(135deg, #546e7a 0%, #37474f 100%); }
+.podium-card.third  .podium-card-header { background: linear-gradient(135deg, #7a5c3a 0%, #5a3e22 100%); }
+
+.podium-trophy { font-size: 32px; margin-bottom: 4px; }
+.podium-place  { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; opacity: 0.75; }
+.podium-score  { font-size: 28px; font-weight: 700; margin-top: 2px; }
+.podium-score.under { color: #a5d6a7; }
+.podium-score.over  { color: #ef9a9a; }
+.podium-score.even  { color: rgba(255,255,255,0.8); }
+
+.podium-card-body { padding: 14px 18px 16px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.podium-player { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: var(--green); line-height: 1.3; }
+.podium-thru   { font-size: 12px; color: var(--text-light); }
+.podium-owner  { font-size: 12px; color: var(--text-mid); margin-top: 2px; }
+.podium-owner strong { color: var(--text); }
+.podium-payout {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid #f0ece6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.podium-payout-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-light); }
+.podium-payout-amount { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--green); }
+.podium-card.first .podium-payout-amount { color: var(--gold); }
+.podium-no-data { text-align: center; padding: 24px 16px; color: var(--text-light); font-style: italic; font-size: 13px; }
+
 /* ── ON THE BLOCK nav highlight ─────────────────────────────── */
 .nav-tab[data-tab="onblock"] { color: var(--gold); font-weight: 600; }
 .nav-tab[data-tab="onblock"].active { color: var(--green); border-bottom-color: var(--gold); }
@@ -971,9 +1027,7 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
     <div class="nav-tab"          data-tab="onblock"    onclick="switchTab('onblock')">🔨 On the Block</div>
     <div class="nav-tab"          data-tab="mylots"     onclick="switchTab('mylots')">My Lots</div>
     <div class="nav-tab"          data-tab="leaderboard" onclick="switchTab('leaderboard')">Leaderboard</div>
-    <div class="nav-tab"          data-tab="winner"     onclick="switchTab('winner')">Winner</div>
-    <div class="nav-tab"          data-tab="second"     onclick="switchTab('second')">2nd</div>
-    <div class="nav-tab"          data-tab="third"      onclick="switchTab('third')">3rd</div>
+    <div class="nav-tab"          data-tab="podium"     onclick="switchTab('podium')">🏆 Podium</div>
     <div class="nav-tab"          data-tab="lowam"      onclick="switchTab('lowam')">Low Am</div>
     <div class="nav-tab"          data-tab="dailylow"   onclick="switchTab('dailylow')">Daily Low</div>
     <div class="nav-tab"          data-tab="deadlast"   onclick="switchTab('deadlast')">Dead Last</div>
@@ -1048,9 +1102,7 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
     </div>
 
     <!-- PAYOUT PANELS -->
-    <div class="tab-panel" id="tab-winner">  <div id="payout-winner"></div></div>
-    <div class="tab-panel" id="tab-second">  <div id="payout-second"></div></div>
-    <div class="tab-panel" id="tab-third">   <div id="payout-third"></div></div>
+    <div class="tab-panel" id="tab-podium">  <div id="payout-podium"></div></div>
     <div class="tab-panel" id="tab-lowam">   <div id="payout-lowam"></div></div>
     <div class="tab-panel" id="tab-dailylow"><div id="payout-dailylow"></div></div>
     <div class="tab-panel" id="tab-deadlast"><div id="payout-deadlast"></div></div>
@@ -1651,7 +1703,7 @@ function switchTab(tab) {
   if (panel) panel.classList.add('active');
   const navEl = document.querySelector(`[data-tab="${tab}"]`);
   if (navEl) navEl.classList.add('active');
-  const payouts=['winner','second','third','lowam','dailylow','deadlast'];
+  const payouts=['podium','lowam','dailylow','deadlast'];
   if (payouts.includes(tab)) renderPayoutTab(tab);
   if (tab === 'onblock')   renderOnBlock();
   if (tab === 'mylots')    renderMyLots();
@@ -1810,13 +1862,89 @@ function refreshActivePayoutTab() {
   const active = document.querySelector('.tab-panel.active');
   if (!active) return;
   const id = active.id.replace('tab-','');
-  const pts = ['winner','second','third','lowam','dailylow','deadlast'];
+  const pts = ['podium','lowam','dailylow','deadlast'];
   if (pts.includes(id)) renderPayoutTab(id);
+}
+
+function renderPodium() {
+  const container = document.getElementById('payout-podium');
+  if (!container) return;
+
+  const eligible = leaderboard.filter(r => !r.cut && !r.withdrawn)
+                               .slice().sort((a,b) => a.toPar - b.toPar);
+
+  const totalPot = pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
+  const fmtMoney = n => totalPot > 0 ? '$' + Math.round(n).toLocaleString() : '—';
+  const safe = v => isNaN(Number(v)) ? 0 : Number(v);
+
+  const spots = [
+    { rank: 0, label: '1st Place', trophy: '🏆', cls: 'first',  pct: 0.50 },
+    { rank: 1, label: '2nd Place', trophy: '🥈', cls: 'second', pct: 0.20 },
+    { rank: 2, label: '3rd Place', trophy: '🥉', cls: 'third',  pct: 0.05 },
+  ];
+
+  const cards = spots.map(spot => {
+    const player  = eligible[spot.rank] || null;
+    const toPar   = player ? safe(player.toPar) : null;
+    const scoreCls = toPar === null ? 'even' : toPar < 0 ? 'under' : toPar > 0 ? 'over' : 'even';
+    const owner    = player ? findOwner(player.player) : null;
+    const payout   = fmtMoney(totalPot * spot.pct);
+
+    return `
+      <div class="podium-card ${spot.cls}">
+        <div class="podium-card-header">
+          <div class="podium-trophy">${spot.trophy}</div>
+          <div class="podium-place">${spot.label}</div>
+          ${player
+            ? `<div class="podium-score ${scoreCls}">${fmtPar(toPar)}</div>`
+            : `<div class="podium-score even">—</div>`}
+        </div>
+        <div class="podium-card-body">
+          ${player ? `
+            <div class="podium-player">${player.player}</div>
+            <div class="podium-thru">Thru: ${player.thru}</div>
+            ${owner && owner !== '—' ? `<div class="podium-owner">Owner: <strong>${owner}</strong></div>` : '<div class="podium-owner" style="color:var(--text-light)">Unowned</div>'}
+          ` : `<div class="podium-no-data">No data yet</div>`}
+          <div class="podium-payout">
+            <span class="podium-payout-label">Payout</span>
+            <span class="podium-payout-amount">${payout}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Full leaderboard table below the podium
+  const rows = eligible.slice(0, 15).map((r, i) => {
+    const toPar = safe(r.toPar);
+    const cls   = toPar < 0 ? 'under' : toPar > 0 ? 'over' : 'even';
+    const am    = r.amateur ? '<span class="am-badge">Am</span>' : '';
+    const podiumHighlight = i < 3 ? `style="background:${i===0?'var(--gold-pale)':i===1?'#f0f4f8':'#fdf5ee'}"` : '';
+    return `<tr ${podiumHighlight}>
+      <td class="pos">${r.pos}</td>
+      <td class="player-name">${r.player}${am}</td>
+      <td>${findOwner(r.player) !== '—' ? `<span class="owner-tag">${findOwner(r.player)}</span>` : '<span style="color:var(--text-light);font-size:12px">—</span>'}</td>
+      <td class="to-par ${cls}">${fmtPar(toPar)}</td>
+      <td>${fmtPar(safe(r.today))}</td>
+      <td>${r.thru}</td>
+    </tr>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="section-header"><div class="section-title">🏆 Podium</div></div>
+    <div class="podium-grid">${cards}</div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:10px">Leaderboard</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Pos</th><th>Player</th><th>Owner</th><th>To Par</th><th>Today</th><th>Thru</th></tr></thead>
+        <tbody>${rows || '<tr class="loading-row"><td colspan="6">No leaderboard data yet.</td></tr>'}</tbody>
+      </table></div>
+    </div>`;
 }
 
 function renderPayoutTab(tab) {
   if (tab==='dailylow') { renderDailyLow(); return; }
   if (tab==='deadlast') { renderDeadLast(); return; }
+  if (tab==='podium')   { renderPodium();   return; }
   const cfg = PAYOUT_CFG[tab];
   const container = document.getElementById('payout-'+tab);
   if (!cfg||!container) return;
