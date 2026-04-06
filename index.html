@@ -1122,6 +1122,87 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
 }
 .intel-link:hover { color: var(--green-mid); text-decoration-color: var(--green-mid); }
 
+/* ── GROUP PROFILE CARDS ─────────────────────────────────────── */
+.group-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.group-card-header {
+  background: linear-gradient(135deg, var(--green) 0%, #1f5c38 100%);
+  color: white;
+  padding: 14px 18px 12px;
+}
+.group-card-lot {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  opacity: 0.7;
+  margin-bottom: 4px;
+}
+.group-card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.group-card-odds {
+  font-size: 13px;
+  color: var(--gold-light);
+  font-weight: 700;
+  margin-top: 4px;
+}
+.group-card-body { padding: 12px 18px 14px; }
+.group-card-members { margin-bottom: 10px; }
+.group-member-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid #f5f1ec;
+}
+.group-member-row:last-child { border-bottom: none; }
+.group-member-icon { font-size: 14px; flex-shrink: 0; }
+.group-member-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--green);
+  flex: 1;
+  min-width: 0;
+}
+.group-member-detail {
+  font-size: 11px;
+  color: var(--text-light);
+  text-align: right;
+  flex-shrink: 0;
+}
+.group-card-note {
+  font-size: 12px;
+  color: var(--text-mid);
+  font-style: italic;
+  line-height: 1.6;
+  padding: 8px 10px;
+  background: var(--off-white);
+  border-radius: 6px;
+  border-left: 3px solid var(--gold);
+  margin-top: 8px;
+}
+.intel-group-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--green);
+  background: var(--green-pale);
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-top: 5px;
+}
+
 /* RESPONSIVE */
 @media(max-width:600px){
   /* Login */
@@ -1386,7 +1467,7 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
       <div class="intel-filter-bar">
         <button class="intel-filter-btn active" data-filter="all"        onclick="setIntelFilter('all')">All Players</button>
         <button class="intel-filter-btn"         data-filter="individual" onclick="setIntelFilter('individual')">Individual</button>
-        <button class="intel-filter-btn"         data-filter="group"      onclick="setIntelFilter('group')">Group</button>
+        <button class="intel-filter-btn"         data-filter="groups"     onclick="setIntelFilter('groups')">⛳ Group Lots</button>
         <button class="intel-filter-btn"         data-filter="amateur"    onclick="setIntelFilter('amateur')">Amateurs</button>
         <button class="intel-filter-btn"         data-filter="contender"  onclick="setIntelFilter('contender')">Top Contenders</button>
       </div>
@@ -1532,7 +1613,7 @@ const STORAGE_BACKEND_KEY = 'mastersPool_backendUrl';
 // ── PASTE YOUR APPS SCRIPT URL HERE ──────────────────────────────
 // Every device will use this URL automatically — no Admin Setup needed.
 // Leave as '' to use the Admin Setup tab instead.
-const HARDCODED_BACKEND_URL = 'https://script.google.com/macros/s/AKfycbwe1YOOIMcAGD8VwxHC3JvApR4ZB_D9KDQmU0u3BUVp2R3NVd_66YFE3BbMgNFWnHB1/exec';
+const HARDCODED_BACKEND_URL = 'https://script.google.com/macros/s/AKfycbyoVM-Av1KRFMagjqOoMH2t76-QISPU1j25s1NIkRDBVwEboO5jwbrEBKvcjrEskpke/exec';
 // ─────────────────────────────────────────────────────────────────
 
 // Refresh intervals
@@ -1597,298 +1678,53 @@ let rulesText = `<h3>General</h3>
    type: 'individual' | 'group' | 'amateur'
    contender: true = top-tier pick
    ═══════════════════════════════════════════ */
-const PLAYER_INTEL = [
-  // ── TOP CONTENDERS ──────────────────────────────────────────────
-  { name:'Scottie Scheffler',   type:'individual', amateur:false, contender:true,
-    odds:'+500', owgr:1, age:29,
-    augusta:'Champion (2022, 2024)',
-    form:'Won American Express; top-5 in next two; withdrew Houston (birth of child)',
-    sgTotal:'#1 on Tour', sgApproach:'Elite', sgPutting:'Solid',
-    note:'World No. 1 and two-time champion. The man to beat every single week.' },
-
-  { name:'Rory McIlroy',        type:'individual', amateur:false, contender:true,
-    odds:'+1100', owgr:3, age:36,
-    augusta:'Champion (2025)',
-    form:'T2 Genesis; withdrew Arnold Palmer (back); T46 Players',
-    sgTotal:'Top 5 Tour', sgApproach:'Top 5 Tour', sgPutting:'Outside top 100',
-    note:'Defending champion seeking back-to-back. Last done by Tiger in 2001-02. Long game elite; putting is the question mark.' },
-
-  { name:'Bryson DeChambeau',   type:'individual', amateur:false, contender:true,
-    odds:'+1000', owgr:8, age:32,
-    augusta:'T5 (2025)',
-    form:'Won two consecutive LIV events inc. playoff over Rahm',
-    sgTotal:'Strong', sgApproach:'Inconsistent', sgPutting:'Lag putting issues',
-    note:'LIV recruit on a hot streak into Masters week. Approach and lag putting must tighten to win.' },
-
-  { name:'Jon Rahm',            type:'individual', amateur:false, contender:true,
-    odds:'+1000', owgr:6, age:31,
-    augusta:'Champion (2023)',
-    form:'Won LIV event; runner-up to DeChambeau in back-to-back LIV',
-    sgTotal:'Strong', sgApproach:'Good', sgPutting:'Good',
-    note:'2023 champion on a resurgent LIV run. Only one top-5 in his last 10 majors — model fading him.' },
-
-  { name:'Xander Schauffele',   type:'individual', amateur:false, contender:true,
-    odds:'+1500', owgr:7, age:30,
-    augusta:'T3 (2023)',
-    form:'Consistent; chasing career Grand Slam — needs Masters',
-    sgTotal:'Top 10', sgApproach:'Elite', sgPutting:'Above average',
-    note:'Grand Slam bid adds extra motivation. Elite ball-striker who is solid at Augusta — just needs to close.' },
-
-  { name:'Tommy Fleetwood',     type:'individual', amateur:false, contender:true,
-    odds:'+2200', owgr:4, age:34,
-    augusta:'T3 (2024)',
-    form:'3 top-10s in 6 starts; slightly under the radar',
-    sgTotal:'Top 5', sgApproach:'Elite', sgPutting:'Improving',
-    note:'Best player without a major. Tour Championship win at East Lake. Augusta suits his elite iron play.' },
-
-  { name:'Ludvig Åberg',        type:'individual', amateur:false, contender:true,
-    odds:'+1600', owgr:18, age:26,
-    augusta:'T2 (2024 — debut)',
-    form:'Blew 54-hole lead at Players; recent form positive entering week',
-    sgTotal:'Strong', sgApproach:'Elite', sgPutting:'Solid',
-    note:'Runner-up on debut. Top-10 in both his Masters starts — only 4 players ever achieved that in their first three.' },
-
-  { name:'Matt Fitzpatrick',    type:'individual', amateur:false, contender:true,
-    odds:'+2000', owgr:5, age:31,
-    augusta:'T7 (2016)',
-    form:'Valspar winner; runner-up Players; red-hot entering week',
-    sgTotal:'#3 Tour TTG', sgApproach:'#7 Tour', sgPutting:'#96 Tour',
-    note:'Playing best golf of career. Has made 10 straight cuts at Augusta — third-longest active streak.' },
-
-  { name:'Cameron Young',       type:'individual', amateur:false, contender:true,
-    odds:'+2000', owgr:15, age:27,
-    augusta:'T12 (2024)',
-    form:'2026 Players Championship winner at TPC Sawgrass',
-    sgTotal:'Strong', sgApproach:'Good', sgPutting:'Good',
-    note:'Players champion coming in with momentum. Augusta debut was solid — now a genuine contender.' },
-
-  { name:'Justin Rose',         type:'individual', amateur:false, contender:true,
-    odds:'+2700', owgr:12, age:45,
-    augusta:'Runner-up (2025)',
-    form:'DP World Tour Championship win; Valspar runner-up 2026',
-    sgTotal:'Top 7', sgApproach:'Top 7 Tour', sgPutting:'Elite historically',
-    note:'Shot a final-round 66 in 2025 before McIlroy\'s miracle. 21st Masters. Unfinished business.' },
-
-  { name:'Collin Morikawa',     type:'individual', amateur:false, contender:true,
-    odds:'+2700', owgr:11, age:27,
-    augusta:'T2 (2023)',
-    form:'Chasing Grand Slam — needs Masters and US Open',
-    sgTotal:'Strong', sgApproach:'Elite irons', sgPutting:'Good',
-    note:'Grand Slam hunt adds motivation. Augusta suits his precision iron play perfectly.' },
-
-  { name:'Patrick Reed',        type:'individual', amateur:false, contender:true,
-    odds:'+2700', owgr:22, age:35,
-    augusta:'Champion (2018)',
-    form:'LIV competitor; four top-10s since his win',
-    sgTotal:'Solid', sgApproach:'Good', sgPutting:'Experienced',
-    note:'Augusta specialist — four top-10s after his 2018 win including T3 last year. Course fits his scrambling style.' },
-
-  // ── SECOND TIER ─────────────────────────────────────────────────
-  { name:'Brooks Koepka',       type:'individual', amateur:false, contender:false,
-    odds:'+4000', owgr:23, age:35,
-    augusta:'T2 (2023)',
-    form:'LIV; Grand Slam bid — needs Masters and British Open',
-    sgTotal:'Good', sgApproach:'Good', sgPutting:'Clutch',
-    note:'Slow-builds into contention at Augusta consistently. Three major titles. Major specialist mode.' },
-
-  { name:'Jordan Spieth',       type:'individual', amateur:false, contender:false,
-    odds:'+3300', owgr:27, age:32,
-    augusta:'Champion (2015)',
-    form:'Sporadic results; looking to rediscover consistency',
-    sgTotal:'Variable', sgApproach:'Good', sgPutting:'Elite historically',
-    note:'Three-time runner-up before winning in 2015. Augusta pedigree unmatched — form is the only question.' },
-
-  { name:'Hideki Matsuyama',    type:'individual', amateur:false, contender:false,
-    odds:'+3500', owgr:19, age:34,
-    augusta:'Champion (2021)',
-    form:'Consistent; celebrating 5-year anniversary of breakthrough win',
-    sgTotal:'Good', sgApproach:'Elite', sgPutting:'Variable',
-    note:'Model of Augusta consistency — made cut every year since 2015. Contender every single week.' },
-
-  { name:'Robert MacIntyre',    type:'individual', amateur:false, contender:false,
-    odds:'+3300', owgr:14, age:28,
-    augusta:'T29 (2024)',
-    form:'Runner-up Valero Texas Open (led 54 holes); 2025 Open Championship runner-up',
-    sgTotal:'Strong', sgApproach:'Good', sgPutting:'Good',
-    note:'Led the Valero entering Sunday before Spaun overtook him. Scottish left-hander with a game built for Augusta. Major pedigree developing fast.' },
-
-  { name:'Min Woo Lee',         type:'individual', amateur:false, contender:false,
-    odds:'+3500', owgr:16, age:26,
-    augusta:'T8 (2025)',
-    form:'Multiple wins; one of the most exciting young players on Tour',
-    sgTotal:'Strong', sgApproach:'Good', sgPutting:'Good',
-    note:'Top-10 last year. Electric game — Augusta suits attacking left-handers.' },
-
-  { name:'Jason Day',           type:'group', amateur:false, contender:false,
-    odds:'+6500', owgr:41, age:38,
-    augusta:'T2 (2011)',
-    form:'Top-10 last year; veteran competing well',
-    sgTotal:'Solid', sgApproach:'Good', sgPutting:'Strong short game',
-    note:'Best finish was runner-up in 2011. Age 38 and running out of chances — short game is still elite.' },
-
-  { name:'Corey Conners',       type:'group', amateur:false, contender:false,
-    odds:'+6500', owgr:43, age:34,
-    augusta:'T6 (2022)',
-    form:'Consistent; shaky putter',
-    sgTotal:'Strong TTG', sgApproach:'Elite', sgPutting:'Weak link',
-    note:'Four top-10s in six Masters starts — most underrated Augusta specialist in the field.' },
-
-  { name:'Russell Henley',      type:'individual', amateur:false, contender:false,
-    odds:'+4200', owgr:31, age:35,
-    augusta:'T5 (2024)',
-    form:'Strong approach metrics; consistent results',
-    sgTotal:'Good', sgApproach:'Top 5 Tour', sgPutting:'Average',
-    note:'Georgia native playing Augusta like a home course. Elite approach play is a major weapon here.' },
-
-  { name:'Chris Gotterup',      type:'individual', amateur:false, contender:false,
-    odds:'+4300', owgr:25, age:25,
-    augusta:'First appearance',
-    form:'Won Scottish Open and Genesis Invitational',
-    sgTotal:'Strong', sgApproach:'Good', sgPutting:'Learning',
-    note:'Exciting rookie with multiple wins. Contending as a Masters debutant is uniquely difficult.' },
-
-  { name:'Viktor Hovland',      type:'individual', amateur:false, contender:false,
-    odds:'+5000', owgr:20, age:28,
-    augusta:'T4 (2023)',
-    form:'2023 FedEx Cup champion; finding form again in 2026',
-    sgTotal:'Strong', sgApproach:'Good', sgPutting:'Improving',
-    note:'T4 in 2023. Chipping and wedge work improved. Quietly dangerous when in form.' },
-
-  { name:'Shane Lowry',         type:'individual', amateur:false, contender:false,
-    odds:'+4500', owgr:28, age:38,
-    augusta:'T12 (2024)',
-    form:'Solid; Ryder Cup hero 2025',
-    sgTotal:'Good', sgApproach:'Good', sgPutting:'Solid',
-    note:'2019 Open champion. Augusta suits his patience and course management. Legitimate dark horse.' },
-
-  { name:'Adam Scott',          type:'group', amateur:false, contender:false,
-    odds:'+6500', owgr:35, age:45,
-    augusta:'Champion (2013)',
-    form:'Making all cuts in 2026; consistent top-40 finishes',
-    sgTotal:'Good', sgApproach:'Good', sgPutting:'Solid',
-    note:'2013 champion at 45, defying time. Has five top-10s at Augusta over his career.' },
-
-  { name:'Tyrrell Hatton',      type:'individual', amateur:false, contender:false,
-    odds:'+5500', owgr:30, age:34,
-    augusta:'T10 (2024)',
-    form:'LIV competitor; volatile game',
-    sgTotal:'Volatile', sgApproach:'Good days', sgPutting:'Streaky',
-    note:'Top-10 at Augusta last year but experts are actively fading him. High variance pick.' },
-
-  { name:'Patrick Cantlay',     type:'group', amateur:false, contender:false,
-    odds:'+5500', owgr:34, age:34,
-    augusta:'T9 (2019)',
-    form:'Winless since 2022; sliding rankings',
-    sgTotal:'Solid TTG', sgApproach:'Good', sgPutting:'Elite historically',
-    note:'Once top-10 in the world for four straight years. Still consistent but hasn\'t contended in ages.' },
-
-  { name:'Justin Thomas',       type:'group', amateur:false, contender:false,
-    odds:'+6500', owgr:36, age:31,
-    augusta:'T12 (2023)',
-    form:'Sporadic; talented but inconsistent in 2026',
-    sgTotal:'Variable', sgApproach:'Elite on form', sgPutting:'Good',
-    note:'Former world No. 1 looking to rediscover his best. Always dangerous at Augusta when clicking.' },
-
-  { name:'Sungjae Im',          type:'group', amateur:false, contender:false,
-    odds:'+7000', owgr:37, age:26,
-    augusta:'Runner-up (2020)',
-    form:'Consistent Tour presence in 2026',
-    sgTotal:'Good', sgApproach:'Good', sgPutting:'Good',
-    note:'Runner-up at the pandemic Masters in 2020. Quietly consistent performer.' },
-
-  { name:'Jacob Bridgeman',     type:'group', amateur:false, contender:false,
-    odds:'+7500', owgr:17, age:26,
-    augusta:'First appearance',
-    form:'Genesis Invitational winner; #1 Tour in SG: Putting',
-    sgTotal:'Strong', sgApproach:'Steady', sgPutting:'#1 on Tour',
-    note:'Tour\'s best putter in his first Masters. Putting doesn\'t always decide Augusta but his form is real.' },
-
-  { name:'Akshay Bhatia',       type:'group', amateur:false, contender:false,
-    odds:'+6000', owgr:20, age:24,
-    augusta:'T35 (2024)',
-    form:'Won Arnold Palmer Invitational at Bay Hill 2026',
-    sgTotal:'Good', sgApproach:'Elite irons', sgPutting:'Improved dramatically',
-    note:'Left-hander with Augusta advantage. Elite iron play. Only 24 with growing major experience.' },
-
-  { name:'Nicolai Højgaard',    type:'individual', amateur:false, contender:false,
-    odds:'+8000', owgr:38, age:24,
-    augusta:'First appearance',
-    form:'Qualified via OWGR top 50; solid DP World Tour form',
-    sgTotal:'Good', sgApproach:'Good', sgPutting:'Good',
-    note:'Danish talent on the rise. First Masters debut — excitement could work either way.' },
-
-  { name:'Sepp Straka',         type:'group', amateur:false, contender:false,
-    odds:'+6000', owgr:29, age:31,
-    augusta:'T18 (2024)',
-    form:'Two Tour wins in 2025 inc. Truist Championship',
-    sgTotal:'Consistent', sgApproach:'Good', sgPutting:'Solid',
-    note:'Five straight Augusta starts building course familiarity. Two wins last year.' },
-
-  { name:'Sam Burns',           type:'group', amateur:false, contender:false,
-    odds:'+6500', owgr:33, age:29,
-    augusta:'T29 (2023)',
-    form:'Elite putting; underwhelming results in 2026',
-    sgTotal:'Average', sgApproach:'Average', sgPutting:'Elite',
-    note:'Great putter but putting is the least rewarded skill at Augusta. Results here haven\'t matched his ability.' },
-
-  { name:'Daniel Berger',       type:'group', amateur:false, contender:false,
-    odds:'+8000', owgr:38, age:33,
-    augusta:'T10 (2016)',
-    form:'Finger injury recovery; runner-up Arnold Palmer 2026',
-    sgTotal:'Solid', sgApproach:'#6 Tour', sgPutting:'Average',
-    note:'Best finish was his debut top-10 in 2016. Elite approach play (6th on Tour) bodes well.' },
-
-  { name:'Ben Griffin',         type:'group', amateur:false, contender:false,
-    odds:'+5500', owgr:16, age:29,
-    augusta:'First appearance',
-    form:'Three wins in 2025; slow start to 2026',
-    sgTotal:'Down from 2025', sgApproach:'102nd Tour 2026', sgPutting:'Variable',
-    note:'Three wins last year but ball-striking has dropped sharply in 2026. Form a significant concern.' },
-
-  { name:'Gary Woodland',       type:'group', amateur:false, contender:false,
-    odds:'+7500', owgr:55, age:41,
-    augusta:'T12 (2019)',
-    form:'Won Houston Open — first win since brain surgery in 2023',
-    sgTotal:'Good', sgApproach:'Good', sgPutting:'Good',
-    note:'The feel-good story of the week. Won in Houston to earn his spot back at Augusta.' },
-
-  { name:'Harris English',      type:'group', amateur:false, contender:false,
-    odds:'+10000', owgr:21, age:36,
-    augusta:'T12 (2025)',
-    form:'Runner-up at both The Open and PGA Championship in 2025; Spaun WON Valero Texas Open',
-    sgTotal:'Solid', sgApproach:'Variable', sgPutting:'Top 20 SG',
-    note:'J.J. Spaun just won the Valero Texas Open to punch his Masters ticket — hot entering Augusta. English is a Georgia native with growing confidence here. Two major runner-ups last year.' },
-
-  { name:'Dustin Johnson',      type:'group', amateur:false, contender:false,
-    odds:'+12000', owgr:42, age:41,
-    augusta:'Champion (2020)',
-    form:'LIV; limited top-level competition data available',
-    sgTotal:'Still powerful', sgApproach:'Good', sgPutting:'Variable',
-    note:'2020 champion and 2019 runner-up. LIV limits available data. Power game still fits Augusta.' },
-
-  { name:'Cameron Smith',       type:'group', amateur:false, contender:false,
-    odds:'+8000', owgr:45, age:31,
-    augusta:'Runner-up (2022)',
-    form:'LIV; two top-3s at Augusta in career',
-    sgTotal:'Good', sgApproach:'Good', sgPutting:'Elite',
-    note:'Best putter in LIV Golf. Two top-3 finishes at Augusta. Putting + short game is the Augusta formula.' },
-
-  { name:'Si Woo Kim',          type:'group', amateur:false, contender:false,
-    odds:'+4500', owgr:32, age:29,
-    augusta:'T16 (2024)',
-    form:'Solid Tour presence; consistent in 2026',
-    sgTotal:'Steady', sgApproach:'Good', sgPutting:'Good',
-    note:'Quietly consistent at Augusta. Solid across the board without an obvious weakness.' },
-
-  // ── AMATEURS ────────────────────────────────────────────────────
-  { name:'Ethan Fang',          type:'group', amateur:true, contender:false,
-    odds:'N/A', owgr:'N/A', age:20,
-    augusta:'First appearance',
-    form:'Won 2025 Amateur Championship at Royal St. George\'s — first American since 2007',
-    sgTotal:'N/A', sgApproach:'Strong for level', sgPutting:'Reliable short game',
-    note:'Oklahoma State junior. Scrappy short game could keep him in contention through the weekend.' },
+/* ═══════════════════════════════════════════
+   GROUP LOTS — all 23 group auction lots
+   ═══════════════════════════════════════════ */
+const GROUP_LOTS = [
+  { lot:23,  members:['Akshay Bhatia','Jackson Herrington','Sami Valimaki'],    amateur:[1],   note:'Bhatia won the 2026 Arnold Palmer Invitational. Herrington is the amateur finalist.' },
+  { lot:24,  members:['Corey Conners','Sam Stevens','Kristoffer Reitan'],       amateur:[],    note:'Conners is a steady Augusta performer. Stevens and Reitan bring upside on their first Masters appearances.' },
+  { lot:25,  members:['Adam Scott','Harry Hall','Michael Kim'],                 amateur:[],    note:'Scott is the 2013 champion with lifelong Augusta comfort. Hall and Kim add depth.' },
+  { lot:26,  members:['Justin Thomas','Haotong Li','Johnny Keefer'],            amateur:[],    note:'Thomas is a two-time major winner looking to rediscover top form. Keefer won on the Korn Ferry Tour.' },
+  { lot:27,  members:['Sam Burns','Max Greyserman','Aldrich Potgieter'],        amateur:[],    note:'Burns brings elite putting. Potgieter is one of the longest hitters in the field.' },
+  { lot:28,  members:['Patrick Cantlay','Matt McCarty','Brian Campbell'],       amateur:[],    note:'Cantlay is a former FedEx Cup champion. McCarty qualified via world ranking.' },
+  { lot:29,  members:['Jason Day','Jake Knapp','Brandon Holtz'],               amateur:[2],   note:'Day is a former World No. 1 with strong Augusta history. Holtz is a basketball-turned-golfer amateur.' },
+  { lot:30,  members:['Sungjae Im','Alex Noren','Naoyuki Kataoka'],             amateur:[],    note:'Im was runner-up in 2020. Noren is a steady European Tour veteran.' },
+  { lot:31,  members:['Si Woo Kim','Carlos Ortiz','Rasmus Neergaard-Petersen'], amateur:[],    note:'Kim is consistent and comfortable at Augusta. Ortiz is a LIV competitor with major experience.' },
+  { lot:32,  members:['Sepp Straka','Nico Echavarria','Mason Howell'],         amateur:[2],   note:'Straka has two PGA Tour wins in 2025. Howell is an amateur with a big game.' },
+  { lot:33,  members:['Jacob Bridgeman','Kurt Kitayama','Casey Jarvis'],        amateur:[2],   note:'Bridgeman won the Genesis and leads Tour in SG: Putting. Jarvis is the SA Amateur champion.' },
+  { lot:34,  members:['Cameron Smith','Tom McKibbin','Fifa Laopakdee'],        amateur:[2],   note:'Smith has two top-3s at Augusta. McKibbin is a promising European Tour player. Laopakdee is the first Thai amateur at the Masters.' },
+  { lot:35,  members:['Ben Griffin','Ryan Gerard','Mateo Pulcini'],            amateur:[2],   note:'Griffin had three wins in 2025. Gerard is a steady PGA Tour presence. Pulcini is the Latin America Amateur champion.' },
+  { lot:36,  members:['Gary Woodland','Davis Riley','Danny Willett'],           amateur:[],    note:'Woodland won Houston Open in emotional return from brain surgery. Willett is the 2016 Masters champion.' },
+  { lot:37,  members:['Nicolai Højgaard','Rasmus Højgaard','Sergio Garcia'],    amateur:[],    note:'Twin Danish duo — Nicolai ranked top 50, Rasmus close behind. Garcia is a Masters contender with pedigree.' },
+  { lot:38,  members:['Marco Penge','Andrew Novak','Charl Schwartzel'],         amateur:[],    note:'Schwartzel is the 2011 Masters champion. Penge is the 2025 Open Championship qualifier.' },
+  { lot:39,  members:['Dustin Johnson','Maverick McNealy','Bubba Watson'],      amateur:[],    note:'Johnson is the 2020 Masters champion. Watson is a two-time green jacket winner. McNealy adds PGA Tour experience.' },
+  { lot:40,  members:['Harris English','J.J. Spaun','Fred Couples'],            amateur:[],    note:'Spaun just won the Valero Texas Open to punch his Masters ticket. Couples is beloved at Augusta. English has two major runner-ups.' },
+  { lot:41,  members:['Max Homa','Aaron Rai','Angel Cabrera'],                  amateur:[],    note:'Homa has finished T12 at Augusta. Rai is a DP World Tour winner. Cabrera is a former Masters champion.' },
+  { lot:42,  members:['Brian Harman','Nick Taylor','Vijay Singh'],              amateur:[],    note:'Harman is the 2023 Open champion. Taylor is a two-time winner on Tour. Singh is a past Masters champion.' },
+  { lot:43,  members:['Ethan Fang','Michael Brennan','Mike Weir'],             amateur:[0],   note:'Fang won the 2025 Amateur at Royal St. George\'s. Weir is the 2003 Masters champion.' },
+  { lot:44,  members:['Keegan Bradley','Wyndham Clark','Zach Johnson'],         amateur:[],    note:'Bradley is the 2026 Ryder Cup captain. Clark is the 2023 US Open champion. Johnson is a Masters and Open champion.' },
+  { lot:45,  members:['Ryan Fox','Daniel Berger','Jose Maria Olazabal'],        amateur:[],    note:'Olazabal is a two-time Masters champion. Berger is coming back strong from injury. Fox brings DP World Tour consistency.' },
 ];
 
+// Helper: given a player name, find which group lot they belong to
+function findGroupLot(playerName) {
+  const lower = (playerName||'').toLowerCase().replace(/\[am\]/gi,'').trim();
+  return GROUP_LOTS.find(g =>
+    g.members.some(m => {
+      const ml = m.toLowerCase().replace(/\[am\]/gi,'').trim();
+      return ml === lower || ml.includes(lower) || lower.includes(ml);
+    })
+  ) || null;
+}
+
+/* ═══════════════════════════════════════════
+   PLAYER_INTEL — seed data
+   Populated from Google Sheet (PlayerIntel tab) via fetchAuction/bootstrap.
+   The hardcoded array below is intentionally empty — the sheet is the
+   source of truth for all player cards now that the TSV has full coverage.
+   ═══════════════════════════════════════════ */
+const PLAYER_INTEL = [];
 /* ═══════════════════════════════════════════
    LOGIN
    ═══════════════════════════════════════════ */
@@ -2621,6 +2457,8 @@ function mergedIntel() {
     const norm = {...s};
     if (typeof norm.amateur   === 'string') norm.amateur   = norm.amateur.toLowerCase()   === 'true';
     if (typeof norm.contender === 'string') norm.contender = norm.contender.toLowerCase() === 'true';
+    // Pass groupLot field through as-is
+    norm.groupLot = norm.groupLot || '';
 
     const idx = base.findIndex(p => p.name.toLowerCase() === (norm.name||'').toLowerCase());
     if (idx > -1) {
@@ -2643,10 +2481,19 @@ function setIntelFilter(f) {
 }
 
 function renderIntel() {
+  const grid = document.getElementById('intel-grid');
+  if (!grid) return;
+
+  // Route group lots to their own renderer
+  if (intelFilter === 'groups') {
+    renderIntelGroups();
+    return;
+  }
+
   const search = (document.getElementById('intel-search')?.value || '').toLowerCase().trim();
   let filtered = mergedIntel();
 
-  // Normalize each entry's boolean fields before filtering
+  // Normalize boolean fields
   filtered = filtered.map(p => ({
     ...p,
     amateur:   p.amateur   === true || p.amateur   === 'true',
@@ -2663,7 +2510,6 @@ function renderIntel() {
     (p.note||'').toLowerCase().includes(search)
   );
 
-  const grid = document.getElementById('intel-grid');
   if (!filtered.length) {
     grid.innerHTML = '<div style="color:var(--text-light);font-size:13px;padding:20px 0">No players match.</div>';
     return;
@@ -2675,12 +2521,23 @@ function renderIntel() {
     const oddsVal   = p.odds && p.odds !== 'N/A' ? p.odds : '—';
     const owgrVal   = p.owgr && p.owgr !== 'N/A' ? '#' + p.owgr : null;
     const ageVal    = p.age  && p.age  !== 'N/A' ? p.age  : null;
+
+    // Group lot membership — prefer sheet's groupLot field, fall back to JS lookup
+    const sheetGroupLot = p.groupLot && p.groupLot.trim();
+    const jsGroupLot    = !sheetGroupLot ? findGroupLot(p.name) : null;
+    const groupBadge = sheetGroupLot
+      ? `<div class="intel-group-badge">⛳ ${sheetGroupLot}</div>`
+      : jsGroupLot
+        ? `<div class="intel-group-badge">⛳ Group Lot ${jsGroupLot.lot} — ${jsGroupLot.members.join(' / ')}</div>`
+        : '';
+
     return `<div class="intel-card">
       <div class="intel-card-header">
         <div style="min-width:0;flex:1">
           <div class="intel-card-name">${p.name}</div>
           <span class="intel-type-badge ${typeCls}">${typeLabel}</span>
           ${p.contender ? '<span class="intel-type-badge" style="background:#fdf6e3;color:var(--gold);margin-left:4px">⭐ Contender</span>' : ''}
+          ${groupBadge}
         </div>
         <div class="intel-card-odds">${oddsVal}</div>
       </div>
@@ -2695,6 +2552,81 @@ function renderIntel() {
     </div>`;
   }).join('');
 }
+
+function renderIntelGroups() {
+  const grid = document.getElementById('intel-grid');
+  if (!grid) return;
+
+  const search = (document.getElementById('intel-search')?.value || '').toLowerCase().trim();
+  const allIntel = mergedIntel();
+
+  // Get lot odds and win% from pendingLots if available
+  const getLotData = (lotNum) => pendingLots.find(l => Number(l.lot) === lotNum) || null;
+
+  const filtered = GROUP_LOTS.filter(g => {
+    if (!search) return true;
+    return g.members.some(m => m.toLowerCase().includes(search)) ||
+      (g.note||'').toLowerCase().includes(search) ||
+      String(g.lot).includes(search);
+  });
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div style="color:var(--text-light);font-size:13px;padding:20px 0">No groups match.</div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(g => {
+    const lotData  = getLotData(g.lot);
+    const odds     = lotData?.lot_odds ? String(lotData.lot_odds).replace(/^'/,'') : '—';
+    const winPct   = lotData ? lotWinPct(lotData) : '';
+
+    // Build member rows with intel lookup
+    const memberRows = g.members.map((name, i) => {
+      const isAmateur = g.amateur.includes(i);
+      const intel = allIntel.find(p => {
+        const pn = (p.name||'').toLowerCase().replace(/\[am\]/gi,'').trim();
+        const mn = name.toLowerCase().replace(/\[am\]/gi,'').trim();
+        return pn === mn || pn.includes(mn) || mn.includes(pn);
+      });
+      const detail = intel
+        ? [intel.augusta ? intel.augusta.split('(')[0].trim() : null, intel.form ? intel.form.split(';')[0].trim() : null].filter(Boolean).join(' · ')
+        : '';
+      const amBadge = isAmateur ? ' <span style="font-size:10px;background:#e8f5e9;color:#2e7d32;padding:1px 5px;border-radius:6px;font-weight:700">Am</span>' : '';
+      return `<div class="group-member-row">
+        <div class="group-member-icon">⛳</div>
+        <div style="flex:1;min-width:0">
+          <div class="group-member-name">${name}${amBadge}</div>
+          ${detail ? `<div class="group-member-detail" style="text-align:left;font-size:11px;color:var(--text-light);margin-top:1px">${detail}</div>` : ''}
+        </div>
+        ${intel?.odds && intel.odds !== 'N/A' ? `<div class="group-member-detail" style="color:var(--gold);font-weight:700">${intel.odds}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    // Buyer info
+    const buyer = lotData?.buyerId ? buyers.find(b => b.id === lotData.buyerId)?.name : null;
+    const price = lotData?.price ? '$' + Number(lotData.price).toLocaleString() : null;
+    const ownerBadge = buyer
+      ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:6px 8px;background:var(--green-pale);border-radius:6px">
+           <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-light)">Owner</span>
+           <span style="font-size:13px;font-weight:700;color:var(--green)">${buyer}${price ? ' · ' + price : ''}</span>
+         </div>`
+      : '';
+
+    return `<div class="group-card">
+      <div class="group-card-header">
+        <div class="group-card-lot">Lot ${g.lot} — Group</div>
+        <div class="group-card-title">Group Lot ${g.lot}</div>
+        <div class="group-card-odds">${odds !== '—' ? odds : ''}${winPct ? ' &nbsp;·&nbsp; ' + winPct + ' win' : ''}</div>
+      </div>
+      <div class="group-card-body">
+        <div class="group-card-members">${memberRows}</div>
+        ${g.note ? `<div class="group-card-note">${g.note}</div>` : ''}
+        ${ownerBadge}
+      </div>
+    </div>`;
+  }).join('');
+}
+
 
 /* ═══════════════════════════════════════════
    RULES
