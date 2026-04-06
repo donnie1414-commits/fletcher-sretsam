@@ -3038,6 +3038,29 @@ function buildQueueSidebar(ordered, curIdx) {
   </div>`;
 }
 
+function buildProgressHtml(soldCount, totalCount, pct, phase) {
+  const pot = pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
+  const potDisplay = pot > 0 ? '$' + pot.toLocaleString() : 'TBD';
+  return `
+    <div class="onblock-progress">
+      <div class="onblock-progress-info">
+        <div class="onblock-progress-label">${phase} &nbsp;·&nbsp; ${soldCount} of ${totalCount} lots sold</div>
+        <div class="onblock-progress-bar-wrap">
+          <div class="onblock-progress-bar" style="width:${pct}%"></div>
+        </div>
+        <div class="onblock-progress-text">${pct}% &nbsp;·&nbsp; ${totalCount - soldCount} remaining</div>
+      </div>
+      <div class="onblock-pot-display">
+        <div class="onblock-pot-icon">💰</div>
+        <div class="onblock-pot-amount">${potDisplay}</div>
+        <div class="onblock-pot-label">Pool Pot</div>
+      </div>
+      <div class="onblock-nav-btns">
+        <button class="btn btn-outline btn-sm" onclick="switchTab('auction')">Full Auction →</button>
+      </div>
+    </div>`;
+}
+
 function buildLayout(progressHtml, mainContent, ordered, curIdx) {
   return `
     ${progressHtml}
@@ -3067,26 +3090,7 @@ function renderOnBlock() {
               : allGroupsDone ? 'Phase 2 — Individual Players'
               : 'Phase 1 — Group Lots';
 
-  const pot = pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
-  const potDisplay = pot > 0 ? '$' + pot.toLocaleString() : 'TBD';
-  const progressHtml = `
-    <div class="onblock-progress">
-      <div class="onblock-progress-info">
-        <div class="onblock-progress-label">${phase} &nbsp;·&nbsp; ${soldCount} of ${totalCount} lots sold</div>
-        <div class="onblock-progress-bar-wrap">
-          <div class="onblock-progress-bar" style="width:${pct}%"></div>
-        </div>
-        <div class="onblock-progress-text">${pct}% &nbsp;·&nbsp; ${totalCount - soldCount} remaining</div>
-      </div>
-      <div class="onblock-pot-display">
-        <div class="onblock-pot-icon">💰</div>
-        <div class="onblock-pot-amount">${potDisplay}</div>
-        <div class="onblock-pot-label">Pool Pot</div>
-      </div>
-      <div class="onblock-nav-btns">
-        <button class="btn btn-outline btn-sm" onclick="switchTab('auction')">Full Auction →</button>
-      </div>
-    </div>`;
+  const progressHtml = buildProgressHtml(soldCount, totalCount, pct, phase);
 
   if (auctionDone) {
     clearOnBlockCountdown();
@@ -3163,19 +3167,7 @@ function startOnBlockCountdown(ordered, progressHtml, container) {
       const done       = freshOrdered.every(l => !!l.buyerId);
       const phase      = done ? 'Auction Complete 🎉' : groupsDone ? 'Phase 2 — Individual Players' : 'Phase 1 — Group Lots';
 
-      const freshProgress = `
-        <div class="onblock-progress">
-          <div class="onblock-progress-info">
-            <div class="onblock-progress-label">${phase} &nbsp;·&nbsp; ${soldCount} of ${totalCount} lots sold</div>
-            <div class="onblock-progress-bar-wrap">
-              <div class="onblock-progress-bar" style="width:${pct}%"></div>
-            </div>
-            <div class="onblock-progress-text">${pct}% &nbsp;·&nbsp; ${totalCount - soldCount} remaining</div>
-          </div>
-          <div class="onblock-nav-btns">
-            <button class="btn btn-outline btn-sm" onclick="switchTab('auction')">Full Auction →</button>
-          </div>
-        </div>`;
+      const freshProgress = buildProgressHtml(soldCount, totalCount, pct, phase);
 
       if (done) {
         freshContainer.innerHTML = freshProgress + `<div class="onblock-body">
@@ -3279,26 +3271,7 @@ async function sellLotFromBlock(lotNum) {
               : groupsDone   ? 'Phase 2 — Individual Players'
               : 'Phase 1 — Group Lots';
 
-  const pot2 = pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
-  const potDisplay2 = pot2 > 0 ? '$' + pot2.toLocaleString() : 'TBD';
-  const progressHtml = `
-    <div class="onblock-progress">
-      <div class="onblock-progress-info">
-        <div class="onblock-progress-label">${phase} &nbsp;·&nbsp; ${soldCount} of ${totalCount} lots sold</div>
-        <div class="onblock-progress-bar-wrap">
-          <div class="onblock-progress-bar" style="width:${pct}%"></div>
-        </div>
-        <div class="onblock-progress-text">${pct}% complete &nbsp;·&nbsp; ${totalCount - soldCount} remaining</div>
-      </div>
-      <div class="onblock-pot-display">
-        <div class="onblock-pot-icon">💰</div>
-        <div class="onblock-pot-amount">${potDisplay2}</div>
-        <div class="onblock-pot-label">Pool Pot</div>
-      </div>
-      <div class="onblock-nav-btns">
-        <button class="btn btn-outline btn-sm" onclick="switchTab('auction')">Full Auction →</button>
-      </div>
-    </div>`;
+  const progressHtml = buildProgressHtml(soldCount, totalCount, pct, phase);
 
   const container = document.getElementById('onblock-content');
   if (container) {
