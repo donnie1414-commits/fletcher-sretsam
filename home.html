@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Masters Calcutta HQ — 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green:      #1a4a2e;
+    --green-mid:  #2d6a46;
+    --green-light:#3d8a5e;
+    --green-pale: #e8f3ec;
+    --gold:       #c9a84c;
+    --gold-light: #e8c97a;
+    --gold-pale:  #fdf6e3;
+    --off-white:  #f9f7f4;
+    --border:     #d8d0c4;
+    --text:       #1c1c1c;
+    --text-mid:   #4a4a4a;
+    --text-light: #7a7a7a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--off-white);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── HERO ─────────────────────────────────────── */
+  .hero {
+    background: linear-gradient(160deg, #0e2b1a 0%, #1a4a2e 45%, #2d6a46 100%);
+    color: white;
+    padding: 56px 24px 64px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 120%, rgba(201,168,76,0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(201,168,76,0.2);
+    border: 1px solid rgba(201,168,76,0.4);
+    color: var(--gold-light);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin-bottom: 22px;
+  }
+
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(32px, 8vw, 60px);
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 10px;
+  }
+
+  .hero h1 span {
+    color: var(--gold-light);
+    font-style: italic;
+  }
+
+  .hero-sub {
+    font-size: 15px;
+    opacity: 0.72;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+
+  .hero-desc {
+    font-size: 16px;
+    line-height: 1.7;
+    opacity: 0.85;
+    max-width: 560px;
+    margin: 0 auto 36px;
+  }
+
+  .hero-enter {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--gold);
+    color: #1a1a1a;
+    font-weight: 700;
+    font-size: 15px;
+    padding: 14px 32px;
+    border-radius: 50px;
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 20px rgba(201,168,76,0.4);
+  }
+  .hero-enter:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(201,168,76,0.5);
+  }
+
+  .hero-divider {
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 40px auto 0;
+    opacity: 0.6;
+  }
+
+  /* ── DATES STRIP ──────────────────────────────── */
+  .dates-strip {
+    background: var(--green);
+    color: white;
+    text-align: center;
+    padding: 14px 24px;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .dates-strip span { opacity: 0.65; }
+  .dates-strip strong { color: var(--gold-light); }
+
+  /* ── PAGES GRID ───────────────────────────────── */
+  .pages-section {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 48px 20px 64px;
+  }
+
+  .pages-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--green);
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .pages-sub {
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-light);
+    margin-bottom: 36px;
+  }
+
+  .pages-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+  }
+
+  .page-card {
+    background: white;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+    box-shadow: 0 2px 10px rgba(26,74,46,0.07);
+  }
+  .page-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(26,74,46,0.14);
+    border-color: var(--green-light);
+  }
+
+  .page-card-header {
+    padding: 18px 20px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .page-icon {
+    font-size: 26px;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .page-card-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--green);
+    margin-bottom: 4px;
+    line-height: 1.2;
+  }
+
+  .page-card-tag {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-light);
+  }
+
+  .page-card-body {
+    padding: 0 20px 18px;
+    font-size: 13px;
+    color: var(--text-mid);
+    line-height: 1.6;
+    flex: 1;
+  }
+
+  .page-card-footer {
+    padding: 10px 20px 14px;
+    border-top: 1px solid #f0ece6;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .page-card-arrow {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+  }
+  .page-card:hover .page-card-arrow { opacity: 1; }
+
+  /* Card accent colours per category */
+  .card-auction   .page-card-header { background: linear-gradient(135deg, #e8f3ec, #f9f7f4); }
+  .card-payout    .page-card-header { background: linear-gradient(135deg, #fdf6e3, #f9f7f4); }
+  .card-live      .page-card-header { background: linear-gradient(135deg, #e8f0f3, #f9f7f4); }
+  .card-info      .page-card-header { background: linear-gradient(135deg, #f5f0ff, #f9f7f4); }
+  .card-special   .page-card-header { background: linear-gradient(135deg, #fff0e8, #f9f7f4); }
+
+  /* ── FOOTER ───────────────────────────────────── */
+  .footer {
+    background: var(--green);
+    color: white;
+    text-align: center;
+    padding: 28px 24px;
+    font-size: 13px;
+    opacity: 0.9;
+  }
+  .footer p { opacity: 0.6; margin-top: 4px; font-size: 12px; }
+
+  /* ── ANIMATIONS ───────────────────────────────── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero > * { animation: fadeUp 0.6s ease both; }
+  .hero-flag   { animation-delay: 0.05s; }
+  .hero h1     { animation-delay: 0.15s; }
+  .hero-sub    { animation-delay: 0.22s; }
+  .hero-desc   { animation-delay: 0.30s; }
+  .hero-enter  { animation-delay: 0.38s; }
+  .hero-divider{ animation-delay: 0.45s; }
+
+  .page-card {
+    animation: fadeUp 0.5s ease both;
+  }
+  .page-card:nth-child(1)  { animation-delay: 0.05s; }
+  .page-card:nth-child(2)  { animation-delay: 0.10s; }
+  .page-card:nth-child(3)  { animation-delay: 0.15s; }
+  .page-card:nth-child(4)  { animation-delay: 0.20s; }
+  .page-card:nth-child(5)  { animation-delay: 0.25s; }
+  .page-card:nth-child(6)  { animation-delay: 0.30s; }
+  .page-card:nth-child(7)  { animation-delay: 0.35s; }
+  .page-card:nth-child(8)  { animation-delay: 0.40s; }
+  .page-card:nth-child(9)  { animation-delay: 0.45s; }
+  .page-card:nth-child(10) { animation-delay: 0.50s; }
+  .page-card:nth-child(11) { animation-delay: 0.55s; }
+
+  @media(max-width:600px) {
+    .hero { padding: 44px 18px 52px; }
+    .pages-section { padding: 36px 14px 48px; }
+    .pages-grid { grid-template-columns: 1fr; }
+    .dates-strip { gap: 14px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-flag">⛳ Augusta National · April 9–12, 2026</div>
+  <h1>Masters Calcutta <span>HQ</span></h1>
+  <div class="hero-sub">The Official Pool Hub</div>
+  <p class="hero-desc">
+    Your all-in-one hub for the 2026 Masters Calcutta auction. Track bids, follow live scores, scout the field, and watch the money grow — all in one place.
+  </p>
+  <a href="index.html" class="hero-enter">Enter Pool HQ →</a>
+  <div class="hero-divider"></div>
+</div>
+
+<!-- DATES STRIP -->
+<div class="dates-strip">
+  <div>🏌️ <strong>Round 1</strong> Thu Apr 9</div>
+  <div>🏌️ <strong>Round 2</strong> Fri Apr 10</div>
+  <div>🏌️ <strong>Round 3</strong> Sat Apr 11</div>
+  <div>🏆 <strong>Final Round</strong> Sun Apr 12</div>
+</div>
+
+<!-- PAGES -->
+<div class="pages-section">
+  <div class="pages-title">What's Inside</div>
+  <p class="pages-sub">Tap any page to jump straight in after logging in</p>
+
+  <div class="pages-grid">
+
+    <a href="index.html" class="page-card card-auction">
+      <div class="page-card-header">
+        <div class="page-icon">🏌️</div>
+        <div>
+          <div class="page-card-name">Players</div>
+          <div class="page-card-tag">Auction · 47 Lots</div>
+        </div>
+      </div>
+      <div class="page-card-body">
+        The full auction table — all 47 lots including individual players and group lots. See who owns what, how much they paid, and the odds for each lot.
+      </div>
+      <div class="page-card-footer"><span class="page-card-arrow">View →</span></div>
+    </a>
+
+    <a href="index.html" class="page-card card-payout">
+      <div class="page-card-header">
+        <div class="page-icon">📊</div>
+        <div>
+          <div class="page-card-name">Dashboard</div>
+          <div class="page-card-tag">Pot · Payouts · Standings</div>
+        </div>
+      </div>
+      <div class="page-card-body">
+        The money view. Shows the total pool pot, a breakdown of every payout category with current leaders, and buyer standings with best score per team.
+      </div>
+      <div class="page-card-footer"><span class="page-card-arrow">View →</span></div>
+    </a>
+
+    <a href="index.html" class="page-card card-info">
+      <div class="page-card-header">
+        <div class="page-icon">📋</div>
+        <div>
+          <div class="page-card-name">Rules</div>
+          <div class="page-card-tag">Payouts · Format</div>
+        </div>
+      </div>
+      <div class="page-card-body">
+        The official pool rules — payout structure, tiebreaker rules, DFL qualifications, and how the Calcutta format works from start to finish.
+      </div>
+      <div class="page-card-footer"><span class="page-card-arrow">View →</span></div>
+    </a>
+
+    <a href="index.html" class="page-card card-special">
+      <div class="page-card-header">
+        <div class="page-icon">🔨</div>
+        <div>
+          <div class="page-card-name">On the Block</div>
+          <div class="page-card-tag">Live Auction · TV Mode</div>
+        </div>
+      </div>
+      <div class="page-card-body">
+        The live auction display — designed for a TV or big screen. Shows the current lot up for bid with full player intel, odds, and the upcoming queue.
+      </div>
+      <div class="page-card-footer"><span class="page-card-arrow">View →</span></div>
+    </a>
+
+    <a href="index.html" class="page-card card-live">
+      <div class="page-card-header">
+        <div class="page-icon">🔍</div>
+        <div>
+          <div class="page-card-name">Player Intel</div>
+          <div class="page-card-tag">Scouting · Group Cards</div>
+        </div>
+      </div>
+      <div class="page-card-body">
+        Deep scouting on every player in the field. Filter by individual, group lot, amateur, or contender. Each card shows Augusta history, 2026 form, and strokes gained stats.
+      </div>
+      <div class="page-card-footer"><span class="page-card-arrow">View →</span></div>
+    </a>
+
+    <a href="index.html" class="page-card card-auction">
+      <div class="page-card-header">
+        <div class="page-icon">🧾</div>
+        <div>
+          <div class="page-card-name">My Lots</div>
+          <div class="page-card-tag">Your Portfolio</div>
+        </div>
+      </div>
+      <div class="page-card-body">
+        Filter the auction by buyer to see exactly which lots any participant owns, what they paid, and quick intel snippets on each player in their portfolio.
+      </div>
+      <div class="page-card-footer"><span class="page-card-arrow">View →</span></div>
+    </a>
+
+    <a href="index.html" class="page-card card-live">
+      <div class="page-card-header">
+        <div class="page-icon">🎯</div>
+        <div>
+          <div class="page-card-name">Leaderboard</div>
+          <div class="page-card-tag">ESPN Live Scores</div>
+        </div>
+      </div>
+      <div class="page-card-body">
+        Live Masters leaderboard pulled directly from ESPN — updated every 60 seconds. Shows every player's position, score, and which pool participant owns them.
+      </div>
+      <div class="page-card-footer"><span class="page-card-arrow">View →</span></div>
+    </a>
+
+    <a href="index.html" class="page-card card-payout">
+      <div class="page-card-header">
+        <div class="page-icon">🏆</div>
+        <div>
+          <div class="page-card-name">Podium</div>
+          <div class="page-card-tag">Top 3 · Payout Cards</div>
+        </div>
+      </div>
+      <div class="page-card-body">
+        The top three finishers at Augusta with their owner and live payout amount. The 1st, 2nd, and 3rd place cards update in real time as the tournament unfolds.
+      </div>
+      <div class="page-card-footer"><span class="page-card-arrow">View →</span></div>
+    </a>
+
+    <a href="index.html" class="page-card card-payout">
+      <div class="page-card-header">
+        <div class="page-icon">🎓</div>
+        <div>
+          <div class="page-card-name">Low Am</div>
+          <div class="page-card-tag">3% of Pot</div>
+        </div>
+      </div>
+      <div class="page-card-body">
+        Tracks the Low Amateur leaderboard at Augusta. The lowest-scoring amateur earns 3% of the total pot — a meaningful payout if your group lot has an amateur with game.
+      </div>
+      <div class="page-card-footer"><span class="page-card-arrow">View →</span></div>
+    </a>
+
+    <a href="index.html" class="page-card card-payout">
+      <div class="page-card-header">
+        <div class="page-icon">📅</div>
+        <div>
+          <div class="page-card-name">Daily Low</div>
+          <div class="page-card-tag">5% Per Round · 4 Rounds</div>
+        </div>
+      </div>
+      <div class="page-card-body">
+        The lowest single-round score each day wins 5% of the pot. Four separate payouts — one per round — so any participant can win even if they don't have a tournament leader.
+      </div>
+      <div class="page-card-footer"><span class="page-card-arrow">View →</span></div>
+    </a>
+
+    <a href="index.html" class="page-card card-special">
+      <div class="page-card-header">
+        <div class="page-icon">💀</div>
+        <div>
+          <div class="page-card-name">DFL</div>
+          <div class="page-card-tag">Dead Freaking Last · 2×1%</div>
+        </div>
+      </div>
+      <div class="page-card-body">
+        Dead Last Friday (R1+R2 cumulative) and Dead Last Sunday (R1–R4 cumulative) each pay 1% of the pot. Sometimes owning the worst player is the most fun seat at the table.
+      </div>
+      <div class="page-card-footer"><span class="page-card-arrow">View →</span></div>
+    </a>
+
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  ⛳ Masters Calcutta HQ · Augusta National 2026
+  <p>Powered by ESPN Live Scores · Data via Google Sheets</p>
+</div>
+
+</body>
+</html>
