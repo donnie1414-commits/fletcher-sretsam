@@ -1367,6 +1367,7 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
     <div class="nav-tab active"   data-tab="auction"    onclick="switchTab('auction')">Players</div>
     <div class="nav-tab"          data-tab="dashboard"  onclick="switchTab('dashboard')">📊 Dashboard</div>
     <div class="nav-tab"          data-tab="rules"      onclick="switchTab('rules')">Rules</div>
+    <div class="nav-tab"          data-tab="onblock"    onclick="switchTab('onblock')">🔨 On the Block</div>
     <div class="nav-tab"          data-tab="intel"      onclick="switchTab('intel')">Player Intel</div>
     <div class="nav-tab"          data-tab="mylots"     onclick="switchTab('mylots')">My Lots</div>
     <div class="nav-tab"          data-tab="leaderboard" onclick="switchTab('leaderboard')">Leaderboard</div>
@@ -1374,7 +1375,6 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
     <div class="nav-tab"          data-tab="lowam"      onclick="switchTab('lowam')">Low Am</div>
     <div class="nav-tab"          data-tab="dailylow"   onclick="switchTab('dailylow')">Daily Low</div>
     <div class="nav-tab"          data-tab="deadlast"   onclick="switchTab('deadlast')">DFL</div>
-    <div class="nav-tab"          data-tab="onblock"    onclick="switchTab('onblock')">🔨 On the Block</div>
     <div class="nav-tab admin-only" id="admin-nav-tab"
          data-tab="setup" onclick="switchTab('setup')" style="display:none">⚙ Admin</div>
   </nav>
@@ -2693,7 +2693,7 @@ function renderIntelGroups() {
     const ownerBadge = buyer
       ? `<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:6px 8px;background:var(--green-pale);border-radius:6px">
            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-light)">Owner</span>
-           <span style="font-size:13px;font-weight:700;color:var(--green)">${buyer}${price ? ' · ' + price : ''}</span>
+           <span style="font-size:13px;font-weight:700;color:var(--green)">${buyer}${displaySpend && price ? ' · ' + price : ''}</span>
          </div>`
       : '';
 
@@ -2934,7 +2934,7 @@ function buildHeroCard(lot) {
 
   // ── Sold banner ──────────────────────────────────────────────
   const soldBanner = owner
-    ? `<div class="hero-sold-banner">✓ Sold to <strong>${owner}</strong>${lot.price ? ' — $' + Number(lot.price).toLocaleString() : ''}</div>`
+    ? `<div class="hero-sold-banner">✓ Sold to <strong>${owner}</strong>${displaySpend && lot.price ? ' — $' + Number(lot.price).toLocaleString() : ''}</div>`
     : '';
 
   // ── Admin bid panel ──────────────────────────────────────────
@@ -2993,7 +2993,7 @@ function buildHeroCard(lot) {
 function buildSoldCard(lot, countdown) {
   const isGroup  = (lot.type||'').toLowerCase() === 'group';
   const owner    = lot.buyerId ? buyers.find(b=>b.id===lot.buyerId)?.name : '—';
-  const price    = lot.price ? '$' + Number(lot.price).toLocaleString() : '—';
+  const price    = (displaySpend && lot.price) ? '$' + Number(lot.price).toLocaleString() : '—';
   const odds     = lotOddsDisplay(lot);
 
   const members = isGroup
@@ -3131,9 +3131,13 @@ function renderOnBlock() {
     return;
   }
 
-  // Detect newly sold lots
+  // Detect newly sold lots — only trigger sold state for lots that sold SINCE last render.
+  // On first render, seed prevSoldIds so existing sales don't trigger the countdown.
   const currentlySoldIds = new Set(ordered.filter(l => !!l.buyerId).map(l => String(l.lot)));
-  const newlySoldIds = [...currentlySoldIds].filter(id => !onBlockPrevSoldIds.has(id));
+  const isFirstRender = onBlockPrevSoldIds.size === 0 && currentlySoldIds.size > 0;
+  const newlySoldIds = isFirstRender
+    ? [] // don't treat existing sales as new on first load
+    : [...currentlySoldIds].filter(id => !onBlockPrevSoldIds.has(id));
   onBlockPrevSoldIds = currentlySoldIds;
 
   if (newlySoldIds.length > 0 && onBlockState !== 'sold') {
@@ -3398,7 +3402,7 @@ function renderMyLotsContent() {
                 ${members}
               </div>
               <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-                ${lot.price ? `<div class="mylots-lot-price">$${Number(lot.price).toLocaleString()}</div>` : ''}
+                ${displaySpend && lot.price ? `<div class="mylots-lot-price">$${Number(lot.price).toLocaleString()}</div>` : ''}
                 ${odds !== '—' ? `<div class="mylots-lot-odds">${odds}</div>` : ''}
                 ${winPct ? `<div style="font-size:11px;color:var(--text-light)">${winPct} win</div>` : ''}
               </div>
