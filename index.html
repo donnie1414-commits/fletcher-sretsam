@@ -1424,7 +1424,7 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
           </table>
         </div>
       </div>
-      <div class="card">
+      <div class="card" id="standings-card">
         <div class="card-title">💰 Buyer Standings</div>
         <div class="standings-grid" id="standings-grid"><div style="color:var(--text-light);font-size:13px">No buyers yet.</div></div>
       </div>
@@ -1552,6 +1552,35 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
       </div>
 
       <div class="setup-section">
+        <div class="setup-label">Display Settings</div>
+        <p style="font-size:13px;color:var(--text-mid);line-height:1.6;margin-bottom:14px">
+          Control what financial information is visible to all users.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;background:var(--off-white);border-radius:8px;border:1px solid var(--border)">
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--text)">💰 Pot Size</div>
+              <div style="font-size:12px;color:var(--text-light);margin-top:2px">Shows running total in header, dashboard banner, and payout amounts</div>
+            </div>
+            <button id="toggle-pot-btn" onclick="toggleDisplaySetting('pot')"
+              style="min-width:72px;padding:7px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;border:2px solid var(--green);background:var(--green);color:white;font-family:inherit;transition:all .2s">
+              ON
+            </button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;background:var(--off-white);border-radius:8px;border:1px solid var(--border)">
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--text)">👥 Team Spend</div>
+              <div style="font-size:12px;color:var(--text-light);margin-top:2px">Shows buyer standings and individual spend amounts</div>
+            </div>
+            <button id="toggle-spend-btn" onclick="toggleDisplaySetting('spend')"
+              style="min-width:72px;padding:7px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;border:2px solid var(--green);background:var(--green);color:white;font-family:inherit;transition:all .2s">
+              ON
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="setup-section">
         <div class="setup-label">Passwords</div>
         <p style="font-size:13px;color:var(--text-mid);line-height:1.6">
           Find <code>PASSWORDS</code> near the top of the <code>&lt;script&gt;</code> block and edit directly.
@@ -1627,6 +1656,10 @@ const ROUND_LABELS = { r1:'Rd 1 — Thu', r2:'Rd 2 — Fri', r3:'Rd 3 — Sat', 
    STATE
    ═══════════════════════════════════════════ */
 let currentRole = null;
+
+// Display settings — admin can toggle these to show/hide financial info
+let displayPot   = true;  // show pot size in header, dashboard, payouts
+let displaySpend = true;  // show buyer standings and spend amounts
 let loginRoleSelected = 'viewer';
 let backendUrl = HARDCODED_BACKEND_URL || localStorage.getItem(STORAGE_BACKEND_KEY) || '';
 
@@ -2032,7 +2065,7 @@ function renderPodium() {
                                .slice().sort((a,b) => a.toPar - b.toPar);
 
   const totalPot = pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
-  const fmtMoney = n => totalPot > 0 ? '$' + Math.round(n).toLocaleString() : '—';
+  const fmtMoney = n => (displayPot && totalPot > 0) ? '$' + Math.round(n).toLocaleString() : '—';
   const safe = v => isNaN(Number(v)) ? 0 : Number(v);
 
   const spots = [
@@ -2100,6 +2133,7 @@ function renderPodium() {
 }
 
 function calcPayout(pct) {
+  if (!displayPot) return '—';
   const totalPot = pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
   if (totalPot <= 0) return '—';
   return '$' + Math.round(totalPot * pct).toLocaleString();
@@ -2345,7 +2379,7 @@ function renderAuction() {
         <td>${typeBadge}</td>
         <td class="player-name"><span class="intel-link" onclick="showIntelModal(${lot.lot})">${lot.player}</span></td>
         <td>${isSold ? `<span class="owner-tag">${buyerName}</span>` : '<span style="color:var(--text-light)">—</span>'}</td>
-        <td style="text-align:right">${lot.price?'$'+lot.price.toLocaleString():'—'}</td>
+        <td style="text-align:right">${displaySpend && lot.price ? '$'+lot.price.toLocaleString() : (isSold && !displaySpend ? '✓' : '—')}</td>
         <td style="text-align:right;font-weight:600;color:var(--gold)">${oddsDisplay}</td>
         <td style="text-align:right;color:var(--text-mid)">${winDisplay}</td>
       </tr>`;
@@ -2358,7 +2392,7 @@ function updatePotPill() {
   const el  = document.getElementById('header-pot');
   const amt = document.getElementById('header-pot-amt');
   if (!el || !amt) return;
-  if (pot > 0) {
+  if (displayPot && pot > 0) {
     amt.textContent = '$' + pot.toLocaleString();
     el.style.display = '';
   } else {
@@ -2473,7 +2507,11 @@ async function deleteBuyer(id) {
    STANDINGS
    ═══════════════════════════════════════════ */
 function renderStandings() {
-  const grid=document.getElementById('standings-grid');
+  // Hide/show the whole standings card
+  const card = document.getElementById('standings-card');
+  if (card) card.style.display = displaySpend ? '' : 'none';
+
+  const grid = document.getElementById('standings-grid');
   if (!buyers.length) { grid.innerHTML='<div style="color:var(--text-light);font-size:13px">No buyers yet.</div>'; return; }
   const totals={},counts={};
   buyers.forEach(b=>{totals[b.id]=0;counts[b.id]=0;});
@@ -2481,7 +2519,7 @@ function renderStandings() {
   grid.innerHTML=buyers.slice().sort((a,b)=>totals[b.id]-totals[a.id]).map(b=>
     `<div class="standing-item">
       <div class="standing-name">${b.name}</div>
-      <div class="standing-amt">$${totals[b.id].toLocaleString()}</div>
+      ${displaySpend ? `<div class="standing-amt">$${totals[b.id].toLocaleString()}</div>` : ''}
       <div class="standing-lots">${counts[b.id]} lot${counts[b.id]===1?'':'s'}</div>
     </div>`).join('');
 }
@@ -3410,7 +3448,7 @@ function renderDashboard() {
   // Note: Daily Low is 5% total split into 4 rounds at 1.25% each? Actually rules say 5%/round.
   // Let's keep them as individual 5% each per rules. Adjust total note if needed.
 
-  const fmtMoney = n => '$' + Math.round(n).toLocaleString();
+  const fmtMoney = n => displayPot ? '$' + Math.round(n).toLocaleString() : '—';
   const safe = v => (v===null||v===undefined||isNaN(Number(v))) ? 0 : Number(v);
 
   // ── Current leaders for each category ───────────────────────
@@ -3535,6 +3573,7 @@ function renderDashboard() {
       <div class="section-title">📊 Pool Dashboard</div>
     </div>
 
+    ${displayPot ? `
     <div class="dash-pot">
       <div>
         <div class="dash-pot-label">Total Pool Pot</div>
@@ -3556,6 +3595,14 @@ function renderDashboard() {
         </div>
       </div>
     </div>
+    ` : `
+    <div class="dash-pot" style="justify-content:center">
+      <div style="text-align:center">
+        <div class="dash-pot-label">Auction in Progress</div>
+        <div class="dash-pot-amount" style="font-size:28px">${soldLots} of ${totalLots} lots sold</div>
+      </div>
+    </div>
+    `}
 
     <div class="section-title" style="margin-bottom:12px">Payout Breakdown</div>
     <div class="dash-payouts">
@@ -3574,7 +3621,7 @@ function renderDashboard() {
       Total distributed: ${Math.round(totalPct*100)}% of pot
     </div>
 
-    ${buyers.length ? `
+    ${displaySpend && buyers.length ? `
     <div class="section-title" style="margin-bottom:12px">Buyer Standings</div>
     <div class="card" style="padding:0;overflow:hidden">
       <table style="width:100%;border-collapse:collapse;font-size:14px">
@@ -3589,7 +3636,6 @@ function renderDashboard() {
           const bLots  = pendingLots.filter(l => l.buyerId === b.id);
           const spent  = bLots.reduce((s,l) => s + (Number(l.price)||0), 0);
           const lotCount = bLots.length;
-          // Find best performing player in leaderboard
           let bestScore = null, bestPlayer = '—';
           if (leaderboard.length) {
             bLots.forEach(l => {
@@ -3618,7 +3664,6 @@ function renderDashboard() {
         }).join('')}</tbody>
       </table>
     </div>` : ''}`;
-
 }
 
 /* ═══════════════════════════════════════════
@@ -3692,6 +3737,48 @@ function closeIntelModal() {
 
 // Close on Escape key
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeIntelModal(); });
+
+/* ═══════════════════════════════════════════
+   DISPLAY SETTINGS
+   ═══════════════════════════════════════════ */
+function toggleDisplaySetting(setting) {
+  if (setting === 'pot') {
+    displayPot = !displayPot;
+    const btn = document.getElementById('toggle-pot-btn');
+    if (btn) {
+      btn.textContent = displayPot ? 'ON' : 'OFF';
+      btn.style.background    = displayPot ? 'var(--green)' : 'white';
+      btn.style.color         = displayPot ? 'white' : 'var(--text-light)';
+      btn.style.borderColor   = displayPot ? 'var(--green)' : 'var(--border)';
+    }
+  } else if (setting === 'spend') {
+    displaySpend = !displaySpend;
+    const btn = document.getElementById('toggle-spend-btn');
+    if (btn) {
+      btn.textContent = displaySpend ? 'ON' : 'OFF';
+      btn.style.background    = displaySpend ? 'var(--green)' : 'white';
+      btn.style.color         = displaySpend ? 'white' : 'var(--text-light)';
+      btn.style.borderColor   = displaySpend ? 'var(--green)' : 'var(--border)';
+    }
+  }
+  // Re-render everything affected
+  applyDisplaySettings();
+  renderAuction();
+  renderStandings();
+  renderDashboard();
+}
+
+function applyDisplaySettings() {
+  // Header pot pill
+  const potEl = document.getElementById('header-pot');
+  if (potEl) {
+    const pot = pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
+    potEl.style.display = (displayPot && pot > 0) ? '' : 'none';
+  }
+  // Buyer standings card on Players tab
+  const standingsCard = document.getElementById('standings-card');
+  if (standingsCard) standingsCard.style.display = displaySpend ? '' : 'none';
+}
 
 /* ═══════════════════════════════════════════
    RESET AUCTION
