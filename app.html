@@ -1319,6 +1319,64 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
   .section-header{flex-direction:column;align-items:flex-start;gap:8px}
   .section-header .flex-gap{width:100%}
 }
+/* ── PAYMENTS TAB ───────────────────────────── */
+.pay-banner{display:flex;justify-content:center;gap:24px;padding:14px 16px;background:var(--green);border-radius:10px;margin-bottom:16px;flex-wrap:wrap}
+.pay-banner-stat{text-align:center}
+.pay-banner-val{font-size:20px;font-weight:700;color:var(--gold-light)}
+.pay-banner-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;opacity:.65;margin-top:2px}
+.pay-card{background:white;border-radius:10px;border:1px solid var(--border);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow)}
+.pay-card-hdr{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;user-select:none}
+.pay-card-hdr:hover{background:#fafaf8}
+.pay-card-name{font-size:16px;font-weight:700;color:var(--green);flex:1;min-width:0}
+.pay-card-meta{font-size:11px;color:var(--text-light);margin-top:1px}
+.pay-amounts{display:flex;gap:14px;flex-shrink:0}
+.pay-amt-block{text-align:right}
+.pay-amt-val{font-size:14px;font-weight:700}
+.pay-amt-label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-light)}
+.pay-status-pill{font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.ps-settled{background:var(--green-pale);color:var(--green)}
+.ps-partial{background:#fff3e0;color:#e65100}
+.ps-unpaid{background:#fdecea;color:#c62828}
+.ps-overpaid{background:#e8f0ff;color:#1a3a8f}
+.pay-body{border-top:1px solid var(--border);padding:14px 16px 16px;display:none}
+.pay-body.open{display:block}
+.pay-lots-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px}
+.pay-lots-table th{text-align:left;padding:5px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-light);border-bottom:1px solid var(--border)}
+.pay-lots-table th:last-child{text-align:right}
+.pay-lots-table td{padding:6px 8px;border-bottom:1px solid #f0ece6}
+.pay-lots-table td:last-child{text-align:right;font-weight:600}
+.pay-lots-table tr:last-child td{border-bottom:none}
+.pay-log-section{background:var(--off-white);border-radius:8px;padding:12px 14px;margin-top:4px}
+.pay-log-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-light);margin-bottom:8px}
+.pay-log-row{display:flex;align-items:center;gap:8px;padding:6px 8px;background:white;border-radius:6px;margin-bottom:4px;border:1px solid var(--border);font-size:13px}
+.pay-log-left{flex:1;min-width:0}
+.pay-log-date{font-size:11px;color:var(--text-light)}
+.pay-log-note{font-size:12px;color:var(--text-mid);font-style:italic;margin-top:1px}
+.pay-log-amt{font-weight:700;color:var(--green);flex-shrink:0}
+.pay-del-btn{background:none;border:none;color:var(--text-light);font-size:17px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0}
+.pay-del-btn:hover{color:#c62828}
+.pay-add-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.pay-add-row input{font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:white;color:var(--text);outline:none}
+.pay-add-row input:focus{border-color:var(--green)}
+.pay-input-amt{width:110px}
+.pay-input-note{flex:1;min-width:100px}
+.pay-add-btn{background:var(--green);color:white;border:none;border-radius:6px;font-family:inherit;font-size:13px;font-weight:600;padding:7px 14px;cursor:pointer;white-space:nowrap}
+.pay-add-btn:hover{background:var(--green-mid)}
+.pay-bal-summary{display:flex;gap:10px;margin-top:12px;padding-top:12px;border-top:2px solid var(--border);flex-wrap:wrap}
+.pay-bal-item{flex:1;min-width:80px;background:white;border:1px solid var(--border);border-radius:8px;padding:9px 10px;text-align:center}
+.pay-bal-item-val{font-size:17px;font-weight:700}
+.pay-bal-item-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-light);margin-top:2px}
+.pay-col-owed{color:var(--text)}
+.pay-col-paid{color:var(--green)}
+.pay-col-pos{color:#c62828}
+.pay-col-zero{color:var(--green)}
+.pay-col-neg{color:#1a3a8f}
+@media(max-width:600px){
+  .pay-amounts{gap:8px}
+  .pay-amt-val{font-size:12px}
+  .pay-banner{gap:12px}
+  .pay-banner-val{font-size:17px}
+}
 </style>
 </head>
 <body>
@@ -1375,6 +1433,7 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
     <div class="nav-tab"          data-tab="lowam"      onclick="switchTab('lowam')">Low Am</div>
     <div class="nav-tab"          data-tab="dailylow"   onclick="switchTab('dailylow')">Daily Low</div>
     <div class="nav-tab"          data-tab="deadlast"   onclick="switchTab('deadlast')">DFL</div>
+    <div class="nav-tab"          data-tab="payments"   onclick="switchTab('payments')">💳 Payments</div>
     <div class="nav-tab admin-only" id="admin-nav-tab"
          data-tab="setup" onclick="switchTab('setup')" style="display:none">⚙ Admin</div>
   </nav>
@@ -1507,6 +1566,10 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
     </div>
 
     <!-- ADMIN SETUP -->
+    <div class="tab-panel" id="tab-payments">
+      <div id="payments-content"></div>
+    </div>
+
     <div class="tab-panel" id="tab-setup">
       <div class="section-header"><div class="section-title">Admin Setup</div></div>
 
@@ -1638,6 +1701,19 @@ const PASSWORDS = { viewer: 'Masters2026', admin: 'fletcher' };
    ═══════════════════════════════════════════ */
 const ESPN_URL   = 'https://site.web.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
 const STORAGE_BACKEND_KEY = 'mastersPool_backendUrl';
+
+/* ── HOUSE FEE ───────────────────────────────────────────────────
+   $500 is deducted from the gross pot to cover event costs.
+   All payout calculations use netPot(). Change HOUSE_FEE here only.
+   ────────────────────────────────────────────────────────────── */
+const HOUSE_FEE = 500;
+function netPot() {
+  const gross = pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
+  return Math.max(0, gross - HOUSE_FEE);
+}
+function grossPot() {
+  return pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
+}
 
 // ── PASTE YOUR APPS SCRIPT URL HERE ──────────────────────────────
 // Every device will use this URL automatically — no Admin Setup needed.
@@ -1892,6 +1968,7 @@ function switchTab(tab) {
   if (tab === 'onblock')   renderOnBlock();
   if (tab === 'mylots')    renderMyLots();
   if (tab === 'dashboard') renderDashboard();
+  if (tab === 'payments')  renderPayments();
 
   // Speed up auction polling when On the Block is active
   if (backendUrl) {
@@ -2064,7 +2141,7 @@ function renderPodium() {
   const eligible = leaderboard.filter(r => !r.cut && !r.withdrawn)
                                .slice().sort((a,b) => a.toPar - b.toPar);
 
-  const totalPot = pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
+  const totalPot = netPot();
   const fmtMoney = n => (displayPot && totalPot > 0) ? '$' + Math.round(n).toLocaleString() : '—';
   const safe = v => isNaN(Number(v)) ? 0 : Number(v);
 
@@ -2134,7 +2211,7 @@ function renderPodium() {
 
 function calcPayout(pct) {
   if (!displayPot) return '—';
-  const totalPot = pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
+  const totalPot = netPot();
   if (totalPot <= 0) return '—';
   return '$' + Math.round(totalPot * pct).toLocaleString();
 }
@@ -2388,12 +2465,13 @@ function renderAuction() {
 }
 
 function updatePotPill() {
-  const pot = pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
-  const el  = document.getElementById('header-pot');
-  const amt = document.getElementById('header-pot-amt');
+  const gross = grossPot();
+  const net   = netPot();
+  const el    = document.getElementById('header-pot');
+  const amt   = document.getElementById('header-pot-amt');
   if (!el || !amt) return;
-  if (displayPot && pot > 0) {
-    amt.textContent = '$' + pot.toLocaleString();
+  if (displayPot && gross > 0) {
+    amt.textContent = '$' + net.toLocaleString();
     el.style.display = '';
   } else {
     el.style.display = 'none';
@@ -3066,8 +3144,8 @@ function buildQueueSidebar(ordered, curIdx) {
 }
 
 function buildProgressHtml(soldCount, totalCount, pct, phase) {
-  const pot = pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
-  const potDisplay = pot > 0 ? '$' + pot.toLocaleString() : 'TBD';
+  const net = netPot();
+  const potDisplay = net > 0 ? '$' + net.toLocaleString() : 'TBD';
   return `
     <div class="onblock-progress">
       <div class="onblock-progress-info">
@@ -3431,10 +3509,11 @@ function renderDashboard() {
   if (!container) return;
 
   // ── Pool pot ────────────────────────────────────────────────
-  const totalPot   = pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
+  const gross      = grossPot();
+  const totalPot   = netPot();   // net of $500 house fee — used for all payout calculations
   const soldLots   = pendingLots.filter(l => l.buyerId && Number(l.price) > 0).length;
   const totalLots  = pendingLots.length;
-  const unsoldPot  = totalPot === 0;
+  const unsoldPot  = gross === 0;
 
   // Payout percentages (from rules)
   const PAYOUTS = [
@@ -3580,9 +3659,9 @@ function renderDashboard() {
     ${displayPot ? `
     <div class="dash-pot">
       <div>
-        <div class="dash-pot-label">Total Pool Pot</div>
+        <div class="dash-pot-label">Prize Pool</div>
         <div class="dash-pot-amount">${unsoldPot ? 'TBD' : fmtMoney(totalPot)}</div>
-        <div class="dash-pot-sub">${soldLots} of ${totalLots} lots sold${unsoldPot ? ' — pot updates as lots sell' : ''}</div>
+        <div class="dash-pot-sub">${unsoldPot ? 'Pot updates as lots sell' : `$${gross.toLocaleString()} gross &minus; $${HOUSE_FEE.toLocaleString()} event costs`}</div>
       </div>
       <div class="dash-pot-stats">
         <div class="dash-pot-stat">
@@ -3773,11 +3852,13 @@ function toggleDisplaySetting(setting) {
 }
 
 function applyDisplaySettings() {
-  // Header pot pill
+  // Header pot pill — show net pot
   const potEl = document.getElementById('header-pot');
   if (potEl) {
-    const pot = pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
-    potEl.style.display = (displayPot && pot > 0) ? '' : 'none';
+    const gross = grossPot();
+    potEl.style.display = (displayPot && gross > 0) ? '' : 'none';
+    const amt = document.getElementById('header-pot-amt');
+    if (amt) amt.textContent = '$' + netPot().toLocaleString();
   }
   // Buyer standings card on Players tab
   const standingsCard = document.getElementById('standings-card');
@@ -3959,6 +4040,226 @@ function setSyncStatus(state){
   else if(state==='offline'){dot.className='sync-dot offline';label.textContent='ESPN offline';}
   else{dot.className='sync-dot loading';label.textContent='Refreshing…';}
 }
+/* ═══════════════════════════════════════════
+   PAYMENTS TAB
+   ═══════════════════════════════════════════ */
+const PAYMENTS_STORAGE_KEY = 'mastersPayments_v1';
+let payExpanded = {};  // { buyerId: bool }
+
+function loadPaymentData() {
+  try { return JSON.parse(localStorage.getItem(PAYMENTS_STORAGE_KEY) || '{}'); }
+  catch { return {}; }
+}
+function savePaymentData(data) {
+  localStorage.setItem(PAYMENTS_STORAGE_KEY, JSON.stringify(data));
+}
+
+function renderPayments() {
+  const container = document.getElementById('payments-content');
+  if (!container) return;
+
+  const pmtData = loadPaymentData();
+
+  if (!buyers.length) {
+    container.innerHTML = `<div style="text-align:center;padding:48px 24px;color:var(--text-light)">
+      <div style="font-size:32px;margin-bottom:12px">👥</div>
+      No buyers found. Add buyers in the Admin tab first.
+    </div>`;
+    return;
+  }
+
+  // Helpers
+  function buyerLots(bid) {
+    return pendingLots.filter(l => String(l.buyerId) === String(bid) && Number(l.price) > 0);
+  }
+  function totalOwed(bid)  { return buyerLots(bid).reduce((s,l) => s + Number(l.price||0), 0); }
+  function totalPaid(bid)  { return (pmtData[bid]||[]).reduce((s,p) => s + Number(p.amount), 0); }
+  function bal(bid)        { return totalOwed(bid) - totalPaid(bid); }
+  function statusFor(bid) {
+    const o = totalOwed(bid), p = totalPaid(bid);
+    if (p > o)  return 'overpaid';
+    if (p === o && o > 0) return 'settled';
+    if (p > 0)  return 'partial';
+    return 'unpaid';
+  }
+
+  // Banner totals
+  const totalPot     = buyers.reduce((s,b) => s + totalOwed(b.id), 0);
+  const totalPaidAll = buyers.reduce((s,b) => s + totalPaid(b.id), 0);
+  const stillOwed    = Math.max(0, totalPot - totalPaidAll);
+  const settledCount = buyers.filter(b => statusFor(b.id) === 'settled').length;
+
+  // Sort: unpaid → partial → overpaid → settled
+  const sortOrd = {unpaid:0, partial:1, overpaid:2, settled:3};
+  const sorted  = [...buyers].sort((a,b) => sortOrd[statusFor(a.id)] - sortOrd[statusFor(b.id)]);
+
+  function statusPillClass(s) {
+    return {settled:'ps-settled', partial:'ps-partial', unpaid:'ps-unpaid', overpaid:'ps-overpaid'}[s];
+  }
+  function statusPillLabel(s) {
+    return {settled:'✓ Settled', partial:'◑ Partial', unpaid:'✗ Unpaid', overpaid:'↑ Overpaid'}[s];
+  }
+
+  function buyerCardHtml(b) {
+    const bid    = b.id;
+    const owed   = totalOwed(bid);
+    const paid   = totalPaid(bid);
+    const b_     = bal(bid);
+    const status = statusFor(bid);
+    const bLots  = buyerLots(bid);
+    const pmts   = pmtData[bid] || [];
+    const isOpen = payExpanded[bid] || false;
+
+    const balClass = b_ > 0 ? 'pay-col-pos' : b_ < 0 ? 'pay-col-neg' : 'pay-col-zero';
+    const balSign  = b_ < 0 ? '−' : '';
+    const balAbs   = Math.abs(b_);
+
+    return `
+    <div class="pay-card" id="paycard-${bid}">
+      <div class="pay-card-hdr" onclick="togglePayCard('${bid}')">
+        <div style="flex:1;min-width:0">
+          <div class="pay-card-name">${b.name}</div>
+          <div class="pay-card-meta">${bLots.length} lot${bLots.length!==1?'s':''} · ${pmts.length} payment${pmts.length!==1?'s':''}</div>
+        </div>
+        <div class="pay-amounts">
+          <div class="pay-amt-block">
+            <div class="pay-amt-val pay-col-owed">$${owed.toLocaleString()}</div>
+            <div class="pay-amt-label">Owes</div>
+          </div>
+          <div class="pay-amt-block">
+            <div class="pay-amt-val pay-col-paid">$${paid.toLocaleString()}</div>
+            <div class="pay-amt-label">Paid</div>
+          </div>
+          <div class="pay-amt-block">
+            <div class="pay-amt-val ${balClass}">${balSign}$${balAbs.toLocaleString()}</div>
+            <div class="pay-amt-label">Balance</div>
+          </div>
+        </div>
+        <span class="pay-status-pill ${statusPillClass(status)}">${statusPillLabel(status)}</span>
+      </div>
+
+      <div class="pay-body${isOpen?' open':''}" id="paybody-${bid}">
+        ${bLots.length ? `
+        <table class="pay-lots-table">
+          <thead><tr>
+            <th>#</th><th>Player / Group</th><th style="text-align:right">Price</th>
+          </tr></thead>
+          <tbody>
+            ${bLots.map(l => `
+            <tr>
+              <td style="color:var(--text-light);font-size:11px">${l.lot}</td>
+              <td style="font-size:13px">${l.player}</td>
+              <td>$${Number(l.price).toLocaleString()}</td>
+            </tr>`).join('')}
+            <tr style="background:var(--off-white)">
+              <td colspan="2" style="font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light)">Total Owed</td>
+              <td style="font-weight:700;font-size:15px">$${owed.toLocaleString()}</td>
+            </tr>
+          </tbody>
+        </table>
+        ` : `<div style="font-size:13px;color:var(--text-light);padding:4px 0 12px">No lots purchased yet.</div>`}
+
+        <div class="pay-log-section">
+          <div class="pay-log-title">💳 Payment Log</div>
+          <div id="paylog-${bid}">
+            ${pmts.length ? pmts.map(p => `
+            <div class="pay-log-row" id="pmt-${p.id}">
+              <div class="pay-log-left">
+                <div class="pay-log-date">${p.date}</div>
+                ${p.note ? `<div class="pay-log-note">${p.note}</div>` : ''}
+              </div>
+              <div class="pay-log-amt">$${Number(p.amount).toLocaleString()}</div>
+              <button class="pay-del-btn" onclick="deletePaymentEntry('${bid}','${p.id}')" title="Remove">×</button>
+            </div>`).join('') : `<div style="font-size:12px;color:var(--text-light);padding:2px 0 8px">No payments recorded yet.</div>`}
+          </div>
+          <div class="pay-add-row">
+            <input type="number" class="pay-input-amt" id="payamt-${bid}" placeholder="$ Amount" min="0" step="1">
+            <input type="text"   class="pay-input-note" id="paynote-${bid}" placeholder="Note — Venmo, Cash, etc.">
+            <button class="pay-add-btn" onclick="addPaymentEntry('${bid}')">+ Add</button>
+          </div>
+          <div class="pay-bal-summary">
+            <div class="pay-bal-item">
+              <div class="pay-bal-item-val pay-col-owed">$${owed.toLocaleString()}</div>
+              <div class="pay-bal-item-label">Total Owed</div>
+            </div>
+            <div class="pay-bal-item">
+              <div class="pay-bal-item-val pay-col-paid">$${paid.toLocaleString()}</div>
+              <div class="pay-bal-item-label">Total Paid</div>
+            </div>
+            <div class="pay-bal-item">
+              <div class="pay-bal-item-val ${balClass}">${balSign}$${balAbs.toLocaleString()}</div>
+              <div class="pay-bal-item-label">${b_>0?'Still Owed':b_<0?'Overpaid':'Settled ✓'}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  container.innerHTML = `
+    <div class="section-header" style="margin-bottom:16px">
+      <div class="section-title">💳 Payment Tracker</div>
+    </div>
+    <div class="pay-banner">
+      <div class="pay-banner-stat">
+        <div class="pay-banner-val">$${totalPot.toLocaleString()}</div>
+        <div class="pay-banner-label">Total Pot</div>
+      </div>
+      <div class="pay-banner-stat">
+        <div class="pay-banner-val">$${totalPaidAll.toLocaleString()}</div>
+        <div class="pay-banner-label">Total Paid</div>
+      </div>
+      <div class="pay-banner-stat">
+        <div class="pay-banner-val" style="color:${stillOwed>0?'#f4c842':'var(--gold-light)'}">$${stillOwed.toLocaleString()}</div>
+        <div class="pay-banner-label">Still Owed</div>
+      </div>
+      <div class="pay-banner-stat">
+        <div class="pay-banner-val">${settledCount} / ${buyers.length}</div>
+        <div class="pay-banner-label">Settled</div>
+      </div>
+    </div>
+    ${sorted.map(b => buyerCardHtml(b)).join('')}
+  `;
+}
+
+function togglePayCard(bid) {
+  payExpanded[bid] = !payExpanded[bid];
+  const body = document.getElementById('paybody-' + bid);
+  if (body) body.classList.toggle('open', payExpanded[bid]);
+}
+
+function addPaymentEntry(bid) {
+  const amtEl  = document.getElementById('payamt-'  + bid);
+  const noteEl = document.getElementById('paynote-' + bid);
+  const amt    = parseFloat(amtEl.value);
+  if (!amt || amt <= 0) { amtEl.focus(); return; }
+
+  const pmtData = loadPaymentData();
+  if (!pmtData[bid]) pmtData[bid] = [];
+  pmtData[bid].push({
+    id:     Date.now() + '_' + Math.random().toString(36).slice(2,6),
+    amount: amt,
+    note:   noteEl.value.trim(),
+    date:   new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}),
+  });
+  savePaymentData(pmtData);
+
+  amtEl.value  = '';
+  noteEl.value = '';
+  payExpanded[bid] = true;
+  renderPayments();
+}
+
+function deletePaymentEntry(bid, pmtId) {
+  const pmtData = loadPaymentData();
+  if (!pmtData[bid]) return;
+  pmtData[bid] = pmtData[bid].filter(p => p.id !== pmtId);
+  if (!pmtData[bid].length) delete pmtData[bid];
+  savePaymentData(pmtData);
+  payExpanded[bid] = true;
+  renderPayments();
+}
+
 </script>
 </body>
 </html>
