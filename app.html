@@ -3722,12 +3722,27 @@ function renderDashboard() {
           let bestScore = null, bestPlayer = '—';
           if (leaderboard.length) {
             bLots.forEach(l => {
-              const names = l.player.split(' / ').map(m => m.replace(/\[Am\]/gi,'').replace(/\([^)]+\)/g,'').trim());
+              const names = l.player.split(' / ').map(m => m.replace(/\[Am\]/gi,'').trim());
               names.forEach(name => {
                 const entry = leaderboard.find(r => {
-                  const n = r.player.toLowerCase();
-                  const cl = name.toLowerCase();
-                  return n === cl || n.includes(cl) || cl.includes(n);
+                  function normStr(s) {
+                    const XLAT = {'ø':'o','ö':'o','ó':'o','ô':'o','ò':'o','õ':'o','ü':'u','ú':'u',
+                                  'û':'u','ù':'u','ä':'a','á':'a','â':'a','à':'a','ã':'a','é':'e',
+                                  'ê':'e','è':'e','ë':'e','í':'i','î':'i','ì':'i','ï':'i','ñ':'n',
+                                  'ß':'ss','æ':'ae','œ':'oe','ý':'y','ÿ':'y','ç':'c','å':'a'};
+                    let r = (s||'').toLowerCase();
+                    for (const [k,v] of Object.entries(XLAT)) r = r.split(k).join(v);
+                    r = r.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+                    return r.replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+                  }
+                  const n  = normStr(r.player);
+                  const cl = normStr(name);
+                  if (n === cl) return true;
+                  const nt = n.split(' ').filter(Boolean);
+                  const ct = cl.split(' ').filter(Boolean);
+                  const sh = nt.length <= ct.length ? nt : ct;
+                  const lo = nt.length <= ct.length ? ct : nt;
+                  return sh.length > 0 && sh.every(t => lo.includes(t));
                 });
                 if (entry && !entry.cut && !entry.withdrawn) {
                   const tp = isNaN(entry.toPar) ? 0 : entry.toPar;
@@ -4013,24 +4028,49 @@ function getHeadshot(playerName) {
 }
 
 function findOwner(playerName){
-  if(!playerName)return'—';
-  // Exact match first (individual lots)
-  let lot = pendingLots.find(l => l.player === playerName);
-  // Partial match for group lots — strip odds/amateur tags and check each name
-  if (!lot) {
-    const needle = playerName.toLowerCase().trim();
-    lot = pendingLots.find(l => {
-      // Split group lot player string on ' / ' and check each member
-      return l.player.split(' / ').some(member => {
-        // Strip [Am] and (+odds) annotations for matching
-        const clean = member.replace(/\[Am\]/gi,'').replace(/\([^)]+\)/g,'').trim().toLowerCase();
-        // Match if the leaderboard name contains the clean name or vice versa
-        return clean === needle || clean.includes(needle) || needle.includes(clean);
-      });
-    });
+  if (!playerName) return '—';
+
+  // Normalize: transliterate non-ASCII, strip diacritics, remove punctuation, collapse spaces
+  function norm(s) {
+    const XLAT = {'ø':'o','ö':'o','ó':'o','ô':'o','ò':'o','õ':'o','ü':'u','ú':'u','û':'u','ù':'u',
+                  'ä':'a','á':'a','â':'a','à':'a','ã':'a','é':'e','ê':'e','è':'e','ë':'e',
+                  'í':'i','î':'i','ì':'i','ï':'i','ñ':'n','ß':'ss','æ':'ae','œ':'oe',
+                  'ý':'y','ÿ':'y','ç':'c','å':'a'};
+    let r = (s||'').toLowerCase();
+    for (const [k,v] of Object.entries(XLAT)) r = r.split(k).join(v);
+    r = r.normalize('NFD').replace(/[\u0300-\u036f]/g,''); // strip remaining diacritics
+    r = r.replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+    return r;
   }
-  if(!lot||!lot.buyerId)return'—';
-  return buyers.find(b=>b.id===lot.buyerId)?.name||'—';
+
+  const needle = norm(playerName);
+
+  const lot = pendingLots.find(l => {
+    return l.player.split(' / ').some(member => {
+      const clean = norm(member.replace(/\[Am\]/gi,''));
+
+      // 1. Exact normalized match
+      if (clean === needle) return true;
+
+      // 2. All tokens of shorter name appear in longer (handles initials, accent variants)
+      const nt = needle.split(' ').filter(Boolean);
+      const ct = clean.split(' ').filter(Boolean);
+      const sh = nt.length <= ct.length ? nt : ct;
+      const lo = nt.length <= ct.length ? ct : nt;
+      if (sh.length > 0 && sh.every(t => lo.includes(t))) return true;
+
+      // 3. Last name + first initial match (catches Hojgaard siblings etc)
+      const nLast = nt[nt.length - 1];
+      const cLast = ct[ct.length - 1];
+      if (nLast && cLast && nLast === cLast &&
+          nt[0] && ct[0] && nt[0][0] === ct[0][0]) return true;
+
+      return false;
+    });
+  });
+
+  if (!lot || !lot.buyerId) return '—';
+  return buyers.find(b => b.id === lot.buyerId)?.name || '—';
 }
 function setSyncStatus(state){
   const dot=document.getElementById('sync-dot');
