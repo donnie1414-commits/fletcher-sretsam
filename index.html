@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Masters Calcutta HQ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -1720,6 +1723,25 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
 
 <script>
 'use strict';
+
+/* ═══════════════════════════════════════════
+   CACHE BUST ON LOAD
+   If the page was served from cache and the
+   stored build timestamp doesn't match, force
+   a hard reload to get the latest version.
+   ═══════════════════════════════════════════ */
+(function() {
+  const BUILD_TS = '20260409-2';  // bump this with APP_VERSION every deploy
+  const TS_KEY   = 'mastersPool_buildTs';
+  const stored   = sessionStorage.getItem(TS_KEY);
+  if (stored && stored !== BUILD_TS) {
+    // Stored timestamp differs — we're running a stale cached page
+    sessionStorage.setItem(TS_KEY, BUILD_TS);
+    window.location.reload(true);
+  } else {
+    sessionStorage.setItem(TS_KEY, BUILD_TS);
+  }
+})();
 
 /* ═══════════════════════════════════════════
    PASSWORDS  ← change these
