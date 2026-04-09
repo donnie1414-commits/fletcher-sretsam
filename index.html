@@ -1422,7 +1422,7 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
   </header>
 
   <nav>
-    <div class="nav-tab"          data-tab="dashboard"  onclick="switchTab('dashboard')">📊 Dashboard</div>
+    <div class="nav-tab active"   data-tab="dashboard"  onclick="switchTab('dashboard')">📊 Dashboard</div>
     <div class="nav-tab"          data-tab="rules"      onclick="switchTab('rules')">Rules</div>
     <div class="nav-tab"          data-tab="mylots"     onclick="switchTab('mylots')">My Lots</div>
     <div class="nav-tab"          data-tab="leaderboard" onclick="switchTab('leaderboard')">Leaderboard</div>
@@ -1431,7 +1431,7 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
     <div class="nav-tab"          data-tab="dailylow"   onclick="switchTab('dailylow')">Daily Low</div>
     <div class="nav-tab"          data-tab="deadlast"   onclick="switchTab('deadlast')">DFL</div>
     <div class="nav-tab"          data-tab="payments"   onclick="switchTab('payments')">💳 Payments</div>
-    <div class="nav-tab active"   data-tab="auction"    onclick="switchTab('auction')">Players</div>
+    <div class="nav-tab"          data-tab="auction"    onclick="switchTab('auction')">Players</div>
     <div class="nav-tab"          data-tab="onblock"    onclick="switchTab('onblock')">🔨 On the Block</div>
     <div class="nav-tab"          data-tab="intel"      onclick="switchTab('intel')">Player Intel</div>
     <div class="nav-tab admin-only" id="admin-nav-tab"
@@ -1671,6 +1671,30 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
   </main>
 </div>
 
+<!-- VERSION UPDATE POPUP -->
+<div id="version-popup-overlay" onclick="dismissVersionPopup()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:600;backdrop-filter:blur(3px)"></div>
+<div id="version-popup" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(420px,92vw);background:white;border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,0.3);z-index:601;overflow:hidden">
+  <div style="background:linear-gradient(140deg,#1a3d1a 0%,#2d5a1b 60%,#1a4a1a 100%);padding:22px 24px 18px;color:white">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;opacity:0.65;margin-bottom:6px">Site Updated</div>
+    <div style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:4px">New Version Available 🎉</div>
+    <div style="font-size:13px;opacity:0.75">Masters Calcutta HQ has been updated since your last visit.</div>
+  </div>
+  <div style="padding:20px 24px 24px">
+    <div style="font-size:13px;color:#4a4a4a;line-height:1.6;margin-bottom:18px">
+      A new version of the pool site has been deployed. For the best experience — including the latest scores, group updates, and bug fixes — please reload the page to get the newest version.
+    </div>
+    <div id="version-popup-detail" style="font-size:11px;color:#7a7a7a;margin-bottom:18px;padding:8px 12px;background:#f9f7f4;border-radius:6px;font-family:monospace"></div>
+    <div style="display:flex;gap:10px">
+      <button onclick="reloadForUpdate()" style="flex:1;background:#1a4a2e;color:white;border:none;border-radius:8px;padding:11px 16px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer">
+        🔄 Reload Now
+      </button>
+      <button onclick="dismissVersionPopup()" style="background:white;color:#4a4a4a;border:1px solid #d8d0c4;border-radius:8px;padding:11px 16px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">
+        Later
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- INTEL MODAL -->
 <div id="intel-modal-overlay" onclick="closeIntelModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;backdrop-filter:blur(2px)"></div>
 <div id="intel-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(560px,94vw);max-height:85vh;overflow-y:auto;background:white;border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,0.3);z-index:501">
@@ -1701,6 +1725,14 @@ const PASSWORDS = { viewer: 'Masters2026', admin: 'fletcher' };
    ═══════════════════════════════════════════ */
 const ESPN_URL   = 'https://site.web.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard';
 const STORAGE_BACKEND_KEY = 'mastersPool_backendUrl';
+const STORAGE_VERSION_KEY = 'mastersPool_lastVersion';
+
+/* ── APP VERSION ─────────────────────────────────────────────────────
+   Bump this string whenever you push an update. Users who logged in
+   on an older version will see a "New version available" popup.
+   Format: YYYY-MM-DD.N  (date + sequence number for same-day updates)
+   ────────────────────────────────────────────────────────────────── */
+const APP_VERSION = '2026-04-09.2';
 
 /* ── HOUSE FEE ───────────────────────────────────────────────────
    $500 is deducted from the gross pot to cover event costs.
@@ -1964,6 +1996,12 @@ function initApp(role) {
 
   renderRules();
   renderIntel();
+
+  // Default landing tab — dashboard
+  switchTab('dashboard');
+
+  // Version check — show popup if this is a newer build than last seen
+  checkAppVersion();
 
   // Start live feeds
   fetchESPN();
@@ -4362,6 +4400,38 @@ function deletePaymentEntry(bid, pmtId) {
   savePaymentData(pmtData);
   payExpanded[bid] = true;
   renderPayments();
+}
+
+/* ═══════════════════════════════════════════
+   VERSION CHECK
+   ═══════════════════════════════════════════ */
+function checkAppVersion() {
+  const lastSeen = localStorage.getItem(STORAGE_VERSION_KEY);
+  // First-time visitor: just record version, no popup
+  if (!lastSeen) {
+    localStorage.setItem(STORAGE_VERSION_KEY, APP_VERSION);
+    return;
+  }
+  // If version has changed since last login, show popup
+  if (lastSeen !== APP_VERSION) {
+    const detail = document.getElementById('version-popup-detail');
+    if (detail) detail.textContent = `Previous: ${lastSeen}  →  Current: ${APP_VERSION}`;
+    document.getElementById('version-popup-overlay').style.display = '';
+    document.getElementById('version-popup').style.display = '';
+  }
+}
+
+function dismissVersionPopup() {
+  document.getElementById('version-popup-overlay').style.display = 'none';
+  document.getElementById('version-popup').style.display = 'none';
+  // Record that user has seen this version
+  localStorage.setItem(STORAGE_VERSION_KEY, APP_VERSION);
+}
+
+function reloadForUpdate() {
+  localStorage.setItem(STORAGE_VERSION_KEY, APP_VERSION);
+  // Force hard reload bypassing cache
+  window.location.reload(true);
 }
 
 </script>
