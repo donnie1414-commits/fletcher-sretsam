@@ -1430,6 +1430,7 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
         <div class="sync-dot loading" id="sync-dot"></div>
         <span class="sync-label" id="sync-label">Loading…</span>
       </div>
+      <button class="btn-share" onclick="forceRefresh()" title="Force reload latest version" style="font-size:15px">🔄</button>
       <button class="btn-share" onclick="shareUrl()" title="Share site URL">🔗</button>
       <button class="btn-logout" onclick="logout()">Logout</button>
     </div>
@@ -3797,13 +3798,17 @@ function renderDashboard() {
   const dflSunRounds   = ['r1','r2','r3','r4'].filter(k => lbAll.some(r => r[k] !== null));
   const currentDeadSun = worstCumul(lbAll, dflSunRounds);
 
-  function winnerCard(payout, player, score, extra) {
+  function winnerCard(payout, player, score, extra, tiedPool) {
     const amount    = fmtMoney(totalPot * payout.pct);
     const scoreCls  = score < 0 ? 'under' : score > 0 ? 'over' : 'even';
     const ownerName = player ? findOwner(player.player) : null;
-    // Tie detection: find all active players who have started with this exact toPar
+    // Use provided tiedPool if given (e.g. amateur-only for Low Am),
+    // otherwise default to all active started players
+    const pool = tiedPool || (player
+      ? lb.filter(r => r.thru && r.thru !== '—')
+      : []);
     const tied = player
-      ? lb.filter(r => safe(r.toPar) === safe(player.toPar) && r.thru && r.thru !== '—')
+      ? pool.filter(r => safe(r.toPar) === safe(player.toPar))
       : [];
     const tieHtml = tied.length > 1
       ? `<div style="margin-top:6px;padding:4px 6px;background:#fff8e1;border-radius:5px;font-size:10px;color:#7a5800;border:1px solid #f0c040">
@@ -3912,6 +3917,11 @@ function renderDashboard() {
       </div>`;
   }
 
+  // Amateur pool for Low Am tie detection — only amateurs who have started
+  const lowAmPool = leaderboard.filter(r =>
+    (r.amateur || isAmateurPlayer(r.player)) && !r.withdrawn && !r.cut &&
+    r.thru && r.thru !== '—'
+  );
   // ── Total payout check ──────────────────────────────────────
   const totalPct = PAYOUTS.reduce((s,p) => s + p.pct, 0);
 
@@ -3956,7 +3966,7 @@ function renderDashboard() {
       ${winnerCard(PAYOUTS[0], currentWinner,  safe(currentWinner?.toPar))}
       ${winnerCard(PAYOUTS[1], current2nd,     safe(current2nd?.toPar))}
       ${winnerCard(PAYOUTS[2], current3rd,     safe(current3rd?.toPar))}
-      ${winnerCard(PAYOUTS[3], currentLowAm,   safe(currentLowAm?.toPar))}
+      ${winnerCard(PAYOUTS[3], currentLowAm,   safe(currentLowAm?.toPar), '', lowAmPool)}
       ${roundCard(PAYOUTS[4])}
       ${roundCard(PAYOUTS[5])}
       ${roundCard(PAYOUTS[6])}
@@ -4567,6 +4577,12 @@ function deletePaymentEntry(bid, pmtId) {
 /* ═══════════════════════════════════════════
    VERSION CHECK
    ═══════════════════════════════════════════ */
+function forceRefresh() {
+  localStorage.setItem(STORAGE_VERSION_KEY, APP_VERSION);
+  sessionStorage.setItem('mastersPool_buildTs', '');  // clear build timestamp to force re-check
+  window.location.reload(true);
+}
+
 function checkAppVersion() {
   const lastSeen = localStorage.getItem(STORAGE_VERSION_KEY);
   // New user — just record version silently, no popup needed
