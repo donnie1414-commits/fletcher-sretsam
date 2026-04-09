@@ -1987,14 +1987,6 @@ async function fetchESPN() {
     const res  = await fetch(ESPN_URL);
     if (!res.ok) throw new Error('HTTP '+res.status);
     const data = await res.json();
-    // DEBUG: log first competitor raw data to console so we can inspect field names
-    const comp0 = data?.events?.[0]?.competitions?.[0]?.competitors?.[0];
-    if (comp0) console.log('[ESPN DEBUG] First competitor:', JSON.stringify({
-      score: comp0.score,
-      status: comp0.status,
-      statistics: comp0.statistics,
-      linescores: comp0.linescores,
-    }, null, 2));
     leaderboard = parseESPN(data);
     setSyncStatus('live');
     const ts = new Date().toLocaleTimeString();
@@ -2028,131 +2020,94 @@ function parseESPN(data) {
     const competitors = event.competitions?.[0]?.competitors || [];
     if (!competitors.length) return demoLeaderboard();
 
-    // Current round number from the event (1–4)
+    // Current round from competition status
     const currentRound = event.competitions?.[0]?.status?.period || 1;
 
     const parsed = competitors.map(c => {
-      // Helper: find a stat by name in the statistics array
-      const getStat = name => (c.statistics||[]).find(s => s.name === name);
-      const getStatVal = name => getStat(name)?.displayValue ?? null;
 
-      // Parse a score string → integer (handles E/Even, +, -, null, --)
-      const parseScore = val => {
+      // ── OVERALL TO-PAR ────────────────────────────────────────
+      // c.score is the reliable overall to-par string: "-5", "E", "+2"
+      const parseTopar = val => {
         if (val === null || val === undefined) return null;
         const v = String(val).trim();
-        if (v === '' || v === '-' || v === '--') return null;
+        if (!v || v === '-' || v === '--') return null;
         if (v === 'E' || v === 'Even') return 0;
         const n = parseInt(v, 10);
-        return isNaN(n) ? null : n;
+        return isNaN(n) ? 0 : n;
       };
 
-      // Parse raw strokes → to-par vs Augusta par 72
-      const strokesToPar = strokes => {
-        const s = parseInt(strokes, 10);
-        if (isNaN(s) || s <= 0) return null;
-        if (s > 50) return s - 72;  // raw strokes
-        return s;                    // already to-par
-      };
+      const toPar = parseTopar(c.score) ?? 0;
 
-      // ── OVERALL TO-PAR ─────────────────────────────
-      // c.score is the overall to-par, displayed as "E", "+2", "-5" etc.
-      // statistics may have scoreToPar as backup
-      const toPar = parseScore(c.score) ??
-                    parseScore(getStatVal('scoreToPar')) ??
-                    parseScore(getStatVal('scoreOverall')) ?? 0;
-
-      // ── LINESCORES (round-by-round) ─────────────────
-      // ESPN golf linescores: each entry has .value (to-par int) and .displayValue (raw strokes or to-par string)
+      // ── LINESCORES STRUCTURE ──────────────────────────────────
+      // linescores[i] = one object per round
+      //   .period         = round number (1-4)
+      //   .displayValue   = round to-par string ("-2", "E", "+1") — only present if round started
+      //   .linescores     = array of hole-by-hole scores for that round (only present if in progress or complete)
+      //     each hole: { value: raw_strokes, displayValue: "4", period: hole_number }
       const lines = c.linescores || [];
-      const rndScore = i => {
-        if (i >= lines.length) return null;
-        const line = lines[i];
-        if (!line) return null;
 
-        // Try .value first — ESPN golf sometimes puts to-par int here
-        if (line.value !== undefined && line.value !== null) {
-          const v = Number(line.value);
-          if (!isNaN(v)) {
-            // If value looks like raw strokes (>20 or negative would be impossible as par)
-            if (Math.abs(v) > 20) return v - 72;
-            return v; // to-par
-          }
-        }
+      // Get the linescore entry for a given round (1-indexed)
+      const getRound = rndNum => lines.find(l => l.period === rndNum) || null;
 
-        // Fall back to displayValue
-        const dv = String(line.displayValue || '').trim();
-        if (!dv || dv === '-' || dv === '--' || dv === '') return null;
-        if (dv === 'E' || dv === 'Even') return 0;
-        const parsed = parseInt(dv, 10);
-        if (isNaN(parsed)) return null;
-        if (Math.abs(parsed) > 20) return parsed - 72; // raw strokes
-        return parsed; // to-par
+      // Parse a completed round's to-par from its displayValue
+      const roundToPar = rndNum => {
+        const ln = getRound(rndNum);
+        if (!ln || ln.displayValue === undefined) return null;
+        return parseTopar(ln.displayValue);
       };
 
-      const r1 = rndScore(0);
-      const r2 = rndScore(1);
-      const r3 = rndScore(2);
-      const r4 = rndScore(3);
+      const r1 = roundToPar(1);
+      const r2 = roundToPar(2);
+      const r3 = roundToPar(3);
+      const r4 = roundToPar(4);
 
-      // ── TODAY'S SCORE ───────────────────────────────
-      // ESPN golf statistics: try multiple known field names
-      // Also derive from linescores if statistics don't have it
-      let today = parseScore(getStatVal('scoreToday')) ??
-                  parseScore(getStatVal('scoreCurrentRound')) ??
-                  parseScore(getStatVal('roundScore'));
+      // ── TODAY'S SCORE ─────────────────────────────────────────
+      // The current round's linescore has displayValue = to-par for that round so far
+      const currentLn = getRound(currentRound);
+      const today = currentLn?.displayValue !== undefined
+        ? (parseTopar(currentLn.displayValue) ?? 0)
+        : 0;
 
-      // If still null, derive from linescores for current round
-      if (today === null) {
-        const roundIdx = currentRound - 1;
-        today = rndScore(roundIdx);
-      }
-      if (today === null) today = 0;
-
-      // ── THRU / HOLES PLAYED ─────────────────────────
-      // Multiple ESPN field names for holes played
-      let thru = getStatVal('holesPlayed') ??
-                 getStatVal('thru') ??
-                 getStatVal('holeNumber');
-
-      // If not in stats, check status
-      if (!thru || thru === '0' || thru === 0) {
-        const statusPeriod = c.status?.period;
-        // period in golf = current round; holes played within round isn't always available
-        thru = null; // will handle below
-      }
-
-      // Finalize thru display
-      const isFinishedRound = c.status?.type?.name === 'STATUS_PLAY_COMPLETE' ||
-                               c.status?.type?.name === 'STATUS_FINAL' ||
-                               String(c.status?.displayValue||'').toUpperCase() === 'F';
-      if (isFinishedRound) {
+      // ── THRU (holes played today) ─────────────────────────────
+      // Count of hole entries in the current round's nested linescores array
+      const currentHoles = currentLn?.linescores || [];
+      let thru;
+      if (currentHoles.length === 18) {
         thru = 'F';
-      } else if (!thru || thru === '0' || thru === '18') {
-        // 18 holes played within round = finished that round
-        thru = thru === '18' ? 'F' : (thru || '—');
+      } else if (currentHoles.length > 0) {
+        thru = String(currentHoles.length);
+      } else {
+        // Round hasn't started yet — check if prior rounds are complete
+        const statusName = c.status?.type?.name || '';
+        if (statusName === 'STATUS_CUT' || statusName === 'STATUS_WITHDRAWN' ||
+            statusName === 'STATUS_RETIRED' || statusName === 'STATUS_FINAL' ||
+            c.status?.displayValue === 'F') {
+          thru = 'F';
+        } else {
+          thru = '—';
+        }
       }
-      if (thru === '0') thru = '—'; // hasn't started
 
-      // ── POSITION ───────────────────────────────────
-      const pos = c.status?.displayValue || c.status?.position?.displayName || String(c.sortOrder || '—');
-
-      // ── CUT / WITHDRAWN ─────────────────────────────
+      // ── STATUS ───────────────────────────────────────────────
       const statusName = c.status?.type?.name || '';
       const cut       = statusName === 'STATUS_CUT';
       const withdrawn = statusName === 'STATUS_WITHDRAWN' || statusName === 'STATUS_RETIRED';
 
+      // Position display
+      const pos = c.status?.displayValue || String(c.sortOrder || '—');
+
       return {
         pos, toPar, today, thru, r1, r2, r3, r4,
-        player:    c.athlete?.displayName || c.athlete?.shortName || '?',
-        amateur:   c.athlete?.amateur === true,
+        player:   c.athlete?.displayName || c.athlete?.shortName || '?',
+        amateur:  c.athlete?.amateur === true,
         cut,
         withdrawn,
       };
     });
 
+    // Sort: active by toPar, then cut, then withdrawn
     return parsed.sort((a, b) => {
-      // Sort: active players by toPar, then cut, then withdrawn
-      if (a.cut !== b.cut) return a.cut ? 1 : -1;
+      if (a.cut !== b.cut)       return a.cut       ? 1 : -1;
       if (a.withdrawn !== b.withdrawn) return a.withdrawn ? 1 : -1;
       return a.toPar - b.toPar;
     });
