@@ -2379,6 +2379,8 @@ function tieNotice(sorted, scoreFn, icon) {
   if (!sorted || sorted.length < 2) return '';
   const topScore = scoreFn(sorted[0]);
   if (topScore === null || topScore === undefined) return '';
+  // Don't show tie notice before tournament starts (everyone at 0 isn't a real tie)
+  if (topScore === 0 && sorted.every(r => r.thru === '—' || r.thru === null)) return '';
   const tied = sorted.filter(r => scoreFn(r) === topScore);
   if (tied.length < 2) return '';
   const names = tied.map(r => {
@@ -2534,19 +2536,44 @@ function renderDeadLast() {
   let sorted, heroLabel, colLabel, getScore, payoutPct;
 
   if (deadLastDay === 'sunday') {
-    const valid = leaderboard.filter(p => p.r1 !== null && p.r4 !== null);
-    getScore  = r => safe(r.r1) + safe(r.r2) + safe(r.r3) + safe(r.r4);
-    sorted    = valid.slice().sort((a,b) => getScore(b) - getScore(a));
-    heroLabel = 'DFL — Through Sunday (R1–R4)';
-    colLabel  = 'Total';
+    // Sunday DFL: cumulative R1+R2+R3+R4 — need all 4 rounds complete
+    // During tournament, use however many rounds have been completed
+    const valid = leaderboard.filter(p =>
+      !p.withdrawn &&
+      p.r1 !== null &&
+      p.r2 !== null &&
+      p.r3 !== null &&
+      p.r4 !== null
+    );
+    // If full 4 rounds not available yet, fall back to however many exist
+    const fallback = valid.length === 0
+      ? leaderboard.filter(p => !p.withdrawn && p.r1 !== null)
+      : valid;
+    getScore  = r => {
+      const rounds = [r.r1, r.r2, r.r3, r.r4].filter(v => v !== null);
+      return rounds.reduce((s, v) => s + v, 0);
+    };
+    sorted    = fallback.slice().sort((a,b) => getScore(b) - getScore(a));
+    heroLabel = 'DFL — Through Sunday (R1–R4 cumulative)';
+    colLabel  = 'Cumulative';
     payoutPct = 0.01;
   } else {
-    // Default: friday
-    const valid = leaderboard.filter(p => p.r1 !== null && p.r2 !== null);
-    getScore  = r => safe(r.r1) + safe(r.r2);
+    // Friday DFL: cumulative R1+R2
+    // During R1, show R1 only. Once R2 exists, use R1+R2.
+    const hasR2 = leaderboard.some(p => p.r2 !== null);
+    const valid = hasR2
+      ? leaderboard.filter(p => !p.withdrawn && p.r1 !== null && p.r2 !== null)
+      : leaderboard.filter(p => !p.withdrawn && p.r1 !== null);
+    getScore  = r => {
+      const r1 = r.r1 !== null ? r.r1 : 0;
+      const r2 = r.r2 !== null ? r.r2 : 0;
+      return hasR2 ? r1 + r2 : r1;
+    };
     sorted    = valid.slice().sort((a,b) => getScore(b) - getScore(a));
-    heroLabel = 'DFL — Through Friday (R1+R2)';
-    colLabel  = 'R1+R2';
+    heroLabel = hasR2
+      ? 'DFL — Through Friday (R1+R2 cumulative)'
+      : 'DFL — Through Round 1';
+    colLabel  = hasR2 ? 'R1+R2' : 'R1';
     payoutPct = 0.01;
   }
 
@@ -2572,10 +2599,12 @@ function renderDeadLast() {
   const rows = sorted.slice(0,15).map((r,i) => {
     const score = getScore(r);
     const cls   = score < 0 ? 'under' : score > 0 ? 'over' : 'even';
-    const am    = r.amateur ? '<span class="am-badge">Am</span>' : '';
+    const am    = (r.amateur || isAmateurPlayer(r.player)) ? '<span class="am-badge">Am</span>' : '';
+    const owner = findOwner(r.player);
+    const ownerTag = owner !== '—' ? `<span class="owner-tag" style="font-size:11px">${owner}</span>` : '';
     return `<tr ${i===0?'style="background:#fff0f0"':''}>
       <td class="pos">${i+1}</td>
-      <td class="player-name">${r.player}${am}</td>
+      <td class="player-name">${r.player}${am} ${ownerTag}</td>
       <td class="to-par ${cls}">${fmtPar(score)}</td>
       <td>${fmtPar(r.toPar)}</td>
       <td>${r.thru}</td>
@@ -3734,13 +3763,20 @@ function renderDashboard() {
     return arr.slice().sort((a,b) => safe(a.toPar) - safe(b.toPar))[0];
   }
   function worstCumul(arr, rounds) {
-    const valid = arr.filter(r => rounds.every(k => r[k] !== null));
+    // Only include rounds that have data for at least some players
+    const availableRounds = rounds.filter(k => arr.some(r => r[k] !== null));
+    if (!availableRounds.length) return null;
+    const valid = arr.filter(r => availableRounds.every(k => r[k] !== null));
     if (!valid.length) return null;
     return valid.slice().sort((a,b) => {
-      const sa = rounds.reduce((s,k) => s + safe(a[k]), 0);
-      const sb = rounds.reduce((s,k) => s + safe(b[k]), 0);
-      return sb - sa; // worst first
+      const sa = availableRounds.reduce((s,k) => s + safe(a[k]), 0);
+      const sb = availableRounds.reduce((s,k) => s + safe(b[k]), 0);
+      return sb - sa; // worst (highest) score first
     })[0];
+  }
+  function worstCumulRounds(arr, rounds) {
+    // Returns the rounds actually used (for accurate score display)
+    return rounds.filter(k => arr.some(r => r[k] !== null));
   }
   function bestRound(arr, key) {
     const valid = arr.filter(r => r[key] !== null && r[key] !== undefined);
@@ -3752,8 +3788,12 @@ function renderDashboard() {
   const current2nd     = (() => { const top=lb.slice().sort((a,b)=>safe(a.toPar)-safe(b.toPar)); return top[1]||null; })();
   const current3rd     = (() => { const top=lb.slice().sort((a,b)=>safe(a.toPar)-safe(b.toPar)); return top[2]||null; })();
   const currentLowAm   = bestScore(leaderboard.filter(r=>(r.amateur||isAmateurPlayer(r.player)) && !r.withdrawn && !r.cut));
-  const currentDeadFri = worstCumul(lbAll, ['r1','r2']);
-  const currentDeadSun = worstCumul(lbAll, ['r1','r2','r3','r4']);
+  // DFL Friday: use R1 only during round 1, R1+R2 once R2 has data
+  const dflFriRounds   = ['r1','r2'].filter(k => lbAll.some(r => r[k] !== null));
+  const currentDeadFri = worstCumul(lbAll, dflFriRounds);
+  // DFL Sunday: use all rounds that have data
+  const dflSunRounds   = ['r1','r2','r3','r4'].filter(k => lbAll.some(r => r[k] !== null));
+  const currentDeadSun = worstCumul(lbAll, dflSunRounds);
 
   function winnerCard(payout, player, score, extra) {
     const amount    = fmtMoney(totalPot * payout.pct);
@@ -3835,10 +3875,12 @@ function renderDashboard() {
     const amount = fmtMoney(totalPot * payout.pct);
     const scoreCls = score !== null ? (score < 0 ? 'under' : score > 0 ? 'over' : 'even') : 'even';
     const ownerName = player ? findOwner(player.player) : null;
-    // Tie: all players with same cumulative score across the same rounds
+    // Tie: only players who have all required rounds AND share the same cumulative score
     const tied = score !== null
-      ? lbAll.filter(r => rounds.every(k => r[k] !== null) &&
-                          rounds.reduce((s,k) => s + safe(r[k]), 0) === score)
+      ? lbAll.filter(r =>
+          !r.withdrawn &&
+          rounds.every(k => r[k] !== null) &&
+          rounds.reduce((s,k) => s + safe(r[k]), 0) === score)
       : [];
     const tieHtml = tied.length > 1
       ? `<div style="margin-top:6px;padding:4px 6px;background:#fff8e1;border-radius:5px;font-size:10px;color:#7a5800;border:1px solid #f0c040">
@@ -3917,8 +3959,8 @@ function renderDashboard() {
       ${roundCard(PAYOUTS[5])}
       ${roundCard(PAYOUTS[6])}
       ${roundCard(PAYOUTS[7])}
-      ${deadLastCard(PAYOUTS[8], currentDeadFri, ['r1','r2'], 'Cumulative R1+R2')}
-      ${deadLastCard(PAYOUTS[9], currentDeadSun, ['r1','r2','r3','r4'], 'Cumulative R1–R4')}
+      ${deadLastCard(PAYOUTS[8], currentDeadFri, dflFriRounds, `Cumulative ${dflFriRounds.map(r=>r.toUpperCase()).join('+')}`)}
+      ${deadLastCard(PAYOUTS[9], currentDeadSun, dflSunRounds, `Cumulative ${dflSunRounds.map(r=>r.toUpperCase()).join('+')}`)}
     </div>
     <div style="font-size:12px;color:var(--text-light);text-align:right;margin-top:-8px;margin-bottom:24px">
       Total distributed: ${Math.round(totalPct*100)}% of pot
