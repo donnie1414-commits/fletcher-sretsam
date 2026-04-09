@@ -1715,6 +1715,33 @@ function grossPot() {
   return pendingLots.reduce((s,l) => s + (Number(l.price)||0), 0);
 }
 
+/* ── AMATEUR PLAYERS ─────────────────────────────────────────────────
+   Hardcoded from GROUP_LOTS [Am] markers — used to identify amateurs
+   on the leaderboard since ESPN's amateur flag is unreliable.
+   ────────────────────────────────────────────────────────────────── */
+const AMATEUR_NAMES = [
+  'Casey Jarvis',
+  'Brandon Holtz',
+  'Mason Howell',
+  'Jackson Herrington',
+  'Mateo Pulcini',
+  'Fifa Laopakdee',
+  'Ethan Fang',
+];
+
+// Normalized amateur name set for fast matching
+function isAmateurPlayer(displayName) {
+  if (!displayName) return false;
+  function normName(s) {
+    const XLAT = {'ø':'o','ö':'o','á':'a','é':'e','í':'i','ó':'o','ú':'u','ñ':'n','å':'a'};
+    let r = (s||'').toLowerCase();
+    for (const [k,v] of Object.entries(XLAT)) r = r.split(k).join(v);
+    return r.replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+  }
+  const needle = normName(displayName);
+  return AMATEUR_NAMES.some(am => normName(am) === needle);
+}
+
 // ── PASTE YOUR APPS SCRIPT URL HERE ──────────────────────────────
 // Every device will use this URL automatically — no Admin Setup needed.
 // Leave as '' to use the Admin Setup tab instead.
@@ -2099,7 +2126,7 @@ function parseESPN(data) {
       return {
         pos, toPar, today, thru, r1, r2, r3, r4,
         player:   c.athlete?.displayName || c.athlete?.shortName || '?',
-        amateur:  c.athlete?.amateur === true,
+        amateur:  isAmateurPlayer(c.athlete?.displayName || c.athlete?.shortName),
         cut,
         withdrawn,
       };
@@ -2135,7 +2162,7 @@ function renderLeaderboard() {
   tbody.innerHTML = leaderboard.map(r => {
     const toPar = isNaN(r.toPar) ? 0 : r.toPar;
     const cls = toPar<0?'under':toPar>0?'over':'even';
-    const amBadge = r.amateur?'<span class="am-badge">Am</span>':'';
+    const amBadge = (r.amateur || isAmateurPlayer(r.player)) ? '<span class="am-badge">Am</span>' : '';
     const rFmt = v => v===null||v===undefined?'—':fmtPar(v);
     const owner = findOwner(r.player);
     const ownerCell = owner !== '—'
@@ -2160,7 +2187,7 @@ const PAYOUT_CFG = {
   winner:   {icon:'🏆',label:'Winner',     trophy:'🏆',heroIdx:0, sort:lb=>lb.filter(r=>!r.cut&&!r.withdrawn).sort((a,b)=>a.toPar-b.toPar)},
   second:   {icon:'🥈',label:'2nd Place',  trophy:'🥈',heroIdx:1, sort:lb=>lb.filter(r=>!r.cut&&!r.withdrawn).sort((a,b)=>a.toPar-b.toPar)},
   third:    {icon:'🥉',label:'3rd Place',  trophy:'🥉',heroIdx:2, sort:lb=>lb.filter(r=>!r.cut&&!r.withdrawn).sort((a,b)=>a.toPar-b.toPar)},
-  lowam:    {icon:'🎓',label:'Low Amateur',trophy:'🎓',heroIdx:0, sort:lb=>lb.filter(r=>r.amateur&&!r.cut).sort((a,b)=>a.toPar-b.toPar)},
+  lowam:    {icon:'🎓',label:'Low Amateur',trophy:'🎓',heroIdx:0, sort:lb=>lb.filter(r=>(r.amateur||isAmateurPlayer(r.player))&&!r.cut&&!r.withdrawn).sort((a,b)=>a.toPar-b.toPar)},
 };
 
 function refreshActivePayoutTab() {
@@ -3597,7 +3624,7 @@ function renderDashboard() {
   const currentWinner  = bestScore(lb);
   const current2nd     = (() => { const top=lb.slice().sort((a,b)=>safe(a.toPar)-safe(b.toPar)); return top[1]||null; })();
   const current3rd     = (() => { const top=lb.slice().sort((a,b)=>safe(a.toPar)-safe(b.toPar)); return top[2]||null; })();
-  const currentLowAm   = bestScore(leaderboard.filter(r=>r.amateur && !r.withdrawn));
+  const currentLowAm   = bestScore(leaderboard.filter(r=>(r.amateur||isAmateurPlayer(r.player)) && !r.withdrawn && !r.cut));
   const currentDeadFri = worstCumul(lbAll, ['r1','r2']);
   const currentDeadSun = worstCumul(lbAll, ['r1','r2','r3','r4']);
 
