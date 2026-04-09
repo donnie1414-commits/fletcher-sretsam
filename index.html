@@ -1516,6 +1516,9 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
           <button class="btn btn-outline btn-sm" onclick="fetchESPN()">↻ Refresh</button>
         </div>
       </div>
+      <div id="lb-owner-filter-bar" style="display:none;margin-bottom:10px">
+        <div class="day-filter-bar" id="lb-owner-btns"></div>
+      </div>
       <div class="card">
         <div class="tbl-wrap">
           <table>
@@ -2226,12 +2229,37 @@ function demoLeaderboard() {
 /* ═══════════════════════════════════════════
    LEADERBOARD RENDER
    ═══════════════════════════════════════════ */
+let lbOwnerFilter = 'all'; // 'all' or a buyer name
+
 function renderLeaderboard() {
+  // Build filter buttons whenever buyers are loaded
+  const filterBar = document.getElementById('lb-owner-filter-bar');
+  const btnsEl    = document.getElementById('lb-owner-btns');
+  if (filterBar && btnsEl && buyers.length) {
+    filterBar.style.display = '';
+    const allBtn = `<button class="day-btn ${lbOwnerFilter==='all'?'active':''}" onclick="setLbOwnerFilter('all')">All</button>`;
+    const buyerBtns = buyers.map(b =>
+      `<button class="day-btn ${lbOwnerFilter===b.name?'active':''}" onclick="setLbOwnerFilter('${b.name.replace(/'/g,"\\'")}')">${b.name}</button>`
+    ).join('');
+    btnsEl.innerHTML = allBtn + buyerBtns;
+  }
+
   const tbody = document.getElementById('lb-tbody');
   if (!leaderboard.length) {
     tbody.innerHTML='<tr class="loading-row"><td colspan="10">No leaderboard data yet — scores will appear here once the tournament begins.</td></tr>'; return;
   }
-  tbody.innerHTML = leaderboard.map(r => {
+
+  // Apply owner filter
+  const filtered = lbOwnerFilter === 'all'
+    ? leaderboard
+    : leaderboard.filter(r => findOwner(r.player) === lbOwnerFilter);
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr class="loading-row"><td colspan="10">No players found for <strong>${lbOwnerFilter}</strong>.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(r => {
     const toPar = isNaN(r.toPar) ? 0 : r.toPar;
     const cls = toPar<0?'under':toPar>0?'over':'even';
     const amBadge = (r.amateur || isAmateurPlayer(r.player)) ? '<span class="am-badge">Am</span>' : '';
@@ -2240,7 +2268,9 @@ function renderLeaderboard() {
     const ownerCell = owner !== '—'
       ? `<span class="owner-tag">${owner}</span>`
       : `<span style="color:var(--text-light);font-size:12px">—</span>`;
-    return `<tr class="${r.cut?'cut-row':''}">
+    // Highlight rows belonging to filtered owner
+    const rowStyle = lbOwnerFilter !== 'all' ? '' : '';
+    return `<tr class="${r.cut?'cut-row':''}" ${rowStyle}>
       <td class="pos">${r.pos}</td>
       <td class="player-name">${r.player}${amBadge}${r.cut?' <em style="font-size:11px;opacity:.6">(CUT)</em>':''}</td>
       <td>${ownerCell}</td>
@@ -2250,6 +2280,11 @@ function renderLeaderboard() {
       <td class="lb-r1">${rFmt(r.r1)}</td><td class="lb-r2">${rFmt(r.r2)}</td><td class="lb-r3">${rFmt(r.r3)}</td><td class="lb-r4">${rFmt(r.r4)}</td>
     </tr>`;
   }).join('');
+}
+
+function setLbOwnerFilter(name) {
+  lbOwnerFilter = name;
+  renderLeaderboard();
 }
 
 /* ═══════════════════════════════════════════
