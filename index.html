@@ -2293,9 +2293,9 @@ function renderPodium() {
     const owner    = player ? findOwner(player.player) : null;
     const payout   = fmtMoney(totalPot * spot.pct);
 
-    // Detect tie at this position
+    // Detect tie at this position — only among players who have actually teed off
     const tiedPlayers = player
-      ? eligible.filter(r => safe(r.toPar) === toPar)
+      ? eligible.filter(r => safe(r.toPar) === toPar && r.thru && r.thru !== '—')
       : [];
     const isTied = tiedPlayers.length > 1;
     const tiedNames = isTied
@@ -2336,7 +2336,8 @@ function renderPodium() {
     const player = eligible[spot.rank] || null;
     if (!player) return '';
     const score = safe(player.toPar);
-    const tied  = eligible.filter(r => safe(r.toPar) === score);
+    // Only players who have started
+    const tied  = eligible.filter(r => safe(r.toPar) === score && r.thru && r.thru !== '—');
     if (tied.length < 2) return '';
     return tieNotice(tied, r => safe(r.toPar), spot.trophy);
   }).filter(Boolean).join('');
@@ -2377,11 +2378,12 @@ function renderPodium() {
    ═══════════════════════════════════════════ */
 function tieNotice(sorted, scoreFn, icon) {
   if (!sorted || sorted.length < 2) return '';
-  const topScore = scoreFn(sorted[0]);
+  // Only consider players who have actually started (thru is not '—')
+  const started = sorted.filter(r => r.thru && r.thru !== '—');
+  if (started.length < 2) return '';
+  const topScore = scoreFn(started[0]);
   if (topScore === null || topScore === undefined) return '';
-  // Don't show tie notice before tournament starts (everyone at 0 isn't a real tie)
-  if (topScore === 0 && sorted.every(r => r.thru === '—' || r.thru === null)) return '';
-  const tied = sorted.filter(r => scoreFn(r) === topScore);
+  const tied = started.filter(r => scoreFn(r) === topScore);
   if (tied.length < 2) return '';
   const names = tied.map(r => {
     const owner = findOwner(r.player);
@@ -3799,9 +3801,9 @@ function renderDashboard() {
     const amount    = fmtMoney(totalPot * payout.pct);
     const scoreCls  = score < 0 ? 'under' : score > 0 ? 'over' : 'even';
     const ownerName = player ? findOwner(player.player) : null;
-    // Tie detection: find all active players with this exact toPar
+    // Tie detection: find all active players who have started with this exact toPar
     const tied = player
-      ? lb.filter(r => safe(r.toPar) === safe(player.toPar))
+      ? lb.filter(r => safe(r.toPar) === safe(player.toPar) && r.thru && r.thru !== '—')
       : [];
     const tieHtml = tied.length > 1
       ? `<div style="margin-top:6px;padding:4px 6px;background:#fff8e1;border-radius:5px;font-size:10px;color:#7a5800;border:1px solid #f0c040">
@@ -3839,9 +3841,9 @@ function renderDashboard() {
     const amount = fmtMoney(totalPot * payout.pct);
     const scoreCls = score !== null ? (score < 0 ? 'under' : score > 0 ? 'over' : 'even') : 'even';
     const ownerName = player ? findOwner(player.player) : null;
-    // Tie: all players with this round score
+    // Tie: all players with this round score who have started
     const tied = score !== null
-      ? active.filter(r => r[key] !== null && safe(r[key]) === score)
+      ? active.filter(r => r[key] !== null && safe(r[key]) === score && r.thru && r.thru !== '—')
       : [];
     const tieHtml = tied.length > 1
       ? `<div style="margin-top:6px;padding:4px 6px;background:#fff8e1;border-radius:5px;font-size:10px;color:#7a5800;border:1px solid #f0c040">
