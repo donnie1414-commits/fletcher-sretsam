@@ -1380,6 +1380,11 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
   .pay-banner{gap:12px}
   .pay-banner-val{font-size:17px}
 }
+/* ── TIE NOTICE ─────────────────────────────────────────── */
+.tie-notice{display:flex;align-items:flex-start;gap:10px;background:linear-gradient(135deg,#fff8e1,#fffde7);border:1.5px solid #f0c040;border-radius:10px;padding:10px 14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(201,168,76,0.15)}
+.tie-icon{font-size:20px;line-height:1;flex-shrink:0;margin-top:1px}
+.tie-title{font-size:12px;font-weight:700;color:#7a5800;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px}
+.tie-names{font-size:13px;color:#3a3000;line-height:1.5}
 </style>
 </head>
 <body>
@@ -2288,6 +2293,20 @@ function renderPodium() {
     const owner    = player ? findOwner(player.player) : null;
     const payout   = fmtMoney(totalPot * spot.pct);
 
+    // Detect tie at this position
+    const tiedPlayers = player
+      ? eligible.filter(r => safe(r.toPar) === toPar)
+      : [];
+    const isTied = tiedPlayers.length > 1;
+    const tiedNames = isTied
+      ? tiedPlayers.map(r => {
+          const o = findOwner(r.player);
+          return o && o !== '—'
+            ? `<strong>${r.player}</strong> <span style="opacity:0.7;font-size:10px">(${o})</span>`
+            : `<strong>${r.player}</strong>`;
+        }).join(' · ')
+      : '';
+
     return `
       <div class="podium-card ${spot.cls}">
         <div class="podium-card-header">
@@ -2302,6 +2321,7 @@ function renderPodium() {
             <div class="podium-player">${player.player}</div>
             <div class="podium-thru">Thru: ${player.thru}</div>
             ${owner && owner !== '—' ? `<div class="podium-owner">Owner: <strong>${owner}</strong></div>` : '<div class="podium-owner" style="color:var(--text-light)">Unowned</div>'}
+            ${isTied ? `<div style="margin-top:6px;padding:5px 8px;background:rgba(255,255,255,0.15);border-radius:6px;font-size:10px;color:rgba(255,255,255,0.9)">🤝 Tied: ${tiedNames}</div>` : ''}
           ` : `<div class="podium-no-data">No data yet</div>`}
           <div class="podium-payout">
             <span class="podium-payout-label">Payout</span>
@@ -2310,6 +2330,16 @@ function renderPodium() {
         </div>
       </div>`;
   }).join('');
+
+  // Tie notices for 1st, 2nd, 3rd — shown below cards if any exist
+  const podiumTieNotices = spots.map(spot => {
+    const player = eligible[spot.rank] || null;
+    if (!player) return '';
+    const score = safe(player.toPar);
+    const tied  = eligible.filter(r => safe(r.toPar) === score);
+    if (tied.length < 2) return '';
+    return tieNotice(tied, r => safe(r.toPar), spot.trophy);
+  }).filter(Boolean).join('');
 
   // Full leaderboard table below the podium
   const rows = eligible.slice(0, 15).map((r, i) => {
@@ -2330,12 +2360,40 @@ function renderPodium() {
   container.innerHTML = `
     <div class="section-header"><div class="section-title">🏆 Podium</div></div>
     <div class="podium-grid">${cards}</div>
+    ${podiumTieNotices}
     <div class="card">
       <div class="card-title" style="margin-bottom:10px">Leaderboard</div>
       <div class="tbl-wrap"><table>
         <thead><tr><th>Pos</th><th>Player</th><th>Owner</th><th>To Par</th><th>Today</th><th>Thru</th></tr></thead>
         <tbody>${rows || '<tr class="loading-row"><td colspan="6">No leaderboard data yet.</td></tr>'}</tbody>
       </table></div>
+    </div>`;
+}
+
+/* ═══════════════════════════════════════════
+   TIE DETECTION
+   Returns an HTML banner listing all players
+   tied at a given score. Returns '' if no tie.
+   ═══════════════════════════════════════════ */
+function tieNotice(sorted, scoreFn, icon) {
+  if (!sorted || sorted.length < 2) return '';
+  const topScore = scoreFn(sorted[0]);
+  if (topScore === null || topScore === undefined) return '';
+  const tied = sorted.filter(r => scoreFn(r) === topScore);
+  if (tied.length < 2) return '';
+  const names = tied.map(r => {
+    const owner = findOwner(r.player);
+    return owner && owner !== '—'
+      ? `<strong>${r.player}</strong> <span style="opacity:0.7;font-size:11px">(${owner})</span>`
+      : `<strong>${r.player}</strong>`;
+  }).join(' &nbsp;·&nbsp; ');
+  return `
+    <div class="tie-notice">
+      <span class="tie-icon">${icon || '🤝'}</span>
+      <div>
+        <div class="tie-title">Tie — ${tied.length} players at ${fmtPar(topScore)}</div>
+        <div class="tie-names">${names}</div>
+      </div>
     </div>`;
 }
 
@@ -2375,7 +2433,8 @@ function renderPayoutTab(tab) {
           <div class="payout-hero-meta">Owner: <strong>${owner}</strong>&emsp;Thru: ${hero.thru}</div>
           ${payoutBadge}
         </div>
-       </div>`
+       </div>
+       ${tieNotice(sorted, r => r.toPar, '🤝')}`
     : `<div class="card" style="color:var(--text-light)">No eligible players found.</div>`;
   const rows = sorted.slice(0,12).map((r,i)=>{
     const cls=r.toPar<0?'under':r.toPar>0?'over':'even';
@@ -2427,7 +2486,8 @@ function renderDailyLow() {
           <div class="payout-hero-meta">Owner: <strong>${findOwner(hero.player)}</strong>&emsp;Overall: ${fmtPar(hero.toPar)}</div>
           ${payoutBadge}
         </div>
-       </div>`
+       </div>
+       ${tieNotice(sorted, r => normScore(r), '📅')}`
     : `<div style="color:var(--text-light);padding:10px 0">No data for this round yet.</div>`;
 
   const dayBtns = Object.entries(ROUND_LABELS).map(([k,label])=>
@@ -2505,7 +2565,8 @@ function renderDeadLast() {
           <div class="payout-hero-meta">Owner: <strong>${findOwner(hero.player)}</strong>&emsp;Overall: ${fmtPar(hero.toPar)}</div>
           ${payoutBadge}
         </div>
-       </div>`
+       </div>
+       ${tieNotice(sorted, r => getScore(r), '💀')}`
     : `<div class="card" style="color:var(--text-light)">No data yet.</div>`;
 
   const rows = sorted.slice(0,15).map((r,i) => {
@@ -3698,6 +3759,14 @@ function renderDashboard() {
     const amount    = fmtMoney(totalPot * payout.pct);
     const scoreCls  = score < 0 ? 'under' : score > 0 ? 'over' : 'even';
     const ownerName = player ? findOwner(player.player) : null;
+    // Tie detection: find all active players with this exact toPar
+    const tied = player
+      ? lb.filter(r => safe(r.toPar) === safe(player.toPar))
+      : [];
+    const tieHtml = tied.length > 1
+      ? `<div style="margin-top:6px;padding:4px 6px;background:#fff8e1;border-radius:5px;font-size:10px;color:#7a5800;border:1px solid #f0c040">
+           🤝 Tied: ${tied.map(r=>r.player).join(' · ')}
+         </div>` : '';
     return `
       <div class="dash-payout-card">
         <div class="dash-payout-header">
@@ -3715,6 +3784,7 @@ function renderDashboard() {
               <div class="dash-payout-winner-score ${scoreCls}">${fmtPar(score)}</div>
             </div>
             ${ownerName && ownerName !== '—' ? `<div class="dash-payout-owner">Owner: <strong>${ownerName}</strong></div>` : ''}
+            ${tieHtml}
             ${extra||''}
           ` : `<div class="dash-no-data">No data yet</div>`}
         </div>
@@ -3723,11 +3793,20 @@ function renderDashboard() {
 
   function roundCard(payout) {
     const key    = payout.round;
-    const player = bestRound(leaderboard.filter(r=>!r.withdrawn), key);
+    const active = leaderboard.filter(r=>!r.withdrawn);
+    const player = bestRound(active, key);
     const score  = player ? safe(player[key]) : null;
     const amount = fmtMoney(totalPot * payout.pct);
     const scoreCls = score !== null ? (score < 0 ? 'under' : score > 0 ? 'over' : 'even') : 'even';
     const ownerName = player ? findOwner(player.player) : null;
+    // Tie: all players with this round score
+    const tied = score !== null
+      ? active.filter(r => r[key] !== null && safe(r[key]) === score)
+      : [];
+    const tieHtml = tied.length > 1
+      ? `<div style="margin-top:6px;padding:4px 6px;background:#fff8e1;border-radius:5px;font-size:10px;color:#7a5800;border:1px solid #f0c040">
+           🤝 Tied: ${tied.map(r=>r.player).join(' · ')}
+         </div>` : '';
     return `
       <div class="dash-payout-card">
         <div class="dash-payout-header">
@@ -3745,6 +3824,7 @@ function renderDashboard() {
               <div class="dash-payout-winner-score ${scoreCls}">${fmtPar(score)}</div>
             </div>
             ${ownerName && ownerName !== '—' ? `<div class="dash-payout-owner">Owner: <strong>${ownerName}</strong></div>` : ''}
+            ${tieHtml}
           ` : `<div class="dash-no-data">No data yet</div>`}
         </div>
       </div>`;
@@ -3755,6 +3835,15 @@ function renderDashboard() {
     const amount = fmtMoney(totalPot * payout.pct);
     const scoreCls = score !== null ? (score < 0 ? 'under' : score > 0 ? 'over' : 'even') : 'even';
     const ownerName = player ? findOwner(player.player) : null;
+    // Tie: all players with same cumulative score across the same rounds
+    const tied = score !== null
+      ? lbAll.filter(r => rounds.every(k => r[k] !== null) &&
+                          rounds.reduce((s,k) => s + safe(r[k]), 0) === score)
+      : [];
+    const tieHtml = tied.length > 1
+      ? `<div style="margin-top:6px;padding:4px 6px;background:#fff8e1;border-radius:5px;font-size:10px;color:#7a5800;border:1px solid #f0c040">
+           🤝 Tied: ${tied.map(r=>r.player).join(' · ')}
+         </div>` : '';
     return `
       <div class="dash-payout-card">
         <div class="dash-payout-header">
@@ -3772,6 +3861,7 @@ function renderDashboard() {
               <div class="dash-payout-winner-score ${scoreCls}">${fmtPar(score)}</div>
             </div>
             ${ownerName && ownerName !== '—' ? `<div class="dash-payout-owner">Owner: <strong>${ownerName}</strong></div>` : ''}
+            ${tieHtml}
             <div class="dash-payout-owner" style="margin-top:2px;font-style:italic">${label}</div>
           ` : `<div class="dash-no-data">No data yet</div>`}
         </div>
