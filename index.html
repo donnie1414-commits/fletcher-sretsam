@@ -1400,6 +1400,12 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
     </div>
     <button class="btn-login" onclick="doLogin()">Enter Pool HQ</button>
     <div class="login-error" id="login-error"></div>
+    <div style="margin-top:18px;padding:10px 12px;background:#f9f7f4;border-radius:8px;border:1px solid #e0d8cc;text-align:center">
+      <div style="font-size:11px;color:#7a7a7a;line-height:1.6">
+        📵 Not seeing updated scores or information?<br>
+        <strong style="color:#4a4a4a">Clear your browser cache &amp; cookies</strong>, then log in again.
+      </div>
+    </div>
   </div>
 </div>
 
@@ -4407,15 +4413,24 @@ function deletePaymentEntry(bid, pmtId) {
    ═══════════════════════════════════════════ */
 function checkAppVersion() {
   const lastSeen = localStorage.getItem(STORAGE_VERSION_KEY);
-  // First-time visitor: just record version, no popup
-  if (!lastSeen) {
+  // New user — just record version silently, no popup needed
+  // We detect "new" by checking if they also have no payment data and no backend URL
+  // (i.e. truly brand new). Returning users without a version key should see the popup.
+  const hasHistory = localStorage.getItem(STORAGE_BACKEND_KEY) ||
+                     localStorage.getItem(PAYMENTS_STORAGE_KEY);
+  if (!lastSeen && !hasHistory) {
+    // Genuinely first time — record quietly
     localStorage.setItem(STORAGE_VERSION_KEY, APP_VERSION);
     return;
   }
-  // If version has changed since last login, show popup
+  // Show popup if: version has changed, OR returning user has no version stored yet
   if (lastSeen !== APP_VERSION) {
     const detail = document.getElementById('version-popup-detail');
-    if (detail) detail.textContent = `Previous: ${lastSeen}  →  Current: ${APP_VERSION}`;
+    if (detail) {
+      detail.textContent = lastSeen
+        ? `Previous: ${lastSeen}  →  Current: ${APP_VERSION}`
+        : `Current version: ${APP_VERSION}`;
+    }
     document.getElementById('version-popup-overlay').style.display = '';
     document.getElementById('version-popup').style.display = '';
   }
