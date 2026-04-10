@@ -1824,6 +1824,22 @@ const AUCTION_ONBLOCK_MS      = 10000;  // 10s — faster when On the Block is a
 
 const ROUND_LABELS = { r1:'Rd 1 — Thu', r2:'Rd 2 — Fri', r3:'Rd 3 — Sat', r4:'Rd 4 — Sun' };
 
+/* ── LOCKED ROUND RESULTS ────────────────────────────────────────────
+   Once a round is complete and a tie has been confirmed, lock it here.
+   Each entry: { players: [name], score: toPar, pct: payoutPct }
+   The payout is split equally among tied players.
+   ────────────────────────────────────────────────────────────────── */
+const LOCKED_ROUND_RESULTS = {
+  r1: {
+    players: ['Rory McIlroy', 'Sam Burns'],
+    score: -7,   // to-par score for round 1
+    pct: 0.05,   // 5% split equally = 2.5% each
+  },
+  r2: null,
+  r3: null,
+  r4: null,
+};
+
 /* ═══════════════════════════════════════════
    STATE
    ═══════════════════════════════════════════ */
@@ -2444,6 +2460,12 @@ function calcPayout(pct) {
   return '$' + Math.round(totalPot * pct).toLocaleString();
 }
 
+function calcPayoutRaw(pct) {
+  const totalPot = netPot();
+  if (totalPot <= 0) return 0;
+  return Math.round(totalPot * pct);
+}
+
 function renderPayoutTab(tab) {
   if (tab==='dailylow') { renderDailyLow(); return; }
   if (tab==='deadlast') { renderDeadLast(); return; }
@@ -2499,7 +2521,79 @@ function renderDailyLow() {
   const container = document.getElementById('payout-dailylow');
   const key = dailyLowDay;
 
-  // Normalize score: treat null/undefined/'E'/NaN as 0
+  const dayBtns = Object.entries(ROUND_LABELS).map(([k,label])=>
+    `<button class="day-btn ${k===key?'active':''}" onclick="setDailyLowDay('${k}')">${label}</button>`
+  ).join('');
+
+  // Check if this round has a locked result (confirmed tie)
+  const locked = LOCKED_ROUND_RESULTS[key];
+  if (locked) {
+    const splitPct  = locked.pct / locked.players.length;
+    const splitAmt  = calcPayoutRaw(splitPct);
+    const fmtSplit  = displayPot && splitAmt > 0 ? '$' + Math.round(splitAmt).toLocaleString() : '—';
+    const totalAmt  = calcPayout(locked.pct);
+
+    const playerRows = locked.players.map(name => {
+      const owner = findOwner(name);
+      return `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1)">
+          <div>
+            <div style="font-size:16px;font-weight:700">${name}</div>
+            <div style="font-size:12px;opacity:0.75;margin-top:2px">Owner: <strong>${owner !== '—' ? owner : 'Unowned'}</strong></div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:15px;font-weight:700;color:var(--gold-light)">${fmtSplit}</div>
+            <div style="font-size:10px;opacity:0.6">(split ${Math.round(splitPct*100*10)/10}%)</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    const heroHtml = `
+      <div class="payout-hero">
+        <div class="trophy">📅</div>
+        <div style="flex:1">
+          <div class="payout-hero-label">Daily Low — ${ROUND_LABELS[key]} · FINAL</div>
+          <div style="margin:6px 0">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;opacity:0.7;margin-bottom:6px">🤝 Tied at ${fmtPar(locked.score)} — Pot Split</div>
+            ${playerRows}
+          </div>
+          <div class="payout-hero-payout" style="margin-top:8px">
+            💰 Total Payout: <strong>${totalAmt}</strong> &nbsp;<span style="opacity:0.6">(${Math.round(locked.pct*100)}% of pot split equally)</span>
+          </div>
+        </div>
+      </div>`;
+
+    // Still show the live leaderboard table below for context
+    const normScore = (p) => { const v = p[key]; if (v===null||v===undefined) return null; const n=Number(v); return isNaN(n)?0:n; };
+    const valid  = leaderboard.filter(p => p[key] !== null && p[key] !== undefined);
+    const sorted = valid.slice().sort((a,b) => normScore(a) - normScore(b));
+    const rows   = sorted.slice(0,20).map((r,i) => {
+      const score = normScore(r);
+      const cls   = score < 0 ? 'under' : score > 0 ? 'over' : 'even';
+      const am    = (r.amateur||isAmateurPlayer(r.player)) ? '<span class="am-badge">Am</span>' : '';
+      const owner = findOwner(r.player);
+      const isWinner = locked.players.some(p => p.toLowerCase() === r.player.toLowerCase());
+      return `<tr style="${isWinner?'background:var(--green-pale);font-weight:600':''}">
+        <td class="pos">${i+1}</td>
+        <td class="player-name">${r.player}${am}${isWinner?' 🤝':''}</td>
+        <td>${owner!=='—'?`<span class="owner-tag">${owner}</span>`:'<span style="color:var(--text-light);font-size:12px">—</span>'}</td>
+        <td class="to-par ${cls}">${fmtPar(score)}</td>
+        <td>${fmtPar(r.toPar)}</td><td>${r.thru}</td>
+      </tr>`;
+    }).join('');
+
+    container.innerHTML=`
+      <div class="section-header"><div class="section-title">📅 Daily Low Round</div></div>
+      <div class="day-filter-bar">${dayBtns}</div>
+      ${heroHtml}
+      <div class="card"><div class="tbl-wrap"><table>
+        <thead><tr><th>Rank</th><th>Player</th><th>Owner</th><th>Round</th><th>Overall</th><th>Thru</th></tr></thead>
+        <tbody>${rows||'<tr class="loading-row"><td colspan="6">No round data yet.</td></tr>'}</tbody>
+      </table></div></div>`;
+    return;
+  }
+
+  // Normal (non-locked) rendering
   const normScore = (p) => {
     const v = p[key];
     if (v === null || v === undefined) return null;
@@ -2512,7 +2606,6 @@ function renderDailyLow() {
   const hero   = sorted[0];
   const heroScore = hero ? normScore(hero) : null;
 
-  // 5% per round
   const payoutAmt = calcPayout(0.05);
   const payoutBadge = `<div class="payout-hero-payout">💰 Payout: <strong>${payoutAmt}</strong> &nbsp;<span style="opacity:0.6">(5% of pot per round)</span></div>`;
 
@@ -2530,17 +2623,15 @@ function renderDailyLow() {
        ${tieNotice(sorted, r => normScore(r), '📅')}`
     : `<div style="color:var(--text-light);padding:10px 0">No data for this round yet.</div>`;
 
-  const dayBtns = Object.entries(ROUND_LABELS).map(([k,label])=>
-    `<button class="day-btn ${k===key?'active':''}" onclick="setDailyLowDay('${k}')">${label}</button>`
-  ).join('');
-
   const rows = sorted.slice(0,20).map((r,i)=>{
     const score = normScore(r);
     const cls   = score < 0 ? 'under' : score > 0 ? 'over' : 'even';
-    const am    = r.amateur ? '<span class="am-badge">Am</span>' : '';
+    const am    = (r.amateur||isAmateurPlayer(r.player)) ? '<span class="am-badge">Am</span>' : '';
+    const owner = findOwner(r.player);
     return `<tr ${i===0?'style="background:var(--green-pale)"':''}>
       <td class="pos">${i+1}</td>
       <td class="player-name">${r.player}${am}</td>
+      <td>${owner!=='—'?`<span class="owner-tag">${owner}</span>`:'<span style="color:var(--text-light);font-size:12px">—</span>'}</td>
       <td class="to-par ${cls}">${fmtPar(score)}</td>
       <td>${fmtPar(r.toPar)}</td><td>${r.thru}</td>
     </tr>`;
@@ -2551,8 +2642,8 @@ function renderDailyLow() {
     <div class="day-filter-bar">${dayBtns}</div>
     ${heroHtml}
     <div class="card"><div class="tbl-wrap"><table>
-      <thead><tr><th>Rank</th><th>Player</th><th>Round Score</th><th>Overall</th><th>Thru</th></tr></thead>
-      <tbody>${rows||'<tr class="loading-row"><td colspan="5">No round data yet.</td></tr>'}</tbody>
+      <thead><tr><th>Rank</th><th>Player</th><th>Owner</th><th>Round Score</th><th>Overall</th><th>Thru</th></tr></thead>
+      <tbody>${rows||'<tr class="loading-row"><td colspan="6">No round data yet.</td></tr>'}</tbody>
     </table></div></div>`;
 }
 function setDailyLowDay(day) { dailyLowDay=day; renderDailyLow(); }
@@ -3875,10 +3966,44 @@ function renderDashboard() {
 
   function roundCard(payout) {
     const key    = payout.round;
+    const amount = fmtMoney(totalPot * payout.pct);
+
+    // Check for locked confirmed tie result
+    const locked = LOCKED_ROUND_RESULTS[key];
+    if (locked) {
+      const splitPct = locked.pct / locked.players.length;
+      const splitAmt = displayPot && totalPot > 0
+        ? '$' + Math.round(totalPot * splitPct).toLocaleString() : '—';
+      const playerLines = locked.players.map(name => {
+        const owner = findOwner(name);
+        return `<div class="dash-payout-winner" style="margin-bottom:4px">
+          <div>
+            <div class="dash-payout-winner-name">${name}</div>
+            ${owner && owner !== '—' ? `<div class="dash-payout-owner" style="margin-top:1px">Owner: <strong>${owner}</strong></div>` : ''}
+          </div>
+          <div class="dash-payout-winner-score under" style="font-size:12px">${splitAmt}</div>
+        </div>`;
+      }).join('');
+      return `
+        <div class="dash-payout-card">
+          <div class="dash-payout-header">
+            <div class="dash-payout-title">
+              <span class="dash-payout-icon">${payout.icon}</span>
+              ${payout.label}
+            </div>
+            <span class="dash-payout-pct">${Math.round(payout.pct*100)}%</span>
+          </div>
+          <div class="dash-payout-body">
+            <div class="dash-payout-amount">${unsoldPot ? '—' : amount}</div>
+            <div style="margin-top:4px;margin-bottom:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold)">🤝 Tied — Split ${fmtPar(locked.score)}</div>
+            ${playerLines}
+          </div>
+        </div>`;
+    }
+
     const active = leaderboard.filter(r=>!r.withdrawn);
     const player = bestRound(active, key);
     const score  = player ? safe(player[key]) : null;
-    const amount = fmtMoney(totalPot * payout.pct);
     const scoreCls = score !== null ? (score < 0 ? 'under' : score > 0 ? 'over' : 'even') : 'even';
     const ownerName = player ? findOwner(player.player) : null;
     // Tie: all players with this round score who have started
