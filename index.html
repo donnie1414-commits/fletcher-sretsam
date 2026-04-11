@@ -1840,6 +1840,15 @@ const LOCKED_ROUND_RESULTS = {
   r4: null,
 };
 
+/* ── LOCKED LOW AMATEUR RESULT ───────────────────────────────────────
+   Set once the Low Am prize is confirmed. Three-way tie split equally.
+   ────────────────────────────────────────────────────────────────── */
+const LOCKED_LOW_AM = {
+  players: ['Casey Jarvis', 'Jackson Herrington', 'Ethan Fang'],
+  score: +8,   // 36-hole total to-par
+  pct: 0.03,   // 3% split equally = 1% each
+};
+
 /* ═══════════════════════════════════════════
    STATE
    ═══════════════════════════════════════════ */
@@ -2470,6 +2479,7 @@ function renderPayoutTab(tab) {
   if (tab==='dailylow') { renderDailyLow(); return; }
   if (tab==='deadlast') { renderDeadLast(); return; }
   if (tab==='podium')   { renderPodium();   return; }
+  if (tab==='lowam')    { renderLowAm();    return; }
   const cfg = PAYOUT_CFG[tab];
   const container = document.getElementById('payout-'+tab);
   if (!cfg||!container) return;
@@ -2514,6 +2524,72 @@ function renderPayoutTab(tab) {
     <div class="card"><div class="tbl-wrap"><table>
       <thead><tr><th>Pos</th><th>Player</th><th>To Par</th><th>Today</th><th>Thru</th></tr></thead>
       <tbody>${rows||'<tr class="loading-row"><td colspan="5">No data.</td></tr>'}</tbody>
+    </table></div></div>`;
+}
+
+function renderLowAm() {
+  const container = document.getElementById('payout-lowam');
+  if (!container) return;
+
+  const totalPot  = netPot();
+  const splitPct  = LOCKED_LOW_AM.pct / LOCKED_LOW_AM.players.length;
+  const splitAmt  = displayPot && totalPot > 0 ? '$' + Math.round(totalPot * splitPct).toLocaleString() : '—';
+  const totalAmt  = calcPayout(LOCKED_LOW_AM.pct);
+
+  const playerRows = LOCKED_LOW_AM.players.map(name => {
+    const owner = findOwner(name);
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1)">
+        <div>
+          <div style="font-size:16px;font-weight:700">${name} <span class="am-badge">Am</span></div>
+          <div style="font-size:12px;opacity:0.75;margin-top:2px">Owner: <strong>${owner !== '—' ? owner : 'Unowned'}</strong></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:15px;font-weight:700;color:var(--gold-light)">${splitAmt}</div>
+          <div style="font-size:10px;opacity:0.6">(split ${Math.round(splitPct*1000)/10}%)</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  const heroHtml = `
+    <div class="payout-hero">
+      <div class="trophy">🎓</div>
+      <div style="flex:1">
+        <div class="payout-hero-label">Low Amateur · FINAL</div>
+        <div style="margin:6px 0">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;opacity:0.7;margin-bottom:6px">
+            🤝 Three-Way Tie at ${fmtPar(LOCKED_LOW_AM.score)} — Pot Split
+          </div>
+          ${playerRows}
+        </div>
+        <div class="payout-hero-payout" style="margin-top:8px">
+          💰 Total Payout: <strong>${totalAmt}</strong> &nbsp;<span style="opacity:0.6">(3% of pot split equally)</span>
+        </div>
+      </div>
+    </div>`;
+
+  // Live amateur leaderboard table for reference
+  const amateurs = leaderboard.filter(r => r.amateur || isAmateurPlayer(r.player));
+  const rows = amateurs.slice().sort((a,b) => a.toPar - b.toPar).map((r, i) => {
+    const cls   = r.toPar < 0 ? 'under' : r.toPar > 0 ? 'over' : 'even';
+    const owner = findOwner(r.player);
+    const isWinner = LOCKED_LOW_AM.players.some(p => p.toLowerCase() === r.player.toLowerCase());
+    return `<tr style="${isWinner ? 'background:var(--green-pale);font-weight:600' : ''}">
+      <td class="pos">${i+1}</td>
+      <td class="player-name">${r.player} <span class="am-badge">Am</span>${isWinner ? ' 🤝' : ''}</td>
+      <td>${owner !== '—' ? `<span class="owner-tag">${owner}</span>` : '<span style="color:var(--text-light);font-size:12px">—</span>'}</td>
+      <td class="to-par ${cls}">${fmtPar(r.toPar)}</td>
+      <td>${fmtPar(r.today)}</td>
+      <td>${r.thru}</td>
+    </tr>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="section-header"><div class="section-title">🎓 Low Amateur</div></div>
+    ${heroHtml}
+    <div class="card"><div class="tbl-wrap"><table>
+      <thead><tr><th>Rank</th><th>Player</th><th>Owner</th><th>To Par</th><th>Today</th><th>Thru</th></tr></thead>
+      <tbody>${rows || '<tr class="loading-row"><td colspan="6">No amateur data yet.</td></tr>'}</tbody>
     </table></div></div>`;
 }
 
@@ -4126,7 +4202,35 @@ function renderDashboard() {
       ${winnerCard(PAYOUTS[0], currentWinner,  safe(currentWinner?.toPar))}
       ${winnerCard(PAYOUTS[1], current2nd,     safe(current2nd?.toPar))}
       ${winnerCard(PAYOUTS[2], current3rd,     safe(current3rd?.toPar))}
-      ${winnerCard(PAYOUTS[3], currentLowAm,   safe(currentLowAm?.toPar), '', lowAmPool)}
+      ${(() => {
+        // Low Am — locked three-way split
+        const splitPct = LOCKED_LOW_AM.pct / LOCKED_LOW_AM.players.length;
+        const splitAmt = displayPot && totalPot > 0
+          ? '$' + Math.round(totalPot * splitPct).toLocaleString() : '—';
+        const totalAmtLowAm = fmtMoney(totalPot * LOCKED_LOW_AM.pct);
+        const playerLines = LOCKED_LOW_AM.players.map(name => {
+          const owner = findOwner(name);
+          return `<div class="dash-payout-winner" style="margin-bottom:4px">
+            <div>
+              <div class="dash-payout-winner-name">${name} <span class="am-badge" style="font-size:9px">Am</span></div>
+              ${owner && owner !== '—' ? `<div class="dash-payout-owner" style="margin-top:1px">Owner: <strong>${owner}</strong></div>` : ''}
+            </div>
+            <div class="dash-payout-winner-score" style="font-size:12px;color:var(--gold)">${splitAmt}</div>
+          </div>`;
+        }).join('');
+        return `
+          <div class="dash-payout-card">
+            <div class="dash-payout-header">
+              <div class="dash-payout-title"><span class="dash-payout-icon">🎓</span> Low Amateur</div>
+              <span class="dash-payout-pct">3%</span>
+            </div>
+            <div class="dash-payout-body">
+              <div class="dash-payout-amount">${unsoldPot ? '—' : totalAmtLowAm}</div>
+              <div style="margin-top:4px;margin-bottom:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold)">🤝 Three-Way Tie at ${fmtPar(LOCKED_LOW_AM.score)}</div>
+              ${playerLines}
+            </div>
+          </div>`;
+      })()}
       ${roundCard(PAYOUTS[4])}
       ${roundCard(PAYOUTS[5])}
       ${roundCard(PAYOUTS[6])}
