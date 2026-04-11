@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -34,38 +35,38 @@ html{scroll-behavior:smooth}
 body{font-family:'DM Sans',sans-serif;background:var(--off-white);color:var(--text);min-height:100vh;font-size:15px;-webkit-font-smoothing:antialiased}
 
 /* LOGIN */
-#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,var(--green) 0%,var(--green-mid) 60%,#162d1e 100%);position:relative;overflow:hidden}
-#login-screen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 72% 28%,rgba(201,168,76,.13) 0%,transparent 55%),radial-gradient(ellipse at 18% 82%,rgba(232,116,138,.09) 0%,transparent 50%);pointer-events:none}
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,var(–green) 0%,var(–green-mid) 60%,#162d1e 100%);position:relative;overflow:hidden}
+#login-screen::before{content:’’;position:absolute;inset:0;background:radial-gradient(ellipse at 72% 28%,rgba(201,168,76,.13) 0%,transparent 55%),radial-gradient(ellipse at 18% 82%,rgba(232,116,138,.09) 0%,transparent 50%);pointer-events:none}
 .login-card{background:rgba(255,255,255,.97);border-radius:18px;padding:48px 44px 40px;width:100%;max-width:400px;box-shadow:0 28px 72px rgba(0,0,0,.28);position:relative;z-index:1}
 .login-logo{text-align:center;margin-bottom:32px}
 .login-logo .flag{font-size:38px;display:block;margin-bottom:10px}
-.login-logo h1{font-family:'Playfair Display',serif;font-size:26px;color:var(--green);line-height:1.2}
-.login-logo p{font-size:11.5px;color:var(--text-light);letter-spacing:.14em;text-transform:uppercase;margin-top:5px}
-.login-tabs{display:flex;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);margin-bottom:24px}
-.login-tab{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:500;cursor:pointer;background:var(--off-white);color:var(--text-mid);border:none;transition:all .2s;font-family:inherit}
-.login-tab.active{background:var(--green);color:white}
+.login-logo h1{font-family:‘Playfair Display’,serif;font-size:26px;color:var(–green);line-height:1.2}
+.login-logo p{font-size:11.5px;color:var(–text-light);letter-spacing:.14em;text-transform:uppercase;margin-top:5px}
+.login-tabs{display:flex;border-radius:var(–radius);overflow:hidden;border:1px solid var(–border);margin-bottom:24px}
+.login-tab{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:500;cursor:pointer;background:var(–off-white);color:var(–text-mid);border:none;transition:all .2s;font-family:inherit}
+.login-tab.active{background:var(–green);color:white}
 .login-field{margin-bottom:16px}
-.login-field label{display:block;font-size:11.5px;font-weight:600;color:var(--text-mid);margin-bottom:6px;text-transform:uppercase;letter-spacing:.09em}
-.login-field input{width:100%;padding:11px 14px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;font-size:15px;outline:none;transition:border-color .2s;background:var(--white);color:var(--text)}
-.login-field input:focus{border-color:var(--green)}
-.btn-login{width:100%;padding:13px;background:var(--green);color:white;border:none;border-radius:var(--radius);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:background .2s;margin-top:8px}
-.btn-login:hover{background:var(--green-mid)}
+.login-field label{display:block;font-size:11.5px;font-weight:600;color:var(–text-mid);margin-bottom:6px;text-transform:uppercase;letter-spacing:.09em}
+.login-field input{width:100%;padding:11px 14px;border:1px solid var(–border);border-radius:var(–radius);font-family:inherit;font-size:15px;outline:none;transition:border-color .2s;background:var(–white);color:var(–text)}
+.login-field input:focus{border-color:var(–green)}
+.btn-login{width:100%;padding:13px;background:var(–green);color:white;border:none;border-radius:var(–radius);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:background .2s;margin-top:8px}
+.btn-login:hover{background:var(–green-mid)}
 .login-error{color:#c0392b;font-size:13px;text-align:center;margin-top:10px;min-height:18px}
 
 /* APP SHELL */
 #app{display:none;min-height:100vh;flex-direction:column}
-header{background:var(--green);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 14px rgba(0,0,0,.22)}
+header{background:var(–green);color:white;display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 14px rgba(0,0,0,.22)}
 .header-left{display:flex;align-items:center;gap:12px}
-.header-logo{font-family:'Playfair Display',serif;font-size:18px;font-weight:700}
+.header-logo{font-family:‘Playfair Display’,serif;font-size:18px;font-weight:700}
 .badge-role{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.09em;text-transform:uppercase}
-.badge-admin{background:var(--gold);color:var(--green)}
+.badge-admin{background:var(–gold);color:var(–green)}
 .badge-viewer{background:rgba(255,255,255,.18);color:white}
 .header-right{display:flex;align-items:center;gap:10px}
 .sync-pill{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border-radius:20px;padding:4px 10px}
 .sync-dot{width:7px;height:7px;border-radius:50%;background:#4caf50}
 .sync-dot.live{animation:blink 2.4s ease-in-out infinite}
 .sync-dot.offline{background:#e57373}
-.sync-dot.loading{background:var(--gold-light);animation:blink .7s ease-in-out infinite}
+.sync-dot.loading{background:var(–gold-light);animation:blink .7s ease-in-out infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
 .sync-label{font-size:11px;color:rgba(255,255,255,.75);white-space:nowrap}
 .btn-logout{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:white;padding:6px 13px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;transition:background .2s}
@@ -74,134 +75,135 @@ header{background:var(--green);color:white;display:flex;align-items:center;justi
 .btn-share{background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:white;padding:6px 10px;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit;transition:background .2s}
 .btn-share:hover{background:rgba(255,255,255,0.2)}
 .auction-row-sold td{background:#f0faf3}
-.auction-row-sold .player-name{color:var(--green)}
-.auction-row-unsold td{color:var(--text-mid)}
+.auction-row-sold .player-name{color:var(–green)}
+.auction-row-unsold td{color:var(–text-mid)}
 tr.auction-row-sold:hover td{background:#e4f5eb}
-tr.auction-row-unsold:hover td{background:var(--green-pale)}
+tr.auction-row-unsold:hover td{background:var(–green-pale)}
 
 /* NAV */
-nav{background:white;border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;position:sticky;top:56px;z-index:90;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+nav{background:white;border-bottom:1px solid var(–border);display:flex;overflow-x:auto;scrollbar-width:none;position:sticky;top:56px;z-index:90;box-shadow:0 1px 4px rgba(0,0,0,.05)}
 nav::-webkit-scrollbar{display:none}
-.nav-tab{padding:13px 17px;font-size:13px;font-weight:500;color:var(--text-mid);cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;transition:all .18s;user-select:none;flex-shrink:0}
-.nav-tab:hover{color:var(--green)}
-.nav-tab.active{color:var(--green);border-bottom-color:var(--green);font-weight:600}
-.nav-tab.admin-only{color:var(--gold)}
-.nav-tab.admin-only.active{color:var(--green-mid);border-bottom-color:var(--gold)}
+.nav-tab{padding:13px 17px;font-size:13px;font-weight:500;color:var(–text-mid);cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;transition:all .18s;user-select:none;flex-shrink:0}
+.nav-tab:hover{color:var(–green)}
+.nav-tab.active{color:var(–green);border-bottom-color:var(–green);font-weight:600}
+.nav-tab.admin-only{color:var(–gold)}
+.nav-tab.admin-only.active{color:var(–green-mid);border-bottom-color:var(–gold)}
 
 /* LAYOUT */
 main{flex:1;padding:20px 16px;max-width:1200px;margin:0 auto;width:100%}
 .tab-panel{display:none}
 .tab-panel.active{display:block}
 .section-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
-.section-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--green)}
-.section-sub{font-size:12px;color:var(--text-light);margin-top:3px}
+.section-title{font-family:‘Playfair Display’,serif;font-size:20px;color:var(–green)}
+.section-sub{font-size:12px;color:var(–text-light);margin-top:3px}
 
 /* CARDS */
-.card{background:white;border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow);padding:20px;margin-bottom:16px}
-.card-title{font-family:'Playfair Display',serif;font-size:16px;color:var(--green);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card{background:white;border-radius:12px;border:1px solid var(–border);box-shadow:var(–shadow);padding:20px;margin-bottom:16px}
+.card-title{font-family:‘Playfair Display’,serif;font-size:16px;color:var(–green);margin-bottom:14px;display:flex;align-items:center;gap:8px}
 
 /* TABLES */
 .tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
-th{text-align:left;padding:9px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-mid);border-bottom:2px solid var(--border);background:var(--off-white)}
+th{text-align:left;padding:9px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(–text-mid);border-bottom:2px solid var(–border);background:var(–off-white)}
 td{padding:10px 12px;border-bottom:1px solid #f0ece6;vertical-align:middle}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:var(--green-pale)}
-.pos{font-weight:700;color:var(--green);min-width:40px}
+tr:hover td{background:var(–green-pale)}
+.pos{font-weight:700;color:var(–green);min-width:40px}
 .player-name{font-weight:500}
 .to-par{font-weight:700}
 .to-par.under{color:#c0392b}
-.to-par.over{color:var(--green-mid)}
-.to-par.even{color:var(--text-mid)}
-.am-badge{font-size:10px;font-weight:700;background:var(--pink-pale);color:var(--pink);padding:2px 6px;border-radius:4px;margin-left:6px}
-.owner-tag{font-size:12px;font-weight:600;color:var(--green);background:var(--green-pale);padding:2px 8px;border-radius:10px;white-space:nowrap}
-.cut-row td{color:var(--text-light);font-style:italic;background:#fffdf5}
-.loading-row td{text-align:center;color:var(--text-light);font-style:italic;padding:28px}
+.to-par.over{color:var(–green-mid)}
+.to-par.even{color:var(–text-mid)}
+.am-badge{font-size:10px;font-weight:700;background:var(–pink-pale);color:var(–pink);padding:2px 6px;border-radius:4px;margin-left:6px}
+.owner-tag{font-size:12px;font-weight:600;color:var(–green);background:var(–green-pale);padding:2px 8px;border-radius:10px;white-space:nowrap}
+.cut-row td{color:var(–text-light);background:#fafafa}
+.cut-divider td{background:#f0f0f0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#999;padding:5px 10px;border-top:2px solid #ddd;border-bottom:1px solid #e0e0e0}
+.loading-row td{text-align:center;color:var(–text-light);font-style:italic;padding:28px}
 
 /* BUTTONS & INPUTS */
-.btn{padding:9px 16px;border-radius:var(--radius);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
-.btn-primary{background:var(--green);color:white}
-.btn-primary:hover{background:var(--green-mid)}
-.btn-gold{background:var(--gold);color:var(--green);font-weight:600}
-.btn-gold:hover{background:var(--gold-light)}
+.btn{padding:9px 16px;border-radius:var(–radius);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+.btn-primary{background:var(–green);color:white}
+.btn-primary:hover{background:var(–green-mid)}
+.btn-gold{background:var(–gold);color:var(–green);font-weight:600}
+.btn-gold:hover{background:var(–gold-light)}
 .btn-danger{background:#fdf0f0;color:#c0392b;border:1px solid #f5c6c6}
 .btn-danger:hover{background:#fce0e0}
-.btn-outline{background:white;border:1px solid var(--border);color:var(--text)}
-.btn-outline:hover{border-color:var(--green);color:var(--green)}
+.btn-outline{background:white;border:1px solid var(–border);color:var(–text)}
+.btn-outline:hover{border-color:var(–green);color:var(–green)}
 .btn-sm{padding:6px 12px;font-size:12px}
-input[type="text"],input[type="number"],input[type="password"],select,textarea{font-family:inherit;font-size:14px;border:1px solid var(--border);border-radius:6px;padding:7px 10px;outline:none;background:white;transition:border-color .2s;color:var(--text)}
-input:focus,select:focus,textarea:focus{border-color:var(--green)}
+input[type=“text”],input[type=“number”],input[type=“password”],select,textarea{font-family:inherit;font-size:14px;border:1px solid var(–border);border-radius:6px;padding:7px 10px;outline:none;background:white;transition:border-color .2s;color:var(–text)}
+input:focus,select:focus,textarea:focus{border-color:var(–green)}
 .flex-gap{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 
 /* PAYOUT HERO */
-.payout-hero{background:linear-gradient(135deg,var(--green) 0%,var(--green-mid) 100%);color:white;border-radius:12px;padding:22px 24px;margin-bottom:16px;display:flex;align-items:center;gap:18px}
+.payout-hero{background:linear-gradient(135deg,var(–green) 0%,var(–green-mid) 100%);color:white;border-radius:12px;padding:22px 24px;margin-bottom:16px;display:flex;align-items:center;gap:18px}
 .payout-hero .trophy{font-size:44px;flex-shrink:0}
 .payout-hero-label{font-size:11px;text-transform:uppercase;letter-spacing:.13em;opacity:.72}
-.payout-hero-name{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-top:3px}
-.payout-hero-score{font-size:30px;font-weight:700;color:var(--gold-light);margin-top:5px;line-height:1}
+.payout-hero-name{font-family:‘Playfair Display’,serif;font-size:22px;font-weight:700;margin-top:3px}
+.payout-hero-score{font-size:30px;font-weight:700;color:var(–gold-light);margin-top:5px;line-height:1}
 .payout-hero-meta{font-size:12.5px;opacity:.78;margin-top:7px}
-.payout-hero-payout{font-size:14px;font-weight:600;margin-top:10px;color:var(--gold-light)}
+.payout-hero-payout{font-size:14px;font-weight:600;margin-top:10px;color:var(–gold-light)}
 
 /* AUCTION */
 .standings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:10px;margin-top:4px}
-.standing-item{background:var(--green-pale);border-radius:var(--radius);padding:13px 15px;border-left:3px solid var(--green-light)}
-.standing-name{font-size:13px;font-weight:600;color:var(--green)}
-.standing-amt{font-size:20px;font-weight:700;color:var(--text);margin-top:1px}
-.standing-lots{font-size:11px;color:var(--text-light)}
+.standing-item{background:var(–green-pale);border-radius:var(–radius);padding:13px 15px;border-left:3px solid var(–green-light)}
+.standing-name{font-size:13px;font-weight:600;color:var(–green)}
+.standing-amt{font-size:20px;font-weight:700;color:var(–text);margin-top:1px}
+.standing-lots{font-size:11px;color:var(–text-light)}
 .buyer-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-.buyer-chip{display:flex;align-items:center;gap:6px;background:var(--off-white);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:13px}
+.buyer-chip{display:flex;align-items:center;gap:6px;background:var(–off-white);border:1px solid var(–border);border-radius:20px;padding:5px 12px;font-size:13px}
 .buyer-chip button{background:none;border:none;cursor:pointer;color:#c0392b;font-size:16px;line-height:1;padding:0 2px}
 
 /* DAY FILTER */
 .day-filter-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
-.day-btn{padding:7px 15px;border-radius:20px;font-family:inherit;font-size:12.5px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:white;color:var(--text-mid);transition:all .15s}
-.day-btn:hover{border-color:var(--green);color:var(--green)}
-.day-btn.active{background:var(--green);color:white;border-color:var(--green)}
+.day-btn{padding:7px 15px;border-radius:20px;font-family:inherit;font-size:12.5px;font-weight:500;cursor:pointer;border:1px solid var(–border);background:white;color:var(–text-mid);transition:all .15s}
+.day-btn:hover{border-color:var(–green);color:var(–green)}
+.day-btn.active{background:var(–green);color:white;border-color:var(–green)}
 
 /* PLAYER INTEL */
-.intel-search{width:100%;max-width:340px;padding:9px 14px;border:1px solid var(--border);border-radius:20px;font-family:inherit;font-size:14px;outline:none;margin-bottom:16px}
-.intel-search:focus{border-color:var(--green)}
+.intel-search{width:100%;max-width:340px;padding:9px 14px;border:1px solid var(–border);border-radius:20px;font-family:inherit;font-size:14px;outline:none;margin-bottom:16px}
+.intel-search:focus{border-color:var(–green)}
 .intel-filter-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
-.intel-filter-btn{padding:6px 14px;border-radius:20px;font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:white;color:var(--text-mid);transition:all .15s}
-.intel-filter-btn:hover{border-color:var(--green);color:var(--green)}
-.intel-filter-btn.active{background:var(--green);color:white;border-color:var(--green)}
+.intel-filter-btn{padding:6px 14px;border-radius:20px;font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(–border);background:white;color:var(–text-mid);transition:all .15s}
+.intel-filter-btn:hover{border-color:var(–green);color:var(–green)}
+.intel-filter-btn.active{background:var(–green);color:white;border-color:var(–green)}
 .intel-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
-.intel-card{background:white;border-radius:10px;border:1px solid var(--border);padding:16px;box-shadow:var(--shadow);transition:box-shadow .2s}
-.intel-card:hover{box-shadow:var(--shadow-md,0 4px 24px rgba(26,74,46,.14))}
+.intel-card{background:white;border-radius:10px;border:1px solid var(–border);padding:16px;box-shadow:var(–shadow);transition:box-shadow .2s}
+.intel-card:hover{box-shadow:var(–shadow-md,0 4px 24px rgba(26,74,46,.14))}
 .intel-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
-.intel-card-name{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:var(--green)}
-.intel-card-odds{font-size:13px;font-weight:700;color:var(--gold);background:var(--gold-pale);padding:3px 8px;border-radius:6px;white-space:nowrap}
+.intel-card-name{font-family:‘Playfair Display’,serif;font-size:15px;font-weight:700;color:var(–green)}
+.intel-card-odds{font-size:13px;font-weight:700;color:var(–gold);background:var(–gold-pale);padding:3px 8px;border-radius:6px;white-space:nowrap}
 .intel-row{display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid #f0ece6;gap:8px}
 .intel-row:last-of-type{border-bottom:none}
-.intel-key{color:var(--text-light);flex-shrink:0}
+.intel-key{color:var(–text-light);flex-shrink:0}
 .intel-val{font-weight:500;text-align:right}
-.intel-note{font-size:12px;color:var(--text-mid);font-style:italic;margin-top:8px;padding-top:8px;border-top:1px solid #f0ece6;line-height:1.5}
+.intel-note{font-size:12px;color:var(–text-mid);font-style:italic;margin-top:8px;padding-top:8px;border-top:1px solid #f0ece6;line-height:1.5}
 .intel-type-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px;vertical-align:middle}
-.type-individual{background:#e8f3ec;color:var(--green)}
+.type-individual{background:#e8f3ec;color:var(–green)}
 .type-group{background:#fdf6e3;color:#7a5a1a}
-.type-amateur{background:var(--pink-pale);color:var(--pink)}
+.type-amateur{background:var(–pink-pale);color:var(–pink)}
 
 /* RULES */
-.rules-content{font-size:14px;line-height:1.78;color:var(--text-mid)}
-.rules-content h3{font-family:'Playfair Display',serif;color:var(--green);font-size:16px;margin:18px 0 8px}
+.rules-content{font-size:14px;line-height:1.78;color:var(–text-mid)}
+.rules-content h3{font-family:‘Playfair Display’,serif;color:var(–green);font-size:16px;margin:18px 0 8px}
 .rules-content h3:first-child{margin-top:0}
 .rules-content ul{padding-left:20px}
 .rules-content li{margin-bottom:6px}
 textarea.rules-editor{width:100%;min-height:340px;resize:vertical;font-size:13.5px;line-height:1.65;padding:14px}
 
 /* SETUP */
-.setup-section{background:white;border-radius:10px;border:1px solid var(--border);padding:18px 20px;margin-bottom:14px}
-.setup-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-light);margin-bottom:10px}
-.status-box{margin-top:12px;padding:10px 14px;border-radius:var(--radius);font-size:13px;font-weight:500}
+.setup-section{background:white;border-radius:10px;border:1px solid var(–border);padding:18px 20px;margin-bottom:14px}
+.setup-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(–text-light);margin-bottom:10px}
+.status-box{margin-top:12px;padding:10px 14px;border-radius:var(–radius);font-size:13px;font-weight:500}
 .status-ok{background:#edf7ed;color:#2e7d32;border:1px solid #c3e6c3}
 .status-err{background:#fdf0f0;color:#c0392b;border:1px solid #f5c6c6}
-.status-info{background:var(--gold-pale);color:#7a5a1a;border:1px solid var(--gold-light)}
+.status-info{background:var(–gold-pale);color:#7a5a1a;border:1px solid var(–gold-light)}
 .info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:10px;margin-top:4px}
-.info-item{background:var(--off-white);border-radius:var(--radius);padding:12px 14px;border:1px solid var(--border)}
-.info-item-label{font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.08em}
-.info-item-val{font-size:15px;font-weight:600;color:var(--text);margin-top:3px}
+.info-item{background:var(–off-white);border-radius:var(–radius);padding:12px 14px;border:1px solid var(–border)}
+.info-item-label{font-size:11px;color:var(–text-light);text-transform:uppercase;letter-spacing:.08em}
+.info-item-val{font-size:15px;font-weight:600;color:var(–text);margin-top:3px}
 .espn-badge{display:inline-flex;align-items:center;gap:5px;background:#cc0000;color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px;letter-spacing:.04em}
-.spinner{display:inline-block;width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .75s linear infinite;vertical-align:middle;margin-right:5px}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid var(–border);border-top-color:var(–green);border-radius:50%;animation:spin .75s linear infinite;vertical-align:middle;margin-right:5px}
 @keyframes spin{to{transform:rotate(360deg)}}
 code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
 
@@ -209,748 +211,747 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
 
 /* Make the tab itself fill the screen */
 #tab-onblock {
-  display: none; /* overridden when active */
-  height: calc(100vh - 56px - 45px); /* minus header and nav */
-  overflow: hidden;
+display: none; /* overridden when active */
+height: calc(100vh - 56px - 45px); /* minus header and nav */
+overflow: hidden;
 }
 #tab-onblock.active {
-  display: flex !important;
-  flex-direction: column;
+display: flex !important;
+flex-direction: column;
 }
 .onblock-viewport {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+display: flex;
+flex-direction: column;
+height: 100%;
+overflow: hidden;
 }
 
 /* Progress bar — compact, always at top */
 .onblock-progress {
-  background: white;
-  border-bottom: 1px solid var(--border);
-  padding: 10px 24px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-shrink: 0;
+background: white;
+border-bottom: 1px solid var(–border);
+padding: 10px 24px;
+display: flex;
+align-items: center;
+gap: 16px;
+flex-shrink: 0;
 }
 .onblock-progress-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 16px; }
-.onblock-progress-label { font-size: 13px; color: var(--text-light); white-space: nowrap; }
+.onblock-progress-label { font-size: 13px; color: var(–text-light); white-space: nowrap; }
 .onblock-progress-bar-wrap {
-  flex: 1;
-  background: var(--off-white);
-  border-radius: 20px;
-  height: 10px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  min-width: 80px;
+flex: 1;
+background: var(–off-white);
+border-radius: 20px;
+height: 10px;
+overflow: hidden;
+border: 1px solid var(–border);
+min-width: 80px;
 }
 .onblock-progress-bar {
-  height: 100%;
-  border-radius: 20px;
-  background: linear-gradient(90deg, var(--green) 0%, var(--green-light) 100%);
-  transition: width 0.5s ease;
+height: 100%;
+border-radius: 20px;
+background: linear-gradient(90deg, var(–green) 0%, var(–green-light) 100%);
+transition: width 0.5s ease;
 }
-.onblock-progress-text { font-size: 13px; font-weight: 600; color: var(--green); white-space: nowrap; }
+.onblock-progress-text { font-size: 13px; font-weight: 600; color: var(–green); white-space: nowrap; }
 .onblock-nav-btns { display: flex; gap: 8px; flex-shrink: 0; }
 
 /* Pot display in progress bar — desktop only */
 .onblock-pot-display {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex-shrink: 0;
-  padding: 0 20px;
-  border-left: 1px solid var(--border);
-  border-right: 1px solid var(--border);
+display: flex;
+flex-direction: column;
+align-items: center;
+flex-shrink: 0;
+padding: 0 20px;
+border-left: 1px solid var(–border);
+border-right: 1px solid var(–border);
 }
 .onblock-pot-icon { font-size: 28px; line-height: 1; }
 .onblock-pot-amount {
-  font-family: 'Playfair Display', serif;
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--green);
-  line-height: 1.1;
-  margin-top: 2px;
+font-family: ‘Playfair Display’, serif;
+font-size: 22px;
+font-weight: 700;
+color: var(–green);
+line-height: 1.1;
+margin-top: 2px;
 }
 .onblock-pot-label {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-light);
-  margin-top: 2px;
+font-size: 10px;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.1em;
+color: var(–text-light);
+margin-top: 2px;
 }
 
 /* Two-column body */
 .onblock-body {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  gap: 0;
+display: flex;
+flex: 1;
+overflow: hidden;
+gap: 0;
 }
 
 /* Left sidebar — queue of next 5 lots */
 .onblock-sidebar {
-  width: 280px;
-  flex-shrink: 0;
-  background: var(--off-white);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+width: 280px;
+flex-shrink: 0;
+background: var(–off-white);
+border-right: 1px solid var(–border);
+display: flex;
+flex-direction: column;
+overflow: hidden;
 }
 .onblock-sidebar-title {
-  padding: 14px 18px 10px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--text-light);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
+padding: 14px 18px 10px;
+font-size: 11px;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.12em;
+color: var(–text-light);
+border-bottom: 1px solid var(–border);
+flex-shrink: 0;
 }
 .onblock-queue {
-  flex: 1;
-  overflow-y: auto;
+flex: 1;
+overflow-y: auto;
 }
 .onblock-queue-item {
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border);
-  cursor: default;
-  transition: background 0.12s;
+padding: 14px 18px;
+border-bottom: 1px solid var(–border);
+cursor: default;
+transition: background 0.12s;
 }
 .onblock-queue-item:last-child { border-bottom: none; }
 .onblock-queue-item.next-up {
-  background: white;
-  border-left: 3px solid var(--gold);
+background: white;
+border-left: 3px solid var(–gold);
 }
 .onblock-queue-num {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-light);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 4px;
+font-size: 10px;
+font-weight: 700;
+color: var(–text-light);
+text-transform: uppercase;
+letter-spacing: 0.08em;
+margin-bottom: 4px;
 }
 .onblock-queue-name {
-  font-family: 'Playfair Display', serif;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--green);
-  line-height: 1.3;
+font-family: ‘Playfair Display’, serif;
+font-size: 15px;
+font-weight: 700;
+color: var(–green);
+line-height: 1.3;
 }
-.onblock-queue-item.next-up .onblock-queue-name { color: var(--green); }
+.onblock-queue-item.next-up .onblock-queue-name { color: var(–green); }
 .onblock-queue-meta {
-  font-size: 12px;
-  color: var(--text-light);
-  margin-top: 3px;
+font-size: 12px;
+color: var(–text-light);
+margin-top: 3px;
 }
 .onblock-queue-odds {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--gold);
-  background: var(--gold-pale);
-  padding: 1px 7px;
-  border-radius: 8px;
-  margin-top: 4px;
+display: inline-block;
+font-size: 11px;
+font-weight: 700;
+color: var(–gold);
+background: var(–gold-pale);
+padding: 1px 7px;
+border-radius: 8px;
+margin-top: 4px;
 }
 .onblock-queue-badge {
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 1px 6px;
-  border-radius: 8px;
-  margin-right: 4px;
+font-size: 9px;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.06em;
+padding: 1px 6px;
+border-radius: 8px;
+margin-right: 4px;
 }
 
 /* Main area — hero card */
 .onblock-main {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px 24px;
-  display: flex;
-  flex-direction: column;
+flex: 1;
+overflow-y: auto;
+padding: 20px 24px;
+display: flex;
+flex-direction: column;
 }
 
 /* Hero card fills main area */
 .hero-card {
-  background: white;
-  border-radius: 20px;
-  border: 3px solid var(--gold);
-  box-shadow: 0 8px 48px rgba(201,168,76,0.22);
-  overflow: hidden;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
+background: white;
+border-radius: 20px;
+border: 3px solid var(–gold);
+box-shadow: 0 8px 48px rgba(201,168,76,0.22);
+overflow: hidden;
+flex: 1;
+display: flex;
+flex-direction: column;
+min-height: 0;
 }
 .hero-header {
-  background: linear-gradient(140deg, var(--green) 0%, #1f5c38 50%, var(--green-mid) 100%);
-  color: white;
-  padding: 36px 44px 40px;
-  flex-shrink: 0;
+background: linear-gradient(140deg, var(–green) 0%, #1f5c38 50%, var(–green-mid) 100%);
+color: white;
+padding: 36px 44px 40px;
+flex-shrink: 0;
 }
 .hero-header-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 22px;
-  gap: 16px;
+display: flex;
+justify-content: space-between;
+align-items: flex-start;
+margin-bottom: 22px;
+gap: 16px;
 }
 .hero-lot-label {
-  font-size: 15px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  opacity: 0.72;
+font-size: 15px;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.14em;
+opacity: 0.72;
 }
 .hero-odds-wrap { text-align: right; flex-shrink: 0; }
 .hero-odds {
-  font-size: 36px;
-  font-weight: 800;
-  color: var(--gold-light);
-  line-height: 1;
+font-size: 36px;
+font-weight: 800;
+color: var(–gold-light);
+line-height: 1;
 }
 .hero-winpct {
-  font-size: 16px;
-  opacity: 0.65;
-  margin-top: 6px;
+font-size: 16px;
+opacity: 0.65;
+margin-top: 6px;
 }
 .hero-identity { display: flex; align-items: flex-start; gap: 0; }
 .hero-name-block { flex: 1; min-width: 0; }
 .hero-type-pill {
-  display: inline-block;
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding: 4px 14px;
-  border-radius: 12px;
-  background: rgba(255,255,255,0.18);
-  color: white;
-  margin-bottom: 12px;
+display: inline-block;
+font-size: 13px;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.1em;
+padding: 4px 14px;
+border-radius: 12px;
+background: rgba(255,255,255,0.18);
+color: white;
+margin-bottom: 12px;
 }
 .hero-name {
-  font-family: 'Playfair Display', serif;
-  font-size: 52px;
-  font-weight: 700;
-  line-height: 1.15;
-  color: white;
+font-family: ‘Playfair Display’, serif;
+font-size: 52px;
+font-weight: 700;
+line-height: 1.15;
+color: white;
 }
 .hero-members {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 14px;
+display: flex;
+flex-direction: column;
+gap: 6px;
+margin-top: 14px;
 }
 .hero-member {
-  font-size: 22px;
-  font-weight: 500;
-  color: rgba(255,255,255,0.90);
-  line-height: 1.4;
+font-size: 22px;
+font-weight: 500;
+color: rgba(255,255,255,0.90);
+line-height: 1.4;
 }
 
 /* Body — split: scrollable intel on top, bid panel pinned at bottom */
 .hero-body {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
+display: flex;
+flex-direction: column;
+flex: 1;
+min-height: 0;
+overflow: hidden;
 }
 .hero-intel-section {
-  padding: 28px 44px 20px;
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
+padding: 28px 44px 20px;
+flex: 1;
+overflow-y: auto;
+min-height: 0;
 }
 .hero-bid-section {
-  flex-shrink: 0;
-  border-top: 2px solid var(--border);
-  background: white;
-  padding: 16px 44px 18px;
+flex-shrink: 0;
+border-top: 2px solid var(–border);
+background: white;
+padding: 16px 44px 18px;
 }
 .hero-sold-banner {
-  background: var(--green-pale);
-  border: 1px solid var(--green-light);
-  border-radius: 10px;
-  padding: 16px 20px;
-  font-size: 20px;
-  color: var(--green);
-  font-weight: 600;
-  margin-bottom: 28px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+background: var(–green-pale);
+border: 1px solid var(–green-light);
+border-radius: 10px;
+padding: 16px 20px;
+font-size: 20px;
+color: var(–green);
+font-weight: 600;
+margin-bottom: 28px;
+display: flex;
+align-items: center;
+gap: 10px;
 }
 .hero-intel-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 40px;
-  margin-bottom: 4px;
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 0 40px;
+margin-bottom: 4px;
 }
 .hero-intel-item {
-  padding: 14px 0;
-  border-bottom: 1px solid #f0ece6;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
+padding: 14px 0;
+border-bottom: 1px solid #f0ece6;
+display: flex;
+flex-direction: column;
+gap: 5px;
 }
 .hero-intel-key {
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: var(--text-light);
+font-size: 13px;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.09em;
+color: var(–text-light);
 }
 .hero-intel-val {
-  font-size: 20px;
-  font-weight: 500;
-  color: var(--text);
-  line-height: 1.4;
+font-size: 20px;
+font-weight: 500;
+color: var(–text);
+line-height: 1.4;
 }
 .hero-note {
-  font-size: 20px;
-  color: var(--text-mid);
-  font-style: italic;
-  line-height: 1.7;
-  margin-top: 24px;
-  padding: 20px 24px;
-  background: var(--off-white);
-  border-radius: 10px;
-  border-left: 4px solid var(--gold);
+font-size: 20px;
+color: var(–text-mid);
+font-style: italic;
+line-height: 1.7;
+margin-top: 24px;
+padding: 20px 24px;
+background: var(–off-white);
+border-radius: 10px;
+border-left: 4px solid var(–gold);
 }
 
 /* Sold card — fullscreen version */
 .sold-card {
-  border-radius: 20px;
-  overflow: hidden;
-  flex: 1;
-  background: linear-gradient(140deg, #1a3a1a 0%, #2d6a2d 50%, #1a4a1a 100%);
-  border: 3px solid #4caf50;
-  box-shadow: 0 10px 56px rgba(76,175,80,0.28);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+border-radius: 20px;
+overflow: hidden;
+flex: 1;
+background: linear-gradient(140deg, #1a3a1a 0%, #2d6a2d 50%, #1a4a1a 100%);
+border: 3px solid #4caf50;
+box-shadow: 0 10px 56px rgba(76,175,80,0.28);
+display: flex;
+align-items: center;
+justify-content: center;
 }
 .sold-card-inner {
-  padding: 56px 48px 48px;
-  text-align: center;
-  color: white;
-  width: 100%;
+padding: 56px 48px 48px;
+text-align: center;
+color: white;
+width: 100%;
 }
 .sold-badge {
-  display: inline-block;
-  background: #4caf50;
-  color: white;
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: 0.18em;
-  padding: 10px 32px;
-  border-radius: 28px;
-  margin-bottom: 24px;
+display: inline-block;
+background: #4caf50;
+color: white;
+font-size: 18px;
+font-weight: 800;
+letter-spacing: 0.18em;
+padding: 10px 32px;
+border-radius: 28px;
+margin-bottom: 24px;
 }
 .sold-lot-label {
-  font-size: 17px;
-  opacity: 0.65;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  margin-bottom: 14px;
+font-size: 17px;
+opacity: 0.65;
+text-transform: uppercase;
+letter-spacing: 0.12em;
+margin-bottom: 14px;
 }
 .sold-player-name {
-  font-family: 'Playfair Display', serif;
-  font-size: 52px;
-  font-weight: 700;
-  line-height: 1.2;
-  margin-bottom: 10px;
+font-family: ‘Playfair Display’, serif;
+font-size: 52px;
+font-weight: 700;
+line-height: 1.2;
+margin-bottom: 10px;
 }
 .sold-members {
-  margin: 10px 0 20px;
-  opacity: 0.88;
-  font-size: 22px;
-  line-height: 1.6;
+margin: 10px 0 20px;
+opacity: 0.88;
+font-size: 22px;
+line-height: 1.6;
 }
 .sold-meta {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  margin: 28px auto 0;
-  background: rgba(255,255,255,0.1);
-  border-radius: 16px;
-  max-width: 500px;
-  overflow: hidden;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 0;
+margin: 28px auto 0;
+background: rgba(255,255,255,0.1);
+border-radius: 16px;
+max-width: 500px;
+overflow: hidden;
 }
 .sold-meta-item { flex: 1; padding: 20px 28px; }
 .sold-meta-label {
-  font-size: 14px;
-  opacity: 0.65;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 6px;
+font-size: 14px;
+opacity: 0.65;
+text-transform: uppercase;
+letter-spacing: 0.1em;
+margin-bottom: 6px;
 }
 .sold-meta-val {
-  font-family: 'Playfair Display', serif;
-  font-size: 36px;
-  font-weight: 700;
-  color: #a5d6a7;
+font-family: ‘Playfair Display’, serif;
+font-size: 36px;
+font-weight: 700;
+color: #a5d6a7;
 }
 .sold-divider { width: 1px; height: 64px; background: rgba(255,255,255,0.2); flex-shrink: 0; }
 .sold-countdown { margin-top: 28px; font-size: 18px; opacity: 0.55; letter-spacing: 0.06em; }
 
 /* type pill reuse */
 .onblock-type-pill {
-  display: inline-block;
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 4px 12px;
-  border-radius: 12px;
-  margin-bottom: 8px;
+display: inline-block;
+font-size: 13px;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.08em;
+padding: 4px 12px;
+border-radius: 12px;
+margin-bottom: 8px;
 }
 
 /* nav highlight */
-.nav-tab[data-tab="onblock"] { color: var(--gold); font-weight: 600; }
-.nav-tab[data-tab="onblock"].active { color: var(--green); border-bottom-color: var(--gold); }
+.nav-tab[data-tab=“onblock”] { color: var(–gold); font-weight: 600; }
+.nav-tab[data-tab=“onblock”].active { color: var(–green); border-bottom-color: var(–gold); }
 
 /* Mobile — stack vertically, allow scroll */
 @media(max-width:768px) {
-  /* Tab container — scrollable on mobile */
-  #tab-onblock { height: auto; overflow: visible; }
-  #tab-onblock.active { display: block !important; }
-  .onblock-viewport { height: auto; overflow: visible; display: flex; flex-direction: column; }
+/* Tab container — scrollable on mobile */
+#tab-onblock { height: auto; overflow: visible; }
+#tab-onblock.active { display: block !important; }
+.onblock-viewport { height: auto; overflow: visible; display: flex; flex-direction: column; }
 
-  /* Progress bar — compact */
-  .onblock-progress { padding: 8px 12px; gap: 8px; flex-wrap: nowrap; }
-  .onblock-progress-info { flex-direction: column; gap: 4px; }
-  .onblock-progress-label { font-size: 11px; white-space: normal; }
-  .onblock-progress-text { font-size: 11px; margin-top: 0; }
-  .onblock-nav-btns { display: none; }
-  .onblock-pot-display { display: none; }
+/* Progress bar — compact */
+.onblock-progress { padding: 8px 12px; gap: 8px; flex-wrap: nowrap; }
+.onblock-progress-info { flex-direction: column; gap: 4px; }
+.onblock-progress-label { font-size: 11px; white-space: normal; }
+.onblock-progress-text { font-size: 11px; margin-top: 0; }
+.onblock-nav-btns { display: none; }
+.onblock-pot-display { display: none; }
 
-  /* Body — column, but main (hero) comes FIRST via order */
-  .onblock-body { flex-direction: column; overflow: visible; }
-  .onblock-main { order: 1; padding: 10px 10px 0; overflow: visible; }
-  .onblock-sidebar { order: 2; width: 100%; border-right: none; border-top: 1px solid var(--border); border-bottom: none; }
+/* Body — column, but main (hero) comes FIRST via order */
+.onblock-body { flex-direction: column; overflow: visible; }
+.onblock-main { order: 1; padding: 10px 10px 0; overflow: visible; }
+.onblock-sidebar { order: 2; width: 100%; border-right: none; border-top: 1px solid var(–border); border-bottom: none; }
 
-  /* Sidebar — compact horizontal scroll of queue items */
-  .onblock-sidebar-title { padding: 8px 14px; font-size: 10px; }
-  .onblock-queue { display: flex; overflow-x: auto; padding: 0; scrollbar-width: none; }
-  .onblock-queue::-webkit-scrollbar { display: none; }
-  .onblock-queue-item { min-width: 140px; max-width: 160px; border-bottom: none; border-right: 1px solid var(--border); padding: 10px 12px; flex-shrink: 0; }
-  .onblock-queue-item:last-child { border-right: none; }
-  .onblock-queue-item.next-up { border-left: 3px solid var(--gold); }
-  .onblock-queue-num { font-size: 9px; }
-  .onblock-queue-name { font-size: 12px; white-space: normal; }
-  .onblock-queue-meta { font-size: 10px; }
-  .onblock-queue-odds { font-size: 10px; }
+/* Sidebar — compact horizontal scroll of queue items */
+.onblock-sidebar-title { padding: 8px 14px; font-size: 10px; }
+.onblock-queue { display: flex; overflow-x: auto; padding: 0; scrollbar-width: none; }
+.onblock-queue::-webkit-scrollbar { display: none; }
+.onblock-queue-item { min-width: 140px; max-width: 160px; border-bottom: none; border-right: 1px solid var(–border); padding: 10px 12px; flex-shrink: 0; }
+.onblock-queue-item:last-child { border-right: none; }
+.onblock-queue-item.next-up { border-left: 3px solid var(–gold); }
+.onblock-queue-num { font-size: 9px; }
+.onblock-queue-name { font-size: 12px; white-space: normal; }
+.onblock-queue-meta { font-size: 10px; }
+.onblock-queue-odds { font-size: 10px; }
 
-  /* Hero card — no flex stretch, scrollable content */
-  .hero-card { flex: none; min-height: 0; }
-  .hero-header { padding: 16px 14px 18px; }
-  .hero-lot-label { font-size: 10px; }
-  .hero-odds { font-size: 20px; }
-  .hero-winpct { font-size: 11px; }
-  .hero-type-pill { font-size: 10px; padding: 2px 8px; margin-bottom: 6px; }
-  .hero-name { font-size: 22px; }
-  .hero-member { font-size: 13px; }
-  .hero-body { overflow: visible; display: block; }
-  .hero-intel-section { padding: 14px 14px 10px; flex: none; overflow: visible; }
-  .hero-bid-section { padding: 10px 14px 14px; }
-  .hero-intel-grid { grid-template-columns: 1fr 1fr; gap: 0 12px; }
-  .hero-intel-key { font-size: 10px; }
-  .hero-intel-val { font-size: 13px; }
-  .hero-note { font-size: 13px; padding: 10px 12px; margin-top: 14px; }
+/* Hero card — no flex stretch, scrollable content */
+.hero-card { flex: none; min-height: 0; }
+.hero-header { padding: 16px 14px 18px; }
+.hero-lot-label { font-size: 10px; }
+.hero-odds { font-size: 20px; }
+.hero-winpct { font-size: 11px; }
+.hero-type-pill { font-size: 10px; padding: 2px 8px; margin-bottom: 6px; }
+.hero-name { font-size: 22px; }
+.hero-member { font-size: 13px; }
+.hero-body { overflow: visible; display: block; }
+.hero-intel-section { padding: 14px 14px 10px; flex: none; overflow: visible; }
+.hero-bid-section { padding: 10px 14px 14px; }
+.hero-intel-grid { grid-template-columns: 1fr 1fr; gap: 0 12px; }
+.hero-intel-key { font-size: 10px; }
+.hero-intel-val { font-size: 13px; }
+.hero-note { font-size: 13px; padding: 10px 12px; margin-top: 14px; }
 
-  /* Sold card */
-  .sold-card { flex: none; border-radius: 14px; display: block; }
-  .sold-card-inner { padding: 24px 14px 20px; }
-  .sold-badge { font-size: 13px; padding: 6px 18px; }
-  .sold-lot-label { font-size: 11px; }
-  .sold-player-name { font-size: 22px; }
-  .sold-members { font-size: 13px; }
-  .sold-meta { max-width: 100%; }
-  .sold-meta-val { font-size: 20px; }
-  .sold-meta-label { font-size: 10px; }
-  .sold-countdown { font-size: 13px; margin-top: 16px; }
+/* Sold card */
+.sold-card { flex: none; border-radius: 14px; display: block; }
+.sold-card-inner { padding: 24px 14px 20px; }
+.sold-badge { font-size: 13px; padding: 6px 18px; }
+.sold-lot-label { font-size: 11px; }
+.sold-player-name { font-size: 22px; }
+.sold-members { font-size: 13px; }
+.sold-meta { max-width: 100%; }
+.sold-meta-val { font-size: 20px; }
+.sold-meta-label { font-size: 10px; }
+.sold-countdown { font-size: 13px; margin-top: 16px; }
 }
 
 /* Admin bid entry panel — pinned at bottom of hero card */
 .hero-bid-label {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-light);
-  margin-bottom: 10px;
+font-size: 12px;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.1em;
+color: var(–text-light);
+margin-bottom: 10px;
 }
 .hero-bid-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
+display: flex;
+gap: 10px;
+align-items: center;
+flex-wrap: wrap;
 }
 .hero-bid-row select {
-  flex: 1;
-  min-width: 130px;
-  font-size: 14px;
-  padding: 10px 12px;
-  border-radius: var(--radius);
-  border: 2px solid var(--border);
-  background: white;
-  font-family: inherit;
+flex: 1;
+min-width: 130px;
+font-size: 14px;
+padding: 10px 12px;
+border-radius: var(–radius);
+border: 2px solid var(–border);
+background: white;
+font-family: inherit;
 }
-.hero-bid-row select:focus { border-color: var(--green); outline: none; }
+.hero-bid-row select:focus { border-color: var(–green); outline: none; }
 .hero-bid-price {
-  width: 110px;
-  font-size: 15px;
-  font-weight: 600;
-  padding: 10px 12px;
-  border-radius: var(--radius);
-  border: 2px solid var(--border);
-  text-align: right;
-  font-family: inherit;
+width: 110px;
+font-size: 15px;
+font-weight: 600;
+padding: 10px 12px;
+border-radius: var(–radius);
+border: 2px solid var(–border);
+text-align: right;
+font-family: inherit;
 }
-.hero-bid-price:focus { border-color: var(--green); outline: none; }
+.hero-bid-price:focus { border-color: var(–green); outline: none; }
 .hero-bid-price::placeholder { font-weight: 400; }
 .btn-sell {
-  background: var(--gold);
-  color: var(--green);
-  font-weight: 700;
-  font-size: 14px;
-  padding: 10px 20px;
-  border-radius: var(--radius);
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-  white-space: nowrap;
-  transition: background 0.15s;
-  flex-shrink: 0;
+background: var(–gold);
+color: var(–green);
+font-weight: 700;
+font-size: 14px;
+padding: 10px 20px;
+border-radius: var(–radius);
+border: none;
+cursor: pointer;
+font-family: inherit;
+white-space: nowrap;
+transition: background 0.15s;
+flex-shrink: 0;
 }
-.btn-sell:hover { background: var(--gold-light); }
+.btn-sell:hover { background: var(–gold-light); }
 .btn-sell:disabled { opacity: 0.45; cursor: not-allowed; }
 .hero-bid-status {
-  font-size: 12.5px;
-  margin-top: 8px;
-  min-height: 18px;
-  color: var(--text-light);
+font-size: 12.5px;
+margin-top: 8px;
+min-height: 18px;
+color: var(–text-light);
 }
-
 
 /* nav highlight */
-.nav-tab[data-tab="onblock"] { color: var(--gold); font-weight: 600; }
-.nav-tab[data-tab="onblock"].active { color: var(--green); border-bottom-color: var(--gold); }
+.nav-tab[data-tab=“onblock”] { color: var(–gold); font-weight: 600; }
+.nav-tab[data-tab=“onblock”].active { color: var(–green); border-bottom-color: var(–gold); }
 
 .sold-card-inner {
-  padding: 56px 48px 48px;
-  text-align: center;
-  color: white;
+padding: 56px 48px 48px;
+text-align: center;
+color: white;
 }
 .sold-badge {
-  display: inline-block;
-  background: #4caf50;
-  color: white;
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: 0.18em;
-  padding: 10px 32px;
-  border-radius: 28px;
-  margin-bottom: 24px;
+display: inline-block;
+background: #4caf50;
+color: white;
+font-size: 18px;
+font-weight: 800;
+letter-spacing: 0.18em;
+padding: 10px 32px;
+border-radius: 28px;
+margin-bottom: 24px;
 }
 .sold-lot-label {
-  font-size: 17px;
-  opacity: 0.65;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  margin-bottom: 14px;
+font-size: 17px;
+opacity: 0.65;
+text-transform: uppercase;
+letter-spacing: 0.12em;
+margin-bottom: 14px;
 }
 .sold-player-name {
-  font-family: 'Playfair Display', serif;
-  font-size: 52px;
-  font-weight: 700;
-  line-height: 1.2;
-  margin-bottom: 10px;
+font-family: ‘Playfair Display’, serif;
+font-size: 52px;
+font-weight: 700;
+line-height: 1.2;
+margin-bottom: 10px;
 }
 @media(max-width:600px){ .sold-player-name { font-size: 24px; } }
 .sold-members {
-  margin: 10px 0 20px;
-  opacity: 0.88;
-  font-size: 22px;
-  line-height: 1.6;
+margin: 10px 0 20px;
+opacity: 0.88;
+font-size: 22px;
+line-height: 1.6;
 }
 .sold-meta {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  margin: 28px auto 0;
-  background: rgba(255,255,255,0.1);
-  border-radius: 16px;
-  max-width: 500px;
-  overflow: hidden;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 0;
+margin: 28px auto 0;
+background: rgba(255,255,255,0.1);
+border-radius: 16px;
+max-width: 500px;
+overflow: hidden;
 }
 .sold-meta-item {
-  flex: 1;
-  padding: 20px 28px;
+flex: 1;
+padding: 20px 28px;
 }
 .sold-meta-label {
-  font-size: 14px;
-  opacity: 0.65;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 6px;
+font-size: 14px;
+opacity: 0.65;
+text-transform: uppercase;
+letter-spacing: 0.1em;
+margin-bottom: 6px;
 }
 .sold-meta-val {
-  font-family: 'Playfair Display', serif;
-  font-size: 36px;
-  font-weight: 700;
-  color: #a5d6a7;
+font-family: ‘Playfair Display’, serif;
+font-size: 36px;
+font-weight: 700;
+color: #a5d6a7;
 }
 .sold-divider {
-  width: 1px;
-  height: 64px;
-  background: rgba(255,255,255,0.2);
-  flex-shrink: 0;
+width: 1px;
+height: 64px;
+background: rgba(255,255,255,0.2);
+flex-shrink: 0;
 }
 .sold-countdown {
-  margin-top: 28px;
-  font-size: 18px;
-  opacity: 0.55;
-  letter-spacing: 0.06em;
+margin-top: 28px;
+font-size: 18px;
+opacity: 0.55;
+letter-spacing: 0.06em;
 }
 
 .mylots-filter-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 18px;
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+margin-bottom: 18px;
 }
 .buyer-filter-btn {
-  padding: 8px 18px;
-  border-radius: 20px;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  border: 1px solid var(--border);
-  background: white;
-  color: var(--text-mid);
-  transition: all 0.15s;
+padding: 8px 18px;
+border-radius: 20px;
+font-family: inherit;
+font-size: 13px;
+font-weight: 500;
+cursor: pointer;
+border: 1px solid var(–border);
+background: white;
+color: var(–text-mid);
+transition: all 0.15s;
 }
-.buyer-filter-btn:hover { border-color: var(--green); color: var(--green); }
-.buyer-filter-btn.active { background: var(--green); color: white; border-color: var(--green); }
+.buyer-filter-btn:hover { border-color: var(–green); color: var(–green); }
+.buyer-filter-btn.active { background: var(–green); color: white; border-color: var(–green); }
 
 .mylots-summary {
-  background: linear-gradient(135deg, var(--green) 0%, var(--green-mid) 100%);
-  color: white;
-  border-radius: 12px;
-  padding: 18px 22px;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
+background: linear-gradient(135deg, var(–green) 0%, var(–green-mid) 100%);
+color: white;
+border-radius: 12px;
+padding: 18px 22px;
+margin-bottom: 16px;
+display: flex;
+align-items: center;
+gap: 20px;
+flex-wrap: wrap;
 }
 .mylots-summary-name {
-  font-family: 'Playfair Display', serif;
-  font-size: 22px;
-  font-weight: 700;
-  flex: 1;
+font-family: ‘Playfair Display’, serif;
+font-size: 22px;
+font-weight: 700;
+flex: 1;
 }
 .mylots-stat { text-align: center; }
-.mylots-stat-val { font-size: 22px; font-weight: 700; color: var(--gold-light); }
+.mylots-stat-val { font-size: 22px; font-weight: 700; color: var(–gold-light); }
 .mylots-stat-label { font-size: 11px; opacity: 0.72; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
 
 .mylots-lot-card {
-  background: white;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  margin-bottom: 12px;
-  overflow: hidden;
-  box-shadow: var(--shadow);
+background: white;
+border-radius: 10px;
+border: 1px solid var(–border);
+margin-bottom: 12px;
+overflow: hidden;
+box-shadow: var(–shadow);
 }
 .mylots-lot-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 13px 16px;
-  border-bottom: 1px solid #f0ece6;
-  flex-wrap: wrap;
+display: flex;
+align-items: center;
+gap: 12px;
+padding: 13px 16px;
+border-bottom: 1px solid #f0ece6;
+flex-wrap: wrap;
 }
 .mylots-lot-num {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-light);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  min-width: 38px;
+font-size: 11px;
+font-weight: 700;
+color: var(–text-light);
+text-transform: uppercase;
+letter-spacing: 0.08em;
+min-width: 38px;
 }
 .mylots-lot-player {
-  font-family: 'Playfair Display', serif;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--green);
-  flex: 1;
-  min-width: 150px;
+font-family: ‘Playfair Display’, serif;
+font-size: 15px;
+font-weight: 700;
+color: var(–green);
+flex: 1;
+min-width: 150px;
 }
 .mylots-lot-price {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text);
+font-size: 16px;
+font-weight: 700;
+color: var(–text);
 }
 .mylots-lot-odds {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--gold);
-  background: var(--gold-pale);
-  padding: 2px 8px;
-  border-radius: 6px;
+font-size: 12px;
+font-weight: 600;
+color: var(–gold);
+background: var(–gold-pale);
+padding: 2px 8px;
+border-radius: 6px;
 }
 .mylots-lot-intel {
-  padding: 10px 16px 12px;
-  background: var(--off-white);
+padding: 10px 16px 12px;
+background: var(–off-white);
 }
 .mylots-lot-intel .intel-row { padding: 3px 0; font-size: 12px; }
 .mylots-lot-intel .intel-note { font-size: 12px; margin-top: 6px; padding-top: 6px; }
 .mylots-empty {
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--text-light);
-  font-style: italic;
+text-align: center;
+padding: 40px 20px;
+color: var(–text-light);
+font-style: italic;
 }
 
 /* ── PODIUM ──────────────────────────────────────────────────── */
 .podium-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 20px;
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 12px;
+margin-bottom: 20px;
 }
 @media(max-width:650px){ .podium-grid { grid-template-columns: 1fr; } }
 
 .podium-card {
-  background: white;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+background: white;
+border-radius: 14px;
+border: 1px solid var(–border);
+box-shadow: var(–shadow);
+overflow: hidden;
+display: flex;
+flex-direction: column;
 }
-.podium-card.first  { border: 2px solid var(--gold); box-shadow: 0 4px 24px rgba(201,168,76,0.2); }
+.podium-card.first  { border: 2px solid var(–gold); box-shadow: 0 4px 24px rgba(201,168,76,0.2); }
 .podium-card.second { border: 2px solid #b0bec5; }
 .podium-card.third  { border: 2px solid #bf8c60; }
 
 .podium-card-header {
-  padding: 16px 18px 12px;
-  color: white;
-  text-align: center;
+padding: 16px 18px 12px;
+color: white;
+text-align: center;
 }
-.podium-card.first  .podium-card-header { background: linear-gradient(135deg, var(--green) 0%, #1f5c38 100%); }
+.podium-card.first  .podium-card-header { background: linear-gradient(135deg, var(–green) 0%, #1f5c38 100%); }
 .podium-card.second .podium-card-header { background: linear-gradient(135deg, #546e7a 0%, #37474f 100%); }
 .podium-card.third  .podium-card-header { background: linear-gradient(135deg, #7a5c3a 0%, #5a3e22 100%); }
 
@@ -962,423 +963,423 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
 .podium-score.even  { color: rgba(255,255,255,0.8); }
 
 .podium-card-body { padding: 14px 18px 16px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
-.podium-player { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: var(--green); line-height: 1.3; }
-.podium-thru   { font-size: 12px; color: var(--text-light); }
-.podium-owner  { font-size: 12px; color: var(--text-mid); margin-top: 2px; }
-.podium-owner strong { color: var(--text); }
+.podium-player { font-family: ‘Playfair Display’, serif; font-size: 16px; font-weight: 700; color: var(–green); line-height: 1.3; }
+.podium-thru   { font-size: 12px; color: var(–text-light); }
+.podium-owner  { font-size: 12px; color: var(–text-mid); margin-top: 2px; }
+.podium-owner strong { color: var(–text); }
 .podium-payout {
-  margin-top: auto;
-  padding-top: 10px;
-  border-top: 1px solid #f0ece6;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+margin-top: auto;
+padding-top: 10px;
+border-top: 1px solid #f0ece6;
+display: flex;
+justify-content: space-between;
+align-items: center;
 }
-.podium-payout-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-light); }
-.podium-payout-amount { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--green); }
-.podium-card.first .podium-payout-amount { color: var(--gold); }
-.podium-no-data { text-align: center; padding: 24px 16px; color: var(--text-light); font-style: italic; font-size: 13px; }
+.podium-payout-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(–text-light); }
+.podium-payout-amount { font-family: ‘Playfair Display’, serif; font-size: 20px; font-weight: 700; color: var(–green); }
+.podium-card.first .podium-payout-amount { color: var(–gold); }
+.podium-no-data { text-align: center; padding: 24px 16px; color: var(–text-light); font-style: italic; font-size: 13px; }
 
 /* ── ON THE BLOCK nav highlight ─────────────────────────────── */
-.nav-tab[data-tab="onblock"] { color: var(--gold); font-weight: 600; }
-.nav-tab[data-tab="onblock"].active { color: var(--green); border-bottom-color: var(--gold); }
+.nav-tab[data-tab=“onblock”] { color: var(–gold); font-weight: 600; }
+.nav-tab[data-tab=“onblock”].active { color: var(–green); border-bottom-color: var(–gold); }
 
 /* ── DASHBOARD ───────────────────────────────────────────────── */
 .dash-pot {
-  background: linear-gradient(135deg, var(--green) 0%, #1f5c38 100%);
-  color: white;
-  border-radius: 16px;
-  padding: 28px 32px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  flex-wrap: wrap;
+background: linear-gradient(135deg, var(–green) 0%, #1f5c38 100%);
+color: white;
+border-radius: 16px;
+padding: 28px 32px;
+margin-bottom: 20px;
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 20px;
+flex-wrap: wrap;
 }
 .dash-pot-label {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  opacity: 0.72;
-  margin-bottom: 6px;
+font-size: 12px;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.12em;
+opacity: 0.72;
+margin-bottom: 6px;
 }
 .dash-pot-amount {
-  font-family: 'Playfair Display', serif;
-  font-size: 48px;
-  font-weight: 700;
-  color: var(--gold-light);
-  line-height: 1;
+font-family: ‘Playfair Display’, serif;
+font-size: 48px;
+font-weight: 700;
+color: var(–gold-light);
+line-height: 1;
 }
 .dash-pot-sub {
-  font-size: 13px;
-  opacity: 0.62;
-  margin-top: 6px;
+font-size: 13px;
+opacity: 0.62;
+margin-top: 6px;
 }
 .dash-pot-stats {
-  display: flex;
-  gap: 28px;
-  flex-wrap: wrap;
+display: flex;
+gap: 28px;
+flex-wrap: wrap;
 }
 .dash-pot-stat { text-align: center; }
-.dash-pot-stat-val { font-size: 22px; font-weight: 700; color: var(--gold-light); }
+.dash-pot-stat-val { font-size: 22px; font-weight: 700; color: var(–gold-light); }
 .dash-pot-stat-label { font-size: 11px; opacity: 0.65; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px; }
 
 .dash-payouts {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+gap: 12px;
+margin-bottom: 20px;
 }
 .dash-payout-card {
-  background: white;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  overflow: hidden;
+background: white;
+border-radius: 12px;
+border: 1px solid var(–border);
+box-shadow: var(–shadow);
+overflow: hidden;
 }
 .dash-payout-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px 10px;
-  border-bottom: 1px solid #f0ece6;
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 14px 18px 10px;
+border-bottom: 1px solid #f0ece6;
 }
 .dash-payout-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--text);
+display: flex;
+align-items: center;
+gap: 8px;
+font-weight: 700;
+font-size: 14px;
+color: var(–text);
 }
 .dash-payout-icon { font-size: 18px; }
 .dash-payout-pct {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-light);
-  background: var(--off-white);
-  padding: 2px 8px;
-  border-radius: 10px;
+font-size: 12px;
+font-weight: 600;
+color: var(–text-light);
+background: var(–off-white);
+padding: 2px 8px;
+border-radius: 10px;
 }
 .dash-payout-body { padding: 14px 18px; }
 .dash-payout-amount {
-  font-family: 'Playfair Display', serif;
-  font-size: 26px;
-  font-weight: 700;
-  color: var(--green);
-  line-height: 1;
-  margin-bottom: 10px;
+font-family: ‘Playfair Display’, serif;
+font-size: 26px;
+font-weight: 700;
+color: var(–green);
+line-height: 1;
+margin-bottom: 10px;
 }
 .dash-payout-winner {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+display: flex;
+align-items: center;
+gap: 8px;
 }
 .dash-payout-winner-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
+font-size: 14px;
+font-weight: 600;
+color: var(–text);
 }
 .dash-payout-winner-score {
-  font-size: 13px;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 6px;
+font-size: 13px;
+font-weight: 700;
+padding: 2px 8px;
+border-radius: 6px;
 }
 .dash-payout-winner-score.under { background: #e8f5e9; color: #2e7d32; }
 .dash-payout-winner-score.over  { background: #fce4ec; color: #c62828; }
-.dash-payout-winner-score.even  { background: var(--off-white); color: var(--text-mid); }
+.dash-payout-winner-score.even  { background: var(–off-white); color: var(–text-mid); }
 .dash-payout-owner {
-  font-size: 12px;
-  color: var(--text-light);
-  margin-top: 4px;
+font-size: 12px;
+color: var(–text-light);
+margin-top: 4px;
 }
 .dash-no-data {
-  font-size: 13px;
-  color: var(--text-light);
-  font-style: italic;
+font-size: 13px;
+color: var(–text-light);
+font-style: italic;
 }
 .dash-daily-sub {
-  margin-top: 10px;
-  border-top: 1px solid #f0ece6;
-  padding-top: 10px;
+margin-top: 10px;
+border-top: 1px solid #f0ece6;
+padding-top: 10px;
 }
 .dash-daily-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 4px 0;
-  font-size: 13px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 4px 0;
+font-size: 13px;
 }
-.dash-daily-round { color: var(--text-light); }
+.dash-daily-round { color: var(–text-light); }
 .dash-daily-info { font-weight: 500; }
 
 .intel-link {
-  color: var(--green);
-  cursor: pointer;
-  text-decoration: underline;
-  text-decoration-color: var(--green-light);
-  text-underline-offset: 2px;
-  transition: color 0.15s;
+color: var(–green);
+cursor: pointer;
+text-decoration: underline;
+text-decoration-color: var(–green-light);
+text-underline-offset: 2px;
+transition: color 0.15s;
 }
-.intel-link:hover { color: var(--green-mid); text-decoration-color: var(--green-mid); }
+.intel-link:hover { color: var(–green-mid); text-decoration-color: var(–green-mid); }
 
 /* ── GROUP PROFILE CARDS ─────────────────────────────────────── */
 .group-card {
-  background: white;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  overflow: hidden;
+background: white;
+border-radius: 12px;
+border: 1px solid var(–border);
+box-shadow: var(–shadow);
+overflow: hidden;
 }
 .group-card-header {
-  background: linear-gradient(135deg, var(--green) 0%, #1f5c38 100%);
-  color: white;
-  padding: 14px 18px 12px;
+background: linear-gradient(135deg, var(–green) 0%, #1f5c38 100%);
+color: white;
+padding: 14px 18px 12px;
 }
 .group-card-lot {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  opacity: 0.7;
-  margin-bottom: 4px;
+font-size: 10px;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.14em;
+opacity: 0.7;
+margin-bottom: 4px;
 }
 .group-card-title {
-  font-family: 'Playfair Display', serif;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.3;
+font-family: ‘Playfair Display’, serif;
+font-size: 16px;
+font-weight: 700;
+line-height: 1.3;
 }
 .group-card-odds {
-  font-size: 13px;
-  color: var(--gold-light);
-  font-weight: 700;
-  margin-top: 4px;
+font-size: 13px;
+color: var(–gold-light);
+font-weight: 700;
+margin-top: 4px;
 }
 .group-card-body { padding: 12px 18px 14px; }
 .group-card-members { margin-bottom: 10px; }
 .group-member-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 0;
-  border-bottom: 1px solid #f5f1ec;
+display: flex;
+align-items: center;
+gap: 8px;
+padding: 7px 0;
+border-bottom: 1px solid #f5f1ec;
 }
 .group-member-row:last-child { border-bottom: none; }
 .group-member-icon { font-size: 14px; flex-shrink: 0; }
 .group-member-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--green);
-  flex: 1;
-  min-width: 0;
+font-size: 14px;
+font-weight: 600;
+color: var(–green);
+flex: 1;
+min-width: 0;
 }
 .group-member-detail {
-  font-size: 11px;
-  color: var(--text-light);
-  text-align: right;
-  flex-shrink: 0;
+font-size: 11px;
+color: var(–text-light);
+text-align: right;
+flex-shrink: 0;
 }
 .group-card-note {
-  font-size: 12px;
-  color: var(--text-mid);
-  font-style: italic;
-  line-height: 1.6;
-  padding: 8px 10px;
-  background: var(--off-white);
-  border-radius: 6px;
-  border-left: 3px solid var(--gold);
-  margin-top: 8px;
+font-size: 12px;
+color: var(–text-mid);
+font-style: italic;
+line-height: 1.6;
+padding: 8px 10px;
+background: var(–off-white);
+border-radius: 6px;
+border-left: 3px solid var(–gold);
+margin-top: 8px;
 }
 .intel-group-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--green);
-  background: var(--green-pale);
-  padding: 2px 8px;
-  border-radius: 10px;
-  margin-top: 5px;
+display: inline-flex;
+align-items: center;
+gap: 4px;
+font-size: 11px;
+font-weight: 600;
+color: var(–green);
+background: var(–green-pale);
+padding: 2px 8px;
+border-radius: 10px;
+margin-top: 5px;
 }
 
 /* RESPONSIVE */
 @media(max-width:600px){
-  /* Login */
-  .login-card{padding:28px 18px 24px;margin:12px}
+/* Login */
+.login-card{padding:28px 18px 24px;margin:12px}
 
-  /* Header */
-  header{height:50px;padding:0 12px}
-  .header-logo{font-size:14px}
-  .sync-label{display:none}
-  .badge-role{display:none}
-  .btn-logout{padding:5px 10px;font-size:11px}
-  .sync-pill{padding:4px 8px}
+/* Header */
+header{height:50px;padding:0 12px}
+.header-logo{font-size:14px}
+.sync-label{display:none}
+.badge-role{display:none}
+.btn-logout{padding:5px 10px;font-size:11px}
+.sync-pill{padding:4px 8px}
 
-  /* Nav — horizontally scrollable, larger touch targets */
-  nav{top:50px}
-  .nav-tab{padding:11px 13px;font-size:12px}
+/* Nav — horizontally scrollable, larger touch targets */
+nav{top:50px}
+.nav-tab{padding:11px 13px;font-size:12px}
 
-  /* Main padding */
-  main{padding:12px 10px}
+/* Main padding */
+main{padding:12px 10px}
 
-  /* Section header */
-  .section-title{font-size:17px}
+/* Section header */
+.section-title{font-size:17px}
 
-  /* Cards */
-  .card{padding:14px 14px;border-radius:10px}
+/* Cards */
+.card{padding:14px 14px;border-radius:10px}
 
-  /* Tables — make them more readable on small screens */
-  table{font-size:12px}
-  th{padding:7px 8px;font-size:10px}
-  td{padding:8px 8px}
-  .pos{min-width:28px}
+/* Tables — make them more readable on small screens */
+table{font-size:12px}
+th{padding:7px 8px;font-size:10px}
+td{padding:8px 8px}
+.pos{min-width:28px}
 
-  /* Leaderboard — hide R1-R4 individual columns on mobile */
-  .lb-r1,.lb-r2,.lb-r3,.lb-r4{display:none}
+/* Leaderboard — hide R1-R4 individual columns on mobile */
+.lb-r1,.lb-r2,.lb-r3,.lb-r4{display:none}
 
-  /* Payout hero */
-  .payout-hero{padding:14px 14px;gap:10px;flex-wrap:wrap}
-  .payout-hero .trophy{font-size:30px}
-  .payout-hero-name{font-size:16px}
-  .payout-hero-score{font-size:22px}
+/* Payout hero */
+.payout-hero{padding:14px 14px;gap:10px;flex-wrap:wrap}
+.payout-hero .trophy{font-size:30px}
+.payout-hero-name{font-size:16px}
+.payout-hero-score{font-size:22px}
 
-  /* Standings */
-  .standings-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+/* Standings */
+.standings-grid{grid-template-columns:repeat(2,1fr);gap:8px}
 
-  /* Intel */
-  .intel-grid{grid-template-columns:1fr}
-  .intel-filter-bar{gap:6px}
-  .intel-filter-btn{padding:5px 10px;font-size:11px}
+/* Intel */
+.intel-grid{grid-template-columns:1fr}
+.intel-filter-bar{gap:6px}
+.intel-filter-btn{padding:5px 10px;font-size:11px}
 
-  /* Hero card — scale back down for mobile */
-  .hero-header{padding:20px 18px 24px}
-  .hero-header-top{margin-bottom:12px}
-  .hero-lot-label{font-size:11px}
-  .hero-odds{font-size:22px}
-  .hero-winpct{font-size:12px}
-  .hero-type-pill{font-size:11px;padding:3px 10px}
-  .hero-name{font-size:24px}
-  .hero-member{font-size:14px}
-  .hero-body{padding:18px 18px}
-  .hero-intel-grid{grid-template-columns:1fr;gap:0}
-  .hero-intel-key{font-size:11px}
-  .hero-intel-val{font-size:15px}
-  .hero-note{font-size:14px;padding:12px 14px}
-  .next-strip-label{font-size:11px;padding:8px 14px}
-  .next-strip-body{padding:12px 14px}
-  .next-strip-name{font-size:15px}
-  .next-strip-odds{font-size:16px}
-  .next-strip-pct{font-size:12px}
-  .onblock-progress{padding:13px 16px}
-  .onblock-progress-label{font-size:12px}
-  .onblock-progress-text{font-size:13px}
-  .onblock-progress-bar-wrap{height:8px}
+/* Hero card — scale back down for mobile */
+.hero-header{padding:20px 18px 24px}
+.hero-header-top{margin-bottom:12px}
+.hero-lot-label{font-size:11px}
+.hero-odds{font-size:22px}
+.hero-winpct{font-size:12px}
+.hero-type-pill{font-size:11px;padding:3px 10px}
+.hero-name{font-size:24px}
+.hero-member{font-size:14px}
+.hero-body{padding:18px 18px}
+.hero-intel-grid{grid-template-columns:1fr;gap:0}
+.hero-intel-key{font-size:11px}
+.hero-intel-val{font-size:15px}
+.hero-note{font-size:14px;padding:12px 14px}
+.next-strip-label{font-size:11px;padding:8px 14px}
+.next-strip-body{padding:12px 14px}
+.next-strip-name{font-size:15px}
+.next-strip-odds{font-size:16px}
+.next-strip-pct{font-size:12px}
+.onblock-progress{padding:13px 16px}
+.onblock-progress-label{font-size:12px}
+.onblock-progress-text{font-size:13px}
+.onblock-progress-bar-wrap{height:8px}
 
-  /* Bid panel */
-  .hero-bid-row{gap:8px}
-  .hero-bid-row select{min-width:0;font-size:13px;padding:9px 10px}
-  .hero-bid-price{width:90px;font-size:14px;padding:9px 10px}
-  .btn-sell{padding:9px 14px;font-size:13px}
+/* Bid panel */
+.hero-bid-row{gap:8px}
+.hero-bid-row select{min-width:0;font-size:13px;padding:9px 10px}
+.hero-bid-price{width:90px;font-size:14px;padding:9px 10px}
+.btn-sell{padding:9px 14px;font-size:13px}
 
-  /* On the Block strips */
-  .next-strip-name{font-size:13px;white-space:normal}
-  .onblock-progress{padding:12px 14px;gap:10px}
+/* On the Block strips */
+.next-strip-name{font-size:13px;white-space:normal}
+.onblock-progress{padding:12px 14px;gap:10px}
 
-  /* Sold card */
-  .sold-card-inner{padding:28px 18px 24px}
-  .sold-badge{font-size:14px;padding:7px 20px}
-  .sold-lot-label{font-size:12px}
-  .sold-player-name{font-size:24px}
-  .sold-members{font-size:14px}
-  .sold-meta{max-width:100%}
-  .sold-meta-val{font-size:22px}
-  .sold-meta-label{font-size:11px}
-  .sold-countdown{font-size:14px}
+/* Sold card */
+.sold-card-inner{padding:28px 18px 24px}
+.sold-badge{font-size:14px;padding:7px 20px}
+.sold-lot-label{font-size:12px}
+.sold-player-name{font-size:24px}
+.sold-members{font-size:14px}
+.sold-meta{max-width:100%}
+.sold-meta-val{font-size:22px}
+.sold-meta-label{font-size:11px}
+.sold-countdown{font-size:14px}
 
-  /* My Lots */
-  .mylots-summary{padding:14px 16px;gap:12px}
-  .mylots-summary-name{font-size:18px}
-  .mylots-stat-val{font-size:18px}
-  .mylots-lot-header{padding:10px 12px;gap:8px}
+/* My Lots */
+.mylots-summary{padding:14px 16px;gap:12px}
+.mylots-summary-name{font-size:18px}
+.mylots-stat-val{font-size:18px}
+.mylots-lot-header{padding:10px 12px;gap:8px}
 
-  /* Dashboard */
-  .dash-pot{padding:20px 18px;gap:14px}
-  .dash-pot-amount{font-size:36px}
-  .dash-payouts{grid-template-columns:1fr;gap:10px}
-  .dash-payout-amount{font-size:22px}
+/* Dashboard */
+.dash-pot{padding:20px 18px;gap:14px}
+.dash-pot-amount{font-size:36px}
+.dash-payouts{grid-template-columns:1fr;gap:10px}
+.dash-payout-amount{font-size:22px}
 
-  /* Info grid */
-  .info-grid{grid-template-columns:1fr 1fr}
+/* Info grid */
+.info-grid{grid-template-columns:1fr 1fr}
 
-  /* Buyer filter */
-  .buyer-filter-btn{padding:7px 12px;font-size:12px}
+/* Buyer filter */
+.buyer-filter-btn{padding:7px 12px;font-size:12px}
 
-  /* Section header — stack on mobile */
-  .section-header{flex-direction:column;align-items:flex-start;gap:8px}
-  .section-header .flex-gap{width:100%}
+/* Section header — stack on mobile */
+.section-header{flex-direction:column;align-items:flex-start;gap:8px}
+.section-header .flex-gap{width:100%}
 }
 /* ── PAYMENTS TAB ───────────────────────────── */
-.pay-banner{display:flex;justify-content:center;gap:24px;padding:14px 16px;background:var(--green);border-radius:10px;margin-bottom:16px;flex-wrap:wrap}
+.pay-banner{display:flex;justify-content:center;gap:24px;padding:14px 16px;background:var(–green);border-radius:10px;margin-bottom:16px;flex-wrap:wrap}
 .pay-banner-stat{text-align:center}
-.pay-banner-val{font-size:20px;font-weight:700;color:var(--gold-light)}
+.pay-banner-val{font-size:20px;font-weight:700;color:var(–gold-light)}
 .pay-banner-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;opacity:.65;margin-top:2px}
-.pay-card{background:white;border-radius:10px;border:1px solid var(--border);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow)}
+.pay-card{background:white;border-radius:10px;border:1px solid var(–border);margin-bottom:10px;overflow:hidden;box-shadow:var(–shadow)}
 .pay-card-hdr{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;user-select:none}
 .pay-card-hdr:hover{background:#fafaf8}
-.pay-card-name{font-size:16px;font-weight:700;color:var(--green);flex:1;min-width:0}
-.pay-card-meta{font-size:11px;color:var(--text-light);margin-top:1px}
+.pay-card-name{font-size:16px;font-weight:700;color:var(–green);flex:1;min-width:0}
+.pay-card-meta{font-size:11px;color:var(–text-light);margin-top:1px}
 .pay-amounts{display:flex;gap:14px;flex-shrink:0}
 .pay-amt-block{text-align:right}
 .pay-amt-val{font-size:14px;font-weight:700}
-.pay-amt-label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-light)}
+.pay-amt-label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(–text-light)}
 .pay-status-pill{font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;flex-shrink:0}
-.ps-settled{background:var(--green-pale);color:var(--green)}
+.ps-settled{background:var(–green-pale);color:var(–green)}
 .ps-partial{background:#fff3e0;color:#e65100}
 .ps-unpaid{background:#fdecea;color:#c62828}
 .ps-overpaid{background:#e8f0ff;color:#1a3a8f}
-.pay-body{border-top:1px solid var(--border);padding:14px 16px 16px;display:none}
+.pay-body{border-top:1px solid var(–border);padding:14px 16px 16px;display:none}
 .pay-body.open{display:block}
 .pay-lots-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px}
-.pay-lots-table th{text-align:left;padding:5px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-light);border-bottom:1px solid var(--border)}
+.pay-lots-table th{text-align:left;padding:5px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(–text-light);border-bottom:1px solid var(–border)}
 .pay-lots-table th:last-child{text-align:right}
 .pay-lots-table td{padding:6px 8px;border-bottom:1px solid #f0ece6}
 .pay-lots-table td:last-child{text-align:right;font-weight:600}
 .pay-lots-table tr:last-child td{border-bottom:none}
-.pay-log-section{background:var(--off-white);border-radius:8px;padding:12px 14px;margin-top:4px}
-.pay-log-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-light);margin-bottom:8px}
-.pay-log-row{display:flex;align-items:center;gap:8px;padding:6px 8px;background:white;border-radius:6px;margin-bottom:4px;border:1px solid var(--border);font-size:13px}
+.pay-log-section{background:var(–off-white);border-radius:8px;padding:12px 14px;margin-top:4px}
+.pay-log-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(–text-light);margin-bottom:8px}
+.pay-log-row{display:flex;align-items:center;gap:8px;padding:6px 8px;background:white;border-radius:6px;margin-bottom:4px;border:1px solid var(–border);font-size:13px}
 .pay-log-left{flex:1;min-width:0}
-.pay-log-date{font-size:11px;color:var(--text-light)}
-.pay-log-note{font-size:12px;color:var(--text-mid);font-style:italic;margin-top:1px}
-.pay-log-amt{font-weight:700;color:var(--green);flex-shrink:0}
-.pay-del-btn{background:none;border:none;color:var(--text-light);font-size:17px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0}
+.pay-log-date{font-size:11px;color:var(–text-light)}
+.pay-log-note{font-size:12px;color:var(–text-mid);font-style:italic;margin-top:1px}
+.pay-log-amt{font-weight:700;color:var(–green);flex-shrink:0}
+.pay-del-btn{background:none;border:none;color:var(–text-light);font-size:17px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0}
 .pay-del-btn:hover{color:#c62828}
 .pay-add-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-.pay-add-row input{font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:white;color:var(--text);outline:none}
-.pay-add-row input:focus{border-color:var(--green)}
+.pay-add-row input{font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(–border);border-radius:6px;background:white;color:var(–text);outline:none}
+.pay-add-row input:focus{border-color:var(–green)}
 .pay-input-amt{width:110px}
 .pay-input-note{flex:1;min-width:100px}
-.pay-add-btn{background:var(--green);color:white;border:none;border-radius:6px;font-family:inherit;font-size:13px;font-weight:600;padding:7px 14px;cursor:pointer;white-space:nowrap}
-.pay-add-btn:hover{background:var(--green-mid)}
-.pay-bal-summary{display:flex;gap:10px;margin-top:12px;padding-top:12px;border-top:2px solid var(--border);flex-wrap:wrap}
-.pay-bal-item{flex:1;min-width:80px;background:white;border:1px solid var(--border);border-radius:8px;padding:9px 10px;text-align:center}
+.pay-add-btn{background:var(–green);color:white;border:none;border-radius:6px;font-family:inherit;font-size:13px;font-weight:600;padding:7px 14px;cursor:pointer;white-space:nowrap}
+.pay-add-btn:hover{background:var(–green-mid)}
+.pay-bal-summary{display:flex;gap:10px;margin-top:12px;padding-top:12px;border-top:2px solid var(–border);flex-wrap:wrap}
+.pay-bal-item{flex:1;min-width:80px;background:white;border:1px solid var(–border);border-radius:8px;padding:9px 10px;text-align:center}
 .pay-bal-item-val{font-size:17px;font-weight:700}
-.pay-bal-item-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-light);margin-top:2px}
-.pay-col-owed{color:var(--text)}
-.pay-col-paid{color:var(--green)}
+.pay-bal-item-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(–text-light);margin-top:2px}
+.pay-col-owed{color:var(–text)}
+.pay-col-paid{color:var(–green)}
 .pay-col-pos{color:#c62828}
-.pay-col-zero{color:var(--green)}
+.pay-col-zero{color:var(–green)}
 .pay-col-neg{color:#1a3a8f}
 @media(max-width:600px){
-  .pay-amounts{gap:8px}
-  .pay-amt-val{font-size:12px}
-  .pay-banner{gap:12px}
-  .pay-banner-val{font-size:17px}
+.pay-amounts{gap:8px}
+.pay-amt-val{font-size:12px}
+.pay-banner{gap:12px}
+.pay-banner-val{font-size:17px}
 }
 /* ── TIE NOTICE ─────────────────────────────────────────── */
 .tie-notice{display:flex;align-items:flex-start;gap:10px;background:linear-gradient(135deg,#fff8e1,#fffde7);border:1.5px solid #f0c040;border-radius:10px;padding:10px 14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(201,168,76,0.15)}
@@ -1386,10 +1387,12 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
 .tie-title{font-size:12px;font-weight:700;color:#7a5800;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px}
 .tie-names{font-size:13px;color:#3a3000;line-height:1.5}
 </style>
+
 </head>
 <body>
 
 <!-- LOGIN -->
+
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">
@@ -1418,6 +1421,7 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
 </div>
 
 <!-- APP -->
+
 <div id="app">
   <header>
     <div class="header-left">
@@ -1455,241 +1459,244 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
 
   <main>
 
-    <!-- DASHBOARD -->
-    <div class="tab-panel" id="tab-dashboard">
-      <div id="dashboard-content"></div>
-    </div>
+```
+<!-- DASHBOARD -->
+<div class="tab-panel" id="tab-dashboard">
+  <div id="dashboard-content"></div>
+</div>
 
-    <!-- AUCTION -->
-    <div class="tab-panel active" id="tab-auction">
-      <div class="section-header">
+<!-- AUCTION -->
+<div class="tab-panel active" id="tab-auction">
+  <div class="section-header">
+    <div>
+      <div class="section-title">Live Auction</div>
+      <div class="section-sub" id="auction-sub">—</div>
+    </div>
+    <div class="flex-gap" id="auction-admin-bar" style="display:none">
+      <button class="btn btn-primary" onclick="saveAuction()">💾 Save Changes</button>
+      <button class="btn btn-outline btn-sm" onclick="fetchAuction()">↻ Sync</button>
+    </div>
+  </div>
+  <div class="card" id="buyer-card" style="display:none">
+    <div class="card-title">👤 Buyers</div>
+    <div class="buyer-chips" id="buyer-chips"></div>
+    <div class="flex-gap" style="margin-top:14px">
+      <input type="text" id="new-buyer-input" placeholder="Add buyer name…" style="width:200px"
+             onkeydown="if(event.key==='Enter')addBuyer()">
+      <button class="btn btn-gold" onclick="addBuyer()">+ Add Buyer</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="flex-gap" style="margin-bottom:12px;flex-wrap:wrap">
+      <input type="text" id="auction-search" placeholder="🔍 Search players or groups…"
+        style="flex:1;min-width:200px;max-width:360px"
+        oninput="renderAuction()">
+      <button class="btn btn-outline btn-sm admin-only" id="snapshot-btn"
+        onclick="snapshotLeaderboard()"
+        title="Save current leaderboard to Google Sheet"
+        style="display:none">📸 Snapshot Scores</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Type</th><th>Player</th><th>Buyer</th><th style="text-align:right">Price</th><th style="text-align:right">Odds</th><th style="text-align:right">Win %</th></tr></thead>
+        <tbody id="auction-tbody"><tr class="loading-row"><td colspan="7"><span class="spinner"></span>Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card" id="standings-card">
+    <div class="card-title">💰 Buyer Standings</div>
+    <div class="standings-grid" id="standings-grid"><div style="color:var(--text-light);font-size:13px">No buyers yet.</div></div>
+  </div>
+</div>
+
+<!-- LEADERBOARD -->
+<div class="tab-panel" id="tab-leaderboard">
+  <div class="section-header">
+    <div>
+      <div class="section-title">Masters Leaderboard</div>
+      <div class="section-sub" id="lb-meta">Connecting to ESPN…</div>
+    </div>
+    <div class="flex-gap">
+      <span class="espn-badge">&#9679; ESPN Live</span>
+      <button class="btn btn-outline btn-sm" onclick="fetchESPN()">↻ Refresh</button>
+    </div>
+  </div>
+  <div id="lb-owner-filter-bar" style="display:none;margin-bottom:10px">
+    <div class="day-filter-bar" id="lb-owner-btns"></div>
+  </div>
+  <div class="card">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Pos</th><th>Player</th><th>Owner</th><th>To Par</th><th>Today</th><th>Thru</th><th class="lb-r1">R1</th><th class="lb-r2">R2</th><th class="lb-r3">R3</th><th class="lb-r4">R4</th></tr></thead>
+        <tbody id="lb-tbody"><tr class="loading-row"><td colspan="10"><span class="spinner"></span>Fetching from ESPN…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- PAYOUT PANELS -->
+<div class="tab-panel" id="tab-podium">  <div id="payout-podium"></div></div>
+<div class="tab-panel" id="tab-lowam">   <div id="payout-lowam"></div></div>
+<div class="tab-panel" id="tab-dailylow"><div id="payout-dailylow"></div></div>
+<div class="tab-panel" id="tab-deadlast"><div id="payout-deadlast"></div></div>
+
+<!-- PLAYER INTEL -->
+<div class="tab-panel" id="tab-intel">
+  <div class="section-header">
+    <div class="section-title">Player Intel</div>
+  </div>
+  <input class="intel-search" id="intel-search" placeholder="🔍 Search players…" oninput="renderIntel()">
+  <div class="intel-filter-bar">
+    <button class="intel-filter-btn active" data-filter="all"        onclick="setIntelFilter('all')">All Players</button>
+    <button class="intel-filter-btn"         data-filter="individual" onclick="setIntelFilter('individual')">Individual</button>
+    <button class="intel-filter-btn"         data-filter="groups"     onclick="setIntelFilter('groups')">⛳ Group Lots</button>
+    <button class="intel-filter-btn"         data-filter="amateur"    onclick="setIntelFilter('amateur')">Amateurs</button>
+    <button class="intel-filter-btn"         data-filter="contender"  onclick="setIntelFilter('contender')">Top Contenders</button>
+  </div>
+  <div class="intel-grid" id="intel-grid"></div>
+</div>
+
+<!-- RULES -->
+<div class="tab-panel" id="tab-rules">
+  <div class="section-header">
+    <div class="section-title">Pool Rules</div>
+    <button class="btn btn-outline btn-sm" id="edit-rules-btn" onclick="toggleRulesEdit()" style="display:none">Edit Rules</button>
+  </div>
+  <div class="card">
+    <div class="rules-content" id="rules-display"></div>
+    <textarea class="rules-editor" id="rules-editor" style="display:none"></textarea>
+    <div class="flex-gap" id="rules-save-row" style="display:none;margin-top:14px">
+      <button class="btn btn-primary" onclick="saveRules()">Save Rules</button>
+      <button class="btn btn-outline" onclick="cancelRulesEdit()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ON THE BLOCK -->
+<div class="tab-panel" id="tab-onblock">
+  <div id="onblock-content" class="onblock-viewport"></div>
+</div>
+
+<!-- MY LOTS -->
+<div class="tab-panel" id="tab-mylots">
+  <div class="section-header">
+    <div class="section-title">My Lots</div>
+  </div>
+  <div class="mylots-filter-bar" id="mylots-filter-bar">
+    <div style="color:var(--text-light);font-size:13px">Loading buyers…</div>
+  </div>
+  <div id="mylots-content"></div>
+</div>
+
+<!-- ADMIN SETUP -->
+<div class="tab-panel" id="tab-payments">
+  <div id="payments-content"></div>
+</div>
+
+<div class="tab-panel" id="tab-setup">
+  <div class="section-header"><div class="section-title">Admin Setup</div></div>
+
+  <div class="setup-section">
+    <div class="setup-label">Google Apps Script Backend URL</div>
+    <div class="flex-gap">
+      <!-- PASTE YOUR APPS SCRIPT /exec URL HERE -->
+      <input type="text" id="backend-url" style="flex:1;min-width:200px"
+             placeholder="https://script.google.com/macros/s/…/exec"
+             value="">
+      <button class="btn btn-primary" onclick="connectBackend()">Connect</button>
+      <button class="btn btn-outline"  onclick="testBackend()">Test</button>
+    </div>
+    <div id="backend-status" class="status-box" style="display:none"></div>
+  </div>
+
+  <div class="setup-section">
+    <div class="setup-label">Live Status</div>
+    <div class="info-grid">
+      <div class="info-item"><div class="info-item-label">Leaderboard</div><div class="info-item-val">🔴 ESPN (Live)</div></div>
+      <div class="info-item"><div class="info-item-label">Auction Data</div><div class="info-item-val">📊 Google Sheets</div></div>
+      <div class="info-item"><div class="info-item-label">ESPN Status</div><div class="info-item-val" id="espn-status-val">—</div></div>
+      <div class="info-item"><div class="info-item-label">Sheets Status</div><div class="info-item-val" id="sheets-status-val">—</div></div>
+      <div class="info-item"><div class="info-item-label">Last Score Sync</div><div class="info-item-val" id="last-espn-sync">—</div></div>
+      <div class="info-item"><div class="info-item-label">Last Auction Sync</div><div class="info-item-val" id="last-auction-sync">—</div></div>
+    </div>
+    <div class="flex-gap" style="margin-top:12px">
+      <button class="btn btn-primary btn-sm" onclick="fetchESPN()">↻ Refresh Scores</button>
+      <button class="btn btn-outline btn-sm" onclick="fetchAuction()">↻ Sync Auction</button>
+    </div>
+  </div>
+
+  <div class="setup-section">
+    <div class="setup-label">Required Google Sheet Tabs</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+      <span style="background:var(--green-pale);color:var(--green);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">Buyers</span>
+      <span style="background:var(--green-pale);color:var(--green);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">AuctionLots</span>
+    </div>
+    <div style="font-size:13px;color:var(--text-mid);margin-top:10px;line-height:1.6">
+      <strong>Buyers</strong> tab columns: <code>id</code> | <code>name</code><br>
+      <strong>AuctionLots</strong> tab columns: <code>lot</code> | <code>type</code> | <code>player</code> | <code>buyerId</code> | <code>price</code>
+    </div>
+  </div>
+
+  <div class="setup-section">
+    <div class="setup-label">Display Settings</div>
+    <p style="font-size:13px;color:var(--text-mid);line-height:1.6;margin-bottom:14px">
+      Control what financial information is visible to all users.
+    </p>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;background:var(--off-white);border-radius:8px;border:1px solid var(--border)">
         <div>
-          <div class="section-title">Live Auction</div>
-          <div class="section-sub" id="auction-sub">—</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text)">💰 Pot Size</div>
+          <div style="font-size:12px;color:var(--text-light);margin-top:2px">Shows running total in header, dashboard banner, and payout amounts</div>
         </div>
-        <div class="flex-gap" id="auction-admin-bar" style="display:none">
-          <button class="btn btn-primary" onclick="saveAuction()">💾 Save Changes</button>
-          <button class="btn btn-outline btn-sm" onclick="fetchAuction()">↻ Sync</button>
-        </div>
+        <button id="toggle-pot-btn" onclick="toggleDisplaySetting('pot')"
+          style="min-width:72px;padding:7px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;border:2px solid var(--green);background:var(--green);color:white;font-family:inherit;transition:all .2s">
+          ON
+        </button>
       </div>
-      <div class="card" id="buyer-card" style="display:none">
-        <div class="card-title">👤 Buyers</div>
-        <div class="buyer-chips" id="buyer-chips"></div>
-        <div class="flex-gap" style="margin-top:14px">
-          <input type="text" id="new-buyer-input" placeholder="Add buyer name…" style="width:200px"
-                 onkeydown="if(event.key==='Enter')addBuyer()">
-          <button class="btn btn-gold" onclick="addBuyer()">+ Add Buyer</button>
-        </div>
-      </div>
-      <div class="card">
-        <div class="flex-gap" style="margin-bottom:12px;flex-wrap:wrap">
-          <input type="text" id="auction-search" placeholder="🔍 Search players or groups…"
-            style="flex:1;min-width:200px;max-width:360px"
-            oninput="renderAuction()">
-          <button class="btn btn-outline btn-sm admin-only" id="snapshot-btn"
-            onclick="snapshotLeaderboard()"
-            title="Save current leaderboard to Google Sheet"
-            style="display:none">📸 Snapshot Scores</button>
-        </div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>#</th><th>Type</th><th>Player</th><th>Buyer</th><th style="text-align:right">Price</th><th style="text-align:right">Odds</th><th style="text-align:right">Win %</th></tr></thead>
-            <tbody id="auction-tbody"><tr class="loading-row"><td colspan="7"><span class="spinner"></span>Loading…</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-      <div class="card" id="standings-card">
-        <div class="card-title">💰 Buyer Standings</div>
-        <div class="standings-grid" id="standings-grid"><div style="color:var(--text-light);font-size:13px">No buyers yet.</div></div>
-      </div>
-    </div>
-
-    <!-- LEADERBOARD -->
-    <div class="tab-panel" id="tab-leaderboard">
-      <div class="section-header">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;background:var(--off-white);border-radius:8px;border:1px solid var(--border)">
         <div>
-          <div class="section-title">Masters Leaderboard</div>
-          <div class="section-sub" id="lb-meta">Connecting to ESPN…</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text)">👥 Team Spend</div>
+          <div style="font-size:12px;color:var(--text-light);margin-top:2px">Shows buyer standings and individual spend amounts</div>
         </div>
-        <div class="flex-gap">
-          <span class="espn-badge">&#9679; ESPN Live</span>
-          <button class="btn btn-outline btn-sm" onclick="fetchESPN()">↻ Refresh</button>
-        </div>
-      </div>
-      <div id="lb-owner-filter-bar" style="display:none;margin-bottom:10px">
-        <div class="day-filter-bar" id="lb-owner-btns"></div>
-      </div>
-      <div class="card">
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>Pos</th><th>Player</th><th>Owner</th><th>To Par</th><th>Today</th><th>Thru</th><th class="lb-r1">R1</th><th class="lb-r2">R2</th><th class="lb-r3">R3</th><th class="lb-r4">R4</th></tr></thead>
-            <tbody id="lb-tbody"><tr class="loading-row"><td colspan="10"><span class="spinner"></span>Fetching from ESPN…</td></tr></tbody>
-          </table>
-        </div>
+        <button id="toggle-spend-btn" onclick="toggleDisplaySetting('spend')"
+          style="min-width:72px;padding:7px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;border:2px solid var(--green);background:var(--green);color:white;font-family:inherit;transition:all .2s">
+          ON
+        </button>
       </div>
     </div>
+  </div>
 
-    <!-- PAYOUT PANELS -->
-    <div class="tab-panel" id="tab-podium">  <div id="payout-podium"></div></div>
-    <div class="tab-panel" id="tab-lowam">   <div id="payout-lowam"></div></div>
-    <div class="tab-panel" id="tab-dailylow"><div id="payout-dailylow"></div></div>
-    <div class="tab-panel" id="tab-deadlast"><div id="payout-deadlast"></div></div>
+  <div class="setup-section">
+    <div class="setup-label">Passwords</div>
+    <p style="font-size:13px;color:var(--text-mid);line-height:1.6">
+      Find <code>PASSWORDS</code> near the top of the <code>&lt;script&gt;</code> block and edit directly.
+    </p>
+  </div>
 
-    <!-- PLAYER INTEL -->
-    <div class="tab-panel" id="tab-intel">
-      <div class="section-header">
-        <div class="section-title">Player Intel</div>
-      </div>
-      <input class="intel-search" id="intel-search" placeholder="🔍 Search players…" oninput="renderIntel()">
-      <div class="intel-filter-bar">
-        <button class="intel-filter-btn active" data-filter="all"        onclick="setIntelFilter('all')">All Players</button>
-        <button class="intel-filter-btn"         data-filter="individual" onclick="setIntelFilter('individual')">Individual</button>
-        <button class="intel-filter-btn"         data-filter="groups"     onclick="setIntelFilter('groups')">⛳ Group Lots</button>
-        <button class="intel-filter-btn"         data-filter="amateur"    onclick="setIntelFilter('amateur')">Amateurs</button>
-        <button class="intel-filter-btn"         data-filter="contender"  onclick="setIntelFilter('contender')">Top Contenders</button>
-      </div>
-      <div class="intel-grid" id="intel-grid"></div>
-    </div>
-
-    <!-- RULES -->
-    <div class="tab-panel" id="tab-rules">
-      <div class="section-header">
-        <div class="section-title">Pool Rules</div>
-        <button class="btn btn-outline btn-sm" id="edit-rules-btn" onclick="toggleRulesEdit()" style="display:none">Edit Rules</button>
-      </div>
-      <div class="card">
-        <div class="rules-content" id="rules-display"></div>
-        <textarea class="rules-editor" id="rules-editor" style="display:none"></textarea>
-        <div class="flex-gap" id="rules-save-row" style="display:none;margin-top:14px">
-          <button class="btn btn-primary" onclick="saveRules()">Save Rules</button>
-          <button class="btn btn-outline" onclick="cancelRulesEdit()">Cancel</button>
-        </div>
+  <div class="setup-section" style="border:1px solid #f5c6c6;background:#fffafa">
+    <div class="setup-label" style="color:#c0392b">⚠ Danger Zone</div>
+    <p style="font-size:13px;color:var(--text-mid);line-height:1.6;margin-bottom:14px">
+      Clear all buyer assignments and prices from every lot. This resets the auction back to a blank slate.
+      <strong>This cannot be undone.</strong>
+    </p>
+    <div id="reset-confirm-box" style="display:none;background:#fdf0f0;border:1px solid #f5c6c6;border-radius:8px;padding:14px 16px;margin-bottom:12px">
+      <div style="font-size:14px;font-weight:600;color:#c0392b;margin-bottom:10px">⚠ Are you sure? This will clear ALL buyer and price data from every lot.</div>
+      <div class="flex-gap">
+        <button class="btn btn-danger" onclick="confirmResetAuction()" style="background:#c0392b;color:white;font-weight:700">Yes, Reset Everything</button>
+        <button class="btn btn-outline" onclick="cancelResetAuction()">Cancel</button>
       </div>
     </div>
-
-    <!-- ON THE BLOCK -->
-    <div class="tab-panel" id="tab-onblock">
-      <div id="onblock-content" class="onblock-viewport"></div>
-    </div>
-
-    <!-- MY LOTS -->
-    <div class="tab-panel" id="tab-mylots">
-      <div class="section-header">
-        <div class="section-title">My Lots</div>
-      </div>
-      <div class="mylots-filter-bar" id="mylots-filter-bar">
-        <div style="color:var(--text-light);font-size:13px">Loading buyers…</div>
-      </div>
-      <div id="mylots-content"></div>
-    </div>
-
-    <!-- ADMIN SETUP -->
-    <div class="tab-panel" id="tab-payments">
-      <div id="payments-content"></div>
-    </div>
-
-    <div class="tab-panel" id="tab-setup">
-      <div class="section-header"><div class="section-title">Admin Setup</div></div>
-
-      <div class="setup-section">
-        <div class="setup-label">Google Apps Script Backend URL</div>
-        <div class="flex-gap">
-          <!-- PASTE YOUR APPS SCRIPT /exec URL HERE -->
-          <input type="text" id="backend-url" style="flex:1;min-width:200px"
-                 placeholder="https://script.google.com/macros/s/…/exec"
-                 value="">
-          <button class="btn btn-primary" onclick="connectBackend()">Connect</button>
-          <button class="btn btn-outline"  onclick="testBackend()">Test</button>
-        </div>
-        <div id="backend-status" class="status-box" style="display:none"></div>
-      </div>
-
-      <div class="setup-section">
-        <div class="setup-label">Live Status</div>
-        <div class="info-grid">
-          <div class="info-item"><div class="info-item-label">Leaderboard</div><div class="info-item-val">🔴 ESPN (Live)</div></div>
-          <div class="info-item"><div class="info-item-label">Auction Data</div><div class="info-item-val">📊 Google Sheets</div></div>
-          <div class="info-item"><div class="info-item-label">ESPN Status</div><div class="info-item-val" id="espn-status-val">—</div></div>
-          <div class="info-item"><div class="info-item-label">Sheets Status</div><div class="info-item-val" id="sheets-status-val">—</div></div>
-          <div class="info-item"><div class="info-item-label">Last Score Sync</div><div class="info-item-val" id="last-espn-sync">—</div></div>
-          <div class="info-item"><div class="info-item-label">Last Auction Sync</div><div class="info-item-val" id="last-auction-sync">—</div></div>
-        </div>
-        <div class="flex-gap" style="margin-top:12px">
-          <button class="btn btn-primary btn-sm" onclick="fetchESPN()">↻ Refresh Scores</button>
-          <button class="btn btn-outline btn-sm" onclick="fetchAuction()">↻ Sync Auction</button>
-        </div>
-      </div>
-
-      <div class="setup-section">
-        <div class="setup-label">Required Google Sheet Tabs</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
-          <span style="background:var(--green-pale);color:var(--green);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">Buyers</span>
-          <span style="background:var(--green-pale);color:var(--green);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">AuctionLots</span>
-        </div>
-        <div style="font-size:13px;color:var(--text-mid);margin-top:10px;line-height:1.6">
-          <strong>Buyers</strong> tab columns: <code>id</code> | <code>name</code><br>
-          <strong>AuctionLots</strong> tab columns: <code>lot</code> | <code>type</code> | <code>player</code> | <code>buyerId</code> | <code>price</code>
-        </div>
-      </div>
-
-      <div class="setup-section">
-        <div class="setup-label">Display Settings</div>
-        <p style="font-size:13px;color:var(--text-mid);line-height:1.6;margin-bottom:14px">
-          Control what financial information is visible to all users.
-        </p>
-        <div style="display:flex;flex-direction:column;gap:12px">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;background:var(--off-white);border-radius:8px;border:1px solid var(--border)">
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--text)">💰 Pot Size</div>
-              <div style="font-size:12px;color:var(--text-light);margin-top:2px">Shows running total in header, dashboard banner, and payout amounts</div>
-            </div>
-            <button id="toggle-pot-btn" onclick="toggleDisplaySetting('pot')"
-              style="min-width:72px;padding:7px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;border:2px solid var(--green);background:var(--green);color:white;font-family:inherit;transition:all .2s">
-              ON
-            </button>
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;background:var(--off-white);border-radius:8px;border:1px solid var(--border)">
-            <div>
-              <div style="font-size:14px;font-weight:600;color:var(--text)">👥 Team Spend</div>
-              <div style="font-size:12px;color:var(--text-light);margin-top:2px">Shows buyer standings and individual spend amounts</div>
-            </div>
-            <button id="toggle-spend-btn" onclick="toggleDisplaySetting('spend')"
-              style="min-width:72px;padding:7px 14px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;border:2px solid var(--green);background:var(--green);color:white;font-family:inherit;transition:all .2s">
-              ON
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="setup-section">
-        <div class="setup-label">Passwords</div>
-        <p style="font-size:13px;color:var(--text-mid);line-height:1.6">
-          Find <code>PASSWORDS</code> near the top of the <code>&lt;script&gt;</code> block and edit directly.
-        </p>
-      </div>
-
-      <div class="setup-section" style="border:1px solid #f5c6c6;background:#fffafa">
-        <div class="setup-label" style="color:#c0392b">⚠ Danger Zone</div>
-        <p style="font-size:13px;color:var(--text-mid);line-height:1.6;margin-bottom:14px">
-          Clear all buyer assignments and prices from every lot. This resets the auction back to a blank slate.
-          <strong>This cannot be undone.</strong>
-        </p>
-        <div id="reset-confirm-box" style="display:none;background:#fdf0f0;border:1px solid #f5c6c6;border-radius:8px;padding:14px 16px;margin-bottom:12px">
-          <div style="font-size:14px;font-weight:600;color:#c0392b;margin-bottom:10px">⚠ Are you sure? This will clear ALL buyer and price data from every lot.</div>
-          <div class="flex-gap">
-            <button class="btn btn-danger" onclick="confirmResetAuction()" style="background:#c0392b;color:white;font-weight:700">Yes, Reset Everything</button>
-            <button class="btn btn-outline" onclick="cancelResetAuction()">Cancel</button>
-          </div>
-        </div>
-        <button class="btn btn-danger" id="reset-auction-btn" onclick="promptResetAuction()">🗑 Reset Auction Data</button>
-        <div id="reset-status" style="font-size:13px;color:var(--text-light);margin-top:10px;min-height:18px"></div>
-      </div>
-    </div>
+    <button class="btn btn-danger" id="reset-auction-btn" onclick="promptResetAuction()">🗑 Reset Auction Data</button>
+    <div id="reset-status" style="font-size:13px;color:var(--text-light);margin-top:10px;min-height:18px"></div>
+  </div>
+</div>
+```
 
   </main>
 </div>
 
 <!-- VERSION UPDATE POPUP -->
+
 <div id="version-popup-overlay" onclick="dismissVersionPopup()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:600;backdrop-filter:blur(3px)"></div>
 <div id="version-popup" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(420px,92vw);background:white;border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,0.3);z-index:601;overflow:hidden">
   <div style="background:linear-gradient(140deg,#1a3d1a 0%,#2d5a1b 60%,#1a4a1a 100%);padding:22px 24px 18px;color:white">
@@ -1714,6 +1721,7 @@ code{background:#f0ece6;padding:2px 6px;border-radius:4px;font-size:12px}
 </div>
 
 <!-- INTEL MODAL -->
+
 <div id="intel-modal-overlay" onclick="closeIntelModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:500;backdrop-filter:blur(2px)"></div>
 <div id="intel-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(560px,94vw);max-height:85vh;overflow-y:auto;background:white;border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,0.3);z-index:501">
   <div id="intel-modal-header" style="background:linear-gradient(140deg,var(--green) 0%,#1f5c38 50%,var(--green-mid) 100%);color:white;padding:20px 24px;border-radius:16px 16px 0 0;position:sticky;top:0;z-index:1">
@@ -2284,7 +2292,7 @@ function renderLeaderboard() {
     return;
   }
 
-  tbody.innerHTML = filtered.map(r => {
+  const renderRow = r => {
     const toPar = isNaN(r.toPar) ? 0 : r.toPar;
     const cls = toPar<0?'under':toPar>0?'over':'even';
     const amBadge = (r.amateur || isAmateurPlayer(r.player)) ? '<span class="am-badge">Am</span>' : '';
@@ -2293,18 +2301,33 @@ function renderLeaderboard() {
     const ownerCell = owner !== '—'
       ? `<span class="owner-tag">${owner}</span>`
       : `<span style="color:var(--text-light);font-size:12px">—</span>`;
-    // Highlight rows belonging to filtered owner
-    const rowStyle = lbOwnerFilter !== 'all' ? '' : '';
-    return `<tr class="${r.cut?'cut-row':''}" ${rowStyle}>
+    const cutTag = r.cut ? ' <span style="font-size:10px;font-weight:700;color:#c0392b;margin-left:4px">CUT</span>' : '';
+    const wdTag  = r.withdrawn ? ' <span style="font-size:10px;font-weight:700;color:#999;margin-left:4px">WD</span>' : '';
+    return `<tr class="${(r.cut||r.withdrawn)?'cut-row':''}">
       <td class="pos">${r.pos}</td>
-      <td class="player-name">${r.player}${amBadge}${r.cut?' <em style="font-size:11px;opacity:.6">(CUT)</em>':''}</td>
+      <td class="player-name">${r.player}${amBadge}${cutTag}${wdTag}</td>
       <td>${ownerCell}</td>
       <td class="to-par ${cls}">${fmtPar(r.toPar)}</td>
       <td>${fmtPar(r.today)}</td>
       <td>${r.thru}</td>
       <td class="lb-r1">${rFmt(r.r1)}</td><td class="lb-r2">${rFmt(r.r2)}</td><td class="lb-r3">${rFmt(r.r3)}</td><td class="lb-r4">${rFmt(r.r4)}</td>
     </tr>`;
-  }).join('');
+  };
+
+  const active    = filtered.filter(r => !r.cut && !r.withdrawn);
+  const cut       = filtered.filter(r => r.cut);
+  const withdrawn = filtered.filter(r => r.withdrawn && !r.cut);
+
+  const cutDivider = cut.length || withdrawn.length
+    ? `<tr class="cut-divider"><td colspan="10">✂️ Missed Cut — ${cut.length + withdrawn.length} players</td></tr>`
+    : '';
+
+  tbody.innerHTML = [
+    ...active.map(renderRow),
+    cutDivider,
+    ...cut.map(renderRow),
+    ...withdrawn.map(renderRow),
+  ].join('');
 }
 
 function setLbOwnerFilter(name) {
@@ -4885,5 +4908,6 @@ function reloadForUpdate() {
 }
 
 </script>
+
 </body>
 </html>
