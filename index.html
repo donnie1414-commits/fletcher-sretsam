@@ -2741,25 +2741,21 @@ function renderDeadLast() {
   let sorted, heroLabel, colLabel, getScore, payoutPct;
 
   if (deadLastDay === 'sunday') {
-    // Sunday DFL: cumulative R1+R2+R3+R4 — need all 4 rounds complete
-    // During tournament, use however many rounds have been completed
-    const valid = leaderboard.filter(p =>
-      !p.withdrawn &&
-      p.r1 !== null &&
-      p.r2 !== null &&
-      p.r3 !== null &&
-      p.r4 !== null
+    // Sunday DFL: only players who made the cut (played all 4 rounds)
+    // Must exclude withdrawn AND cut players
+    const madeCut = leaderboard.filter(p => !p.withdrawn && !p.cut);
+    const valid = madeCut.filter(p =>
+      p.r1 !== null && p.r2 !== null && p.r3 !== null && p.r4 !== null
     );
-    // If full 4 rounds not available yet, fall back to however many exist
-    const fallback = valid.length === 0
-      ? leaderboard.filter(p => !p.withdrawn && p.r1 !== null)
-      : valid;
+    // Fallback: if R3/R4 not yet complete, use available rounds for cut players only
+    const pool = valid.length > 0 ? valid
+      : madeCut.filter(p => p.r1 !== null && p.r2 !== null);
     getScore  = r => {
       const rounds = [r.r1, r.r2, r.r3, r.r4].filter(v => v !== null);
       return rounds.reduce((s, v) => s + v, 0);
     };
-    sorted    = fallback.slice().sort((a,b) => getScore(b) - getScore(a));
-    heroLabel = 'DFL — Through Sunday (R1–R4 cumulative)';
+    sorted    = pool.slice().sort((a,b) => getScore(b) - getScore(a));
+    heroLabel = 'DFL — Through Sunday (R1–R4 cumulative, made cut only)';
     colLabel  = 'Cumulative';
     payoutPct = 0.01;
   } else {
@@ -3996,9 +3992,10 @@ function renderDashboard() {
   // DFL Friday: use R1 only during round 1, R1+R2 once R2 has data
   const dflFriRounds   = ['r1','r2'].filter(k => lbAll.some(r => r[k] !== null));
   const currentDeadFri = worstCumul(lbAll, dflFriRounds);
-  // DFL Sunday: use all rounds that have data
-  const dflSunRounds   = ['r1','r2','r3','r4'].filter(k => lbAll.some(r => r[k] !== null));
-  const currentDeadSun = worstCumul(lbAll, dflSunRounds);
+  // DFL Sunday: only players who made the cut (not withdrawn, not cut)
+  const lbMadeCut      = leaderboard.filter(r => !r.withdrawn && !r.cut);
+  const dflSunRounds   = ['r1','r2','r3','r4'].filter(k => lbMadeCut.some(r => r[k] !== null));
+  const currentDeadSun = worstCumul(lbMadeCut, dflSunRounds);
 
   function winnerCard(payout, player, score, extra, tiedPool) {
     const amount    = fmtMoney(totalPot * payout.pct);
@@ -4118,10 +4115,12 @@ function renderDashboard() {
     const amount = fmtMoney(totalPot * payout.pct);
     const scoreCls = score !== null ? (score < 0 ? 'under' : score > 0 ? 'over' : 'even') : 'even';
     const ownerName = player ? findOwner(player.player) : null;
-    // Tie: only players who have all required rounds AND share the same cumulative score
+    // Tie: only players who have all required rounds, made the cut, and share the same cumulative score
+    const dflPool = rounds.every(k => k === 'r1' || k === 'r2')
+      ? lbAll  // Friday DFL: all non-withdrawn players
+      : lbMadeCut; // Sunday DFL: only players who made the cut
     const tied = score !== null
-      ? lbAll.filter(r =>
-          !r.withdrawn &&
+      ? dflPool.filter(r =>
           rounds.every(k => r[k] !== null) &&
           rounds.reduce((s,k) => s + safe(r[k]), 0) === score)
       : [];
