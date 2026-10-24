@@ -102,7 +102,7 @@ export function WeeklyBody({ w, sel, week, setWeek, groupBy, setGroupBy, onPrese
       <div className="wk-cmp">{cmpCard(c.year, 'year', c.pw && c.pw.year, yearTail)}{cmpCard(c.month, 'month', c.pw && c.pw.month)}{cmpCard(c.week, 'week', c.pw && c.pw.week)}</div>
       <p className="muted small">Figures run to {fmtDate(c.asOf)}{c.partial ? ' (week still in progress)' : ''}. {c.hasLy ? `Last year is the same number of elapsed days, ${fmtInt(c.lyShiftDays)} days earlier (the AY-start gap rounded to whole weeks).` : 'No prior academic year to compare against.'}</p>
       <div className="tiles six">
-        <Tile label="Occupancy" value={fmtPct(s.occPct)} tone={ly ? paceTone(s.vsLyPct) : occTone(s.occPct)} rows={[pw(fmtPct(prev.occPct), D(s.dOccPct, fmtPts)), lw(fmtPct(s.lyOccPct), D(s.vsLyPct, fmtPts))]} note={`of ${fmtInt(w.totalBeds)} beds`} />
+        <Tile label="Occupancy" value={fmtPct(s.occPct)} bar={s.occPct} tone={ly ? paceTone(s.vsLyPct) : occTone(s.occPct)} rows={[pw(fmtPct(prev.occPct), D(s.dOccPct, fmtPts)), lw(fmtPct(s.lyOccPct), D(s.vsLyPct, fmtPts))]} note={`of ${fmtInt(w.totalBeds)} beds`} />
         <Tile label="Occupied Beds" value={fmtInt(s.occ)} rows={[pw(fmtInt(prev.occ), D(s.dOcc, fmtSigned)), lw(fmtInt(s.lyOcc), D(diff(s.occ, s.lyOcc), fmtSigned))]} />
         <Tile label="Beds Leased This Week" value={fmtInt(s.newBeds)} rows={[pw(fmtInt(prev.newBeds), D(diff(s.newBeds, prev.newBeds), fmtSigned)), lw(fmtInt(s.lyNewBeds), D(diff(s.newBeds, s.lyNewBeds), fmtSigned))]} />
         <Tile label={`Leases ${signedWord} This Week`} value={fmtInt(s.newLeases)} rows={[pw(fmtInt(prev.newLeases), D(diff(s.newLeases, prev.newLeases), fmtSigned)), lw(fmtInt(s.lyNewLeases), D(diff(s.newLeases, s.lyNewLeases), fmtSigned))]} />

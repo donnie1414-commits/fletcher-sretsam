@@ -118,12 +118,17 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
   }
   function currentTenants(leaseId) { return sq.few(`SELECT maptwo AS customer FROM MAP_customrecord_serp_lease_record_custrecord_serp_tenants_ WHERE mapone = ?`, [Number(leaseId)]).map((r) => String(r.customer)).sort(); }
 
+  function versionOf(type, id) {
+    const col = type === CUSTOMER.TYPE ? 'lastmodifieddate' : 'lastmodified';
+    try { const r = sq.one(`SELECT ${col} AS v FROM ${type} WHERE id = ?`, [Number(id)]); return r ? r.v : null; } catch (e) { return null; }
+  }
   function applyUpdate(scope, change, fields) {
     const rec = record.load({ type: change.recordType, id: change.recordId });
     const before = {}; for (const f of Object.keys(fields)) before[f] = rec.getValue({ fieldId: f });
-    if (change.version != null) {
-      const lm = rec.getValue({ fieldId: 'lastmodified' }) || rec.getValue({ fieldId: 'lastmodifieddate' });
-      if (lm && String(lm) !== String(change.version)) throw new WriteError('STALE', 'record changed since it was read', { current: before, version: String(lm) });
+    if (change.version != null && change.version !== '') {
+      // Same read on both sides: the client's version came from SuiteQL, so compare against SuiteQL, not record.getValue's Date.
+      const lm = versionOf(change.recordType, change.recordId) ?? (rec.getValue({ fieldId: 'lastmodified' }) || rec.getValue({ fieldId: 'lastmodifieddate' }) || null);
+      if (lm != null && !sameVersion(lm, change.version)) throw new WriteError('STALE', 'record changed since it was read — reload the tab', { current: before, version: String(lm) });
     }
     let captured = null;
     if (change.recordType === LEASE.TYPE) {
@@ -199,5 +204,13 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
     return { results, deferred };
   }
   return { apply, validateChange, ALLOWLIST, tenantFilterOk };
+}
+/** Versions are modified stamps in whatever form the read produced (SuiteQL text, ISO, Date). Equal when they name the same day and, if both carry a time, the same minute. */
+export function sameVersion(a, b) {
+  const norm = (v) => { if (v == null) return null; const s = v instanceof Date ? v.toISOString() : String(v); const iso = localDate(s) instanceof Date ? localDate(s) : null; let m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/.exec(s); if (m) return { day: `${m[1]}-${m[2]}-${m[3]}`, time: m[4] ? `${m[4]}:${m[5]}` : null }; m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})\s*([ap]m)?)?/i.exec(s); if (m) { let h = m[4] ? Number(m[4]) : null; if (h != null && m[6]) { const pm = m[6].toLowerCase() === 'pm'; h = (h % 12) + (pm ? 12 : 0); } return { day: `${m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`, time: h == null ? null : `${String(h).padStart(2, '0')}:${m[5]}` }; } void iso; return { day: s, time: null }; };
+  const x = norm(a), y = norm(b);
+  if (!x || !y) return true;
+  if (x.day !== y.day) return false;
+  return !x.time || !y.time || x.time === y.time;
 }
 function pick(o, keys) { const out = {}; for (const k of keys) if (o && o[k] !== undefined) out[k] = o[k]; return out; }

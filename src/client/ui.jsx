@@ -1,12 +1,11 @@
 import { useState, useId, useEffect } from 'react';
 import { fmtDelta, isNum, sign } from './format.js';
+import { Dropdown } from './components/Dropdown.jsx';
 
 export const cx = (...a) => a.filter(Boolean).join(' ');
 export function Button({ kind = 'default', small, children, ...rest }) { return <button type="button" className={cx('btn', kind !== 'default' && `btn-${kind}`, small && 'btn-sm')} {...rest}>{children}</button>; }
-export function Select({ label, value, onChange, options, id, ...rest }) {
-  const auto = useId(); const sid = id || auto;
-  return <label className="field" htmlFor={sid}>{label && <span className="field-label">{label}</span>}<select id={sid} value={value ?? ''} onChange={(e) => onChange(e.target.value)} {...rest}>{options.map((o) => <option key={o.value ?? o} value={o.value ?? o} disabled={o.disabled}>{o.label ?? o}</option>)}</select></label>;
-}
+/** Every dropdown in the app is the popover menu in components/Dropdown.jsx; this keeps the old call sites working. */
+export function Select(props) { return <Dropdown {...props} />; }
 export function Segmented({ value, onChange, options, ariaLabel }) {
   return <div className="seg" role="tablist" aria-label={ariaLabel}>{options.map((o) => <button type="button" role="tab" key={o.value} aria-selected={value === o.value} className={cx('seg-item', value === o.value && 'is-on')} onClick={() => onChange(o.value)}>{o.label}{o.count != null && <span className="seg-count">{o.count}</span>}</button>)}</div>;
 }
@@ -20,11 +19,12 @@ export function Delta({ v, fmt = fmtDelta, invert = false }) {
   return <span className={cx('delta', dir)}>{fmt(v)}</span>;
 }
 /** KPI tile (v2 "tile"): a headline, optional tone, up to three comparison rows [label, value, deltaNode], a footnote. */
-export function Tile({ label, value, tone, rows = [], note, big }) {
+export function Tile({ label, value, tone, rows = [], note, big, bar }) {
   return (
     <div className={cx('tile', tone && `tone-${tone}`, big && 'tile-big')}>
       <div className="tile-label">{label}</div>
       <div className="tile-value">{value}</div>
+      {isNum(bar) && <div className="tile-bar" aria-hidden="true"><i style={{ width: `${Math.max(0, Math.min(1, bar)) * 100}%` }} /></div>}
       {rows.filter(Boolean).map((r, i) => <div className="tile-row" key={i}><span className="muted">{r[0]}</span><strong>{r[1]}</strong>{r[2] != null && <span className="tile-delta">{r[2]}</span>}</div>)}
       {note && <div className="tile-note muted small">{note}</div>}
     </div>

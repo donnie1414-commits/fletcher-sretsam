@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createWrites } from '../../src/server/writes.js';
+import { createWrites, sameVersion } from '../../src/server/writes.js';
 import { createAuth } from '../../src/server/auth.js';
 import { fakeRuntime, fakeSuiteQL, fakeRecordStore, fakeLog, fakeSchema } from './fakes.js';
 import { UAS, LEASE, CUSTOMER, AUDIT } from '../../src/shared/constants.js';
@@ -116,4 +116,13 @@ test('stages are written as list value ids from the probe; "No stage set" clears
   assert.equal(r.results[2].ok, true); assert.equal(row[UAS.STAGE], ''); assert.equal(row[UAS.MANUAL_STAGE], ''); assert.equal(row[UAS.STAGE_DATE], '');
   assert.ok(rs.saves[0].fields[UAS.FOLLOWUP] instanceof Date && rs.saves[0].fields[UAS.FOLLOWUP].getDate() === 1);
   assert.equal(rs.saves[0].fields[UAS.STAGE], 7);
+});
+
+test('version check: the SuiteQL stamp the row was read with matches the same stamp read back, in any of NetSuite’s spellings', () => {
+  assert.equal(sameVersion('10/20/2026', '10/20/2026'), true);
+  assert.equal(sameVersion('10/20/2026 1:34 am', '2026-10-20'), true, 'date-only versus date-time on the same day');
+  assert.equal(sameVersion('10/20/2026 1:34 am', '10/20/2026 1:35 am'), false);
+  assert.equal(sameVersion('10/20/2026', '10/21/2026'), false);
+  assert.equal(sameVersion(new Date(2026, 9, 20, 13, 34), '2026-10-20T13:34'), true);
+  assert.equal(sameVersion(null, 'v0'), true, 'no stamp on record ⇒ nothing to compare');
 });

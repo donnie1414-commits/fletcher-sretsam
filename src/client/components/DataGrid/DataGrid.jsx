@@ -44,7 +44,7 @@ const Cell = memo(function Cell({ col, row, edits, focused, editing, onFocus, on
   } else body = col.render ? col.render(raw, row) : defaultFormat(col, raw);
   return (
     <div role="gridcell" tabIndex={focused ? 0 : -1} aria-selected={focused} className={cx('cell', col.align === 'right' && 'num', editable && 'editable', dirty && 'dirty', focused && 'focused', col.sticky && 'sticky-col')} style={{ width: col.width }} title={col.title ? col.title(raw, row) : undefined}
-      onClick={() => onFocus()} onDoubleClick={() => editable && onStartEdit()}>
+      onClick={() => { onFocus(); if (editable && col.type !== 'select') onStartEdit(); }}>
       {body}
     </div>
   );

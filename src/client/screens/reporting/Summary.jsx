@@ -34,9 +34,9 @@ export function Summary({ sel, presentation }) {
       <div className="tiles six">
         <Tile label="Total Beds" value={fmtInt(p.beds)} rows={[['Properties', fmtInt(data.propertyCount)], ['Markets', fmtInt(data.marketCount)]]} />
         <Tile label="Occupied Beds" value={fmtInt(p.occ)} rows={[paceRow(fmtInt(p.lyWkOcc), D(isNum(p.lyWkOcc) ? p.occ - p.lyWkOcc : null, fmtSigned)), finalRow(fmtInt(p.pOcc), D(isNum(p.pOcc) ? p.occ - p.pOcc : null, fmtSigned))]} note={basisLabel} />
-        <Tile label={data.ay > data.currentAy ? 'Pre-leased' : 'Occupancy'} value={fmtPct(p.occPct)} tone={hasPace ? paceTone(p.lyWkDelta) : occTone(p.occPct)} rows={[paceRow(fmtPct(p.lyWkOccPct), D(p.lyWkDelta, fmtPts)), finalRow(fmtPct(p.pOccPct), D(p.occDelta, fmtPts))]} />
+        <Tile label={data.ay > data.currentAy ? 'Pre-leased' : 'Occupancy'} value={fmtPct(p.occPct)} bar={p.occPct} tone={hasPace ? paceTone(p.lyWkDelta) : occTone(p.occPct)} rows={[paceRow(fmtPct(p.lyWkOccPct), D(p.lyWkDelta, fmtPts)), finalRow(fmtPct(p.pOccPct), D(p.occDelta, fmtPts))]} />
         <Tile label="Vacant Beds" value={fmtInt(p.vacant)} rows={[['Fully vacant units', fmtInt(v.fullUnits), <span className="muted">{fmtInt(v.fullBeds)} beds</span>], ['Partly vacant units', fmtInt(v.partUnits), <span className="muted">{fmtInt(v.partBeds)} beds</span>]]} />
-        <Tile label="Financial Occupancy" value={fmtPct(p.finPct)} tone={occTone(p.finPct)} rows={[finalRow(fmtPct(p.pFinPct), D(isNum(p.pFinPct) ? p.finPct - p.pFinPct : null, fmtPts))]} note="Lease months capped at 12" />
+        <Tile label="Financial Occupancy" value={fmtPct(p.finPct)} bar={p.finPct} tone={occTone(p.finPct)} rows={[finalRow(fmtPct(p.pFinPct), D(isNum(p.pFinPct) ? p.finPct - p.pFinPct : null, fmtPts))]} note="Lease months capped at 12" />
         <Tile label="Total Revenue" value={fmtMoney(p.trev)} rows={[paceRow(fmtMoneyK(p.lyWkTrev), D(p.trevPace, fmtGrowth)), finalRow(fmtMoneyK(p.pTrev), D(p.trevYoY, fmtGrowth))]} note="Rent actual, full term" />
       </div>
       {hasPace && <p className="muted small">“Same date” counts {ly} leases {sel.basis === 'executed' ? 'signed' : 'sent'} on or before {fmtDate(data.pace.lyAsOf)}, the same point in the leasing cycle as today. “LY final” is where the prior year finished on the same records.</p>}
