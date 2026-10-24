@@ -24,7 +24,7 @@ import { routeSavedViews } from './routes/savedViews.js';
 import { routeWrite } from './routes/write.js';
 import { routeLeaseDialog } from './routes/leaseDialog.js';
 import { routeNotes } from './routes/notes.js';
-import { renderShell } from './shell.js';
+import { renderShell, serveAsset } from './shell.js';
 import { MARKETS, UAS, LEASE, CUSTOMER, TOUR, SAVED_VIEW, FEATURE_FLAGS } from '../shared/constants.js';
 
 export function createApp(N) {
@@ -81,6 +81,7 @@ export function createApp(N) {
     const route = String((context.request.parameters || {}).route || '').toLowerCase();
     const method = context.request.method;
     if (!route) { const ctx = makeCtx(context); context.response.write(renderShell(ctx)); return; }
+    if (route === 'asset') { serveAsset({ N, params: context.request.parameters || {}, log }, context); return; }
     const started = Date.now();
     let status = 200, body;
     try {
