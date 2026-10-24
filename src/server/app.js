@@ -71,7 +71,7 @@ export function createApp(N) {
       selection() { return { fund: params.fund || null, marketId: params.market && inScope(scope, params.market) ? params.market : null }; },
       probeAll() { for (const fn of [dao.portfolio.probe, dao.pipeline.probe, dao.people.probe]) { try { fn(); } catch (e) { log.error({ title: 'probeAll', details: e && e.message }); } } },
     };
-    ctx.writes = createWrites({ record: N.record, sq, runtime: N.runtime, log, schema, auth, marketOf: (type, id, fields) => marketOf(ctx, type, id, fields) });
+    ctx.writes = createWrites({ record: N.record, sq, runtime: N.runtime, log, schema, auth, marketOf: (type, id, fields) => marketOf(ctx, type, id, fields), stageIdFor: (key) => { for (const [id, k] of Object.entries(ctx.load().lookups.stageIds)) if (k === key) return Number(id); return null; } });
     return ctx;
   }
 

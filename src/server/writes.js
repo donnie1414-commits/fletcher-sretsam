@@ -38,7 +38,25 @@ export class WriteError extends Error { constructor(code, message, extra = {}) {
  *   marketOf(recordType, recordId, fields) → marketId | null  (resolves the record's OWN market)
  *   clock() → ISO timestamp (injected so tests are deterministic)
  */
-export function createWrites({ record, sq, runtime, log, schema, auth, marketOf, clock = () => new Date().toISOString() }) {
+/** Fields NetSuite stores as dates: the client sends ISO 'YYYY-MM-DD'; record.setValue needs a Date (a string is an INVALID_FLD_VALUE). */
+const DATE_FIELDS = new Set([UAS.FOLLOWUP, UAS.STAGE_DATE, LEASE.START, LEASE.END, 'custrecord_ad_note_date', 'custrecord_serp_academic_start_date', 'custrecord_academic_end_date', 'custrecord_serp_lease_sent_date', 'custrecord_effective_date', 'startdate', 'custentity9']);
+export function localDate(v) {
+  if (v instanceof Date) return v;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || ''));
+  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : v;
+}
+function nsValue(field, v) {
+  if (v == null || v === '') return '';
+  if (Array.isArray(v)) return v.map(Number);
+  if (DATE_FIELDS.has(field)) return localDate(v);
+  return v;
+}
+
+/**
+ * createWrites({ record, sq, runtime, log, schema, auth, marketOf, clock, stageIdFor })
+ *   stageIdFor(stageKey) → list value internal id | null   (from the schema probe; the board never sends ids)
+ */
+export function createWrites({ record, sq, runtime, log, schema, auth, marketOf, clock = () => new Date().toISOString(), stageIdFor = null }) {
   const auditAvailable = () => { try { return schema.probe(AUDIT.TYPE, [AUDIT.CHANGE_ID]).get(AUDIT.CHANGE_ID) !== false; } catch (e) { return false; } };
 
   function remaining() { try { return runtime.getCurrentScript().getRemainingUsage(); } catch (e) { return Infinity; } }
@@ -74,6 +92,10 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
     if (change.recordType === UAS.TYPE && Object.prototype.hasOwnProperty.call(fields, UAS.STAGE)) {
       const v = validateHumanStageChange(fields[UAS.STAGE]);
       if (!v.ok) throw new WriteError('STAGE_LEASE_DRIVEN', v.reason, { field: UAS.STAGE });
+      // The client sends a stage key or label; NetSuite wants the list value id ("No stage set" clears the field).
+      change.stageKey = v.key;
+      if (v.key === 'NONE') fields[UAS.STAGE] = '';
+      else if (stageIdFor) { const id = stageIdFor(v.key); if (!id) throw new WriteError('STAGE_NO_LIST_VALUE', `the stage "${stageByKey(v.key).label}" has no value in the leasing-stage list yet (see SETUP-CHECKLIST)`, { field: UAS.STAGE }); fields[UAS.STAGE] = id; }
       if (Object.prototype.hasOwnProperty.call(fields, UAS.STAGE_SOURCE) && String(fields[UAS.STAGE_SOURCE]) !== 'manual' && String(fields[UAS.STAGE_SOURCE]) !== '1') throw new WriteError('STAGE_LEASE_DRIVEN', 'the board may only set a manual stage source');
     }
     if (change.recordType === LEASE.TYPE && !isCreate && fields.isinactive === false) throw new WriteError('DENIED_FIELD', 'reactivating a lease is not supported here');
@@ -115,9 +137,9 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
         if (!screen.ok) throw new WriteError('TENANT_FILTER', 'one or more tenants do not match the lease Property/Academic Year; nothing was written', { bad: screen.bad });
       }
     }
-    for (const [f, v] of Object.entries(fields)) rec.setValue({ fieldId: f, value: Array.isArray(v) ? v.map(Number) : v });
+    for (const [f, v] of Object.entries(fields)) rec.setValue({ fieldId: f, value: nsValue(f, v) });
     if (change.recordType === UAS.TYPE && Object.prototype.hasOwnProperty.call(fields, UAS.STAGE)) {
-      rec.setValue({ fieldId: UAS.MANUAL_STAGE, value: fields[UAS.STAGE] }); rec.setValue({ fieldId: UAS.STAGE_SOURCE, value: 1 }); rec.setValue({ fieldId: UAS.STAGE_DATE, value: clock().slice(0, 10) });
+      rec.setValue({ fieldId: UAS.MANUAL_STAGE, value: nsValue(UAS.MANUAL_STAGE, fields[UAS.STAGE]) }); rec.setValue({ fieldId: UAS.STAGE_SOURCE, value: 1 }); rec.setValue({ fieldId: UAS.STAGE_DATE, value: change.stageKey === 'NONE' ? '' : localDate(clock().slice(0, 10)) });
     }
     rec.save();
     let restored = null;
@@ -142,8 +164,8 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
       if (!screen.ok) throw new WriteError('TENANT_FILTER', 'tenants do not match the lease Property/Academic Year', { bad: screen.bad });
     }
     const rec = record.create({ type: change.recordType, isDynamic: false });
-    for (const [f, v] of Object.entries(fields)) rec.setValue({ fieldId: f, value: Array.isArray(v) ? v.map(Number) : v });
-    if (change.recordType === UAS.TYPE && Object.prototype.hasOwnProperty.call(fields, UAS.STAGE)) { rec.setValue({ fieldId: UAS.MANUAL_STAGE, value: fields[UAS.STAGE] }); rec.setValue({ fieldId: UAS.STAGE_SOURCE, value: 1 }); rec.setValue({ fieldId: UAS.STAGE_DATE, value: clock().slice(0, 10) }); }
+    for (const [f, v] of Object.entries(fields)) rec.setValue({ fieldId: f, value: nsValue(f, v) });
+    if (change.recordType === UAS.TYPE && Object.prototype.hasOwnProperty.call(fields, UAS.STAGE)) { rec.setValue({ fieldId: UAS.MANUAL_STAGE, value: nsValue(UAS.MANUAL_STAGE, fields[UAS.STAGE]) }); rec.setValue({ fieldId: UAS.STAGE_SOURCE, value: 1 }); rec.setValue({ fieldId: UAS.STAGE_DATE, value: change.stageKey === 'NONE' ? '' : localDate(clock().slice(0, 10)) }); }
     const id = rec.save();
     audit(scope, change, id, '*create*', null, JSON.stringify(fields));
     return { ok: true, created: true, recordType: change.recordType, recordId: String(id), after: fields };

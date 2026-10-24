@@ -38,7 +38,7 @@ test('lease-driven stages are rejected server-side; a human stage is written wit
   assert.equal(r.results[0].code, 'STAGE_LEASE_DRIVEN');
   assert.equal(r.results[1].ok, true);
   const row = rs.store[UAS.TYPE][11];
-  assert.equal(row[UAS.STAGE], 'Renewal Offered'); assert.equal(row[UAS.MANUAL_STAGE], 'Renewal Offered'); assert.equal(row[UAS.STAGE_SOURCE], 1); assert.equal(row[UAS.STAGE_DATE], '2026-10-24');
+  assert.equal(row[UAS.STAGE], 'Renewal Offered'); assert.equal(row[UAS.MANUAL_STAGE], 'Renewal Offered'); assert.equal(row[UAS.STAGE_SOURCE], 1); assert.ok(row[UAS.STAGE_DATE] instanceof Date && row[UAS.STAGE_DATE].getDate() === 24 && row[UAS.STAGE_DATE].getMonth() === 9, 'stage date is a Date object (NetSuite rejects date strings)');
   assert.equal(auditRows.length, 1); assert.equal(auditRows[0].changeId, 'c2');
 });
 test('idempotent replay: the same change id returns the stored result and writes nothing twice', () => {
@@ -99,4 +99,21 @@ test('lease creation from the dialog is allowed; creation-only fields cannot be 
     { changeId: 'del', recordType: LEASE.TYPE, recordId: 7, fields: { isinactive: true } },
   ], scope);
   assert.equal(r.results[0].created, true); assert.equal(r.results[1].code, 'DENIED_FIELD'); assert.equal(r.results[2].ok, true);
+});
+
+test('stages are written as list value ids from the probe; "No stage set" clears the field; follow-up dates become Date objects', () => {
+  const { writes: base, scope, rs } = build({ store: uasStore() });
+  void base;
+  const writes = createWrites({ record: rs.record, sq: fakeSuiteQL([[/./, () => []]]), runtime: fakeRuntime({ roleId: 3 }), log: fakeLog, schema: fakeSchema(), auth: createAuth({ runtime: fakeRuntime({ roleId: 3 }), sq: fakeSuiteQL([[/./, () => []]]), schema: fakeSchema(), log: fakeLog }), marketOf: () => 'lehigh', clock: () => '2026-10-24T12:00:00.000Z', stageIdFor: (k) => ({ RENEWAL_OFFERED: 7, READY_FOR_LEASE: 3 })[k] || null });
+  const r = writes.apply([
+    { changeId: 's1', recordType: UAS.TYPE, recordId: 11, fields: { [UAS.STAGE]: 'Renewal Offered', [UAS.FOLLOWUP]: '2026-11-01' } },
+    { changeId: 's2', recordType: UAS.TYPE, recordId: 11, fields: { [UAS.STAGE]: 'In Negotiations' } },
+    { changeId: 's3', recordType: UAS.TYPE, recordId: 11, fields: { [UAS.STAGE]: 'No stage set' } },
+  ], scope);
+  assert.equal(r.results[0].ok, true);
+  const row = rs.store[UAS.TYPE][11];
+  assert.equal(r.results[1].code, 'STAGE_NO_LIST_VALUE', 'a stage with no list value yet is refused with a message, not sent to NetSuite as text');
+  assert.equal(r.results[2].ok, true); assert.equal(row[UAS.STAGE], ''); assert.equal(row[UAS.MANUAL_STAGE], ''); assert.equal(row[UAS.STAGE_DATE], '');
+  assert.ok(rs.saves[0].fields[UAS.FOLLOWUP] instanceof Date && rs.saves[0].fields[UAS.FOLLOWUP].getDate() === 1);
+  assert.equal(rs.saves[0].fields[UAS.STAGE], 7);
 });
