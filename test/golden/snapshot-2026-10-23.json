@@ -8,6 +8,10 @@
   {
    "at": "2026-10-24T00:06:05.298Z",
    "reason": "initial golden from the 2026-10-23 live snapshot; legacy collision rule (overlap flag off)"
+  },
+  {
+   "at": "2026-10-24T00:38:08.481Z",
+   "reason": "pipeline row/bed invariant now excludes commercial units (§6.3); engine numbers unchanged"
   }
  ],
  "inventory": {
@@ -336,7 +340,7 @@
    },
    "tenantDoubles": 5,
    "pipeline": {
-    "rows": 1445,
+    "rows": 1438,
     "bedsStudent": 5348,
     "bedsStr": 0,
     "bedsCommercial": 3
@@ -652,7 +656,7 @@
    },
    "tenantDoubles": 4,
    "pipeline": {
-    "rows": 1445,
+    "rows": 1438,
     "bedsStudent": 5348,
     "bedsStr": 0,
     "bedsCommercial": 3
@@ -969,7 +973,7 @@
    },
    "tenantDoubles": 27,
    "pipeline": {
-    "rows": 1445,
+    "rows": 1438,
     "bedsStudent": 5348,
     "bedsStr": 0,
     "bedsCommercial": 3
@@ -1279,7 +1283,7 @@
    },
    "tenantDoubles": 0,
    "pipeline": {
-    "rows": 1445,
+    "rows": 1438,
     "bedsStudent": 5348,
     "bedsStr": 0,
     "bedsCommercial": 3
@@ -1589,7 +1593,7 @@
    },
    "tenantDoubles": 0,
    "pipeline": {
-    "rows": 1445,
+    "rows": 1438,
     "bedsStudent": 5348,
     "bedsStr": 0,
     "bedsCommercial": 3
@@ -1899,7 +1903,7 @@
    },
    "tenantDoubles": 0,
    "pipeline": {
-    "rows": 1445,
+    "rows": 1438,
     "bedsStudent": 5348,
     "bedsStr": 0,
     "bedsCommercial": 3

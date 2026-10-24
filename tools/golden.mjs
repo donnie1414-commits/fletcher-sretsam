@@ -35,7 +35,7 @@ export function computeGolden(fixture, flags = { requireOverlapForCollision: fal
 /** Pipeline rows come from the same inventory as the KPI figures (§6.3 invariant): split their beds by segment. */
 function pipelineBeds(inv) {
   const out = { rows: inv.unitNodes.length, bedsStudent: 0, bedsStr: 0, bedsCommercial: 0 };
-  for (const u of inv.unitNodes) { const seg = inv.propertiesById.get(u.propertyId)?.segment; if (seg === 'STR') out.bedsStr += u.beds; else if (seg === 'COMMERCIAL') out.bedsCommercial += u.beds; else out.bedsStudent += u.beds; }
+  for (const u of inv.unitNodes) { const seg = inv.propertiesById.get(u.propertyId)?.segment; if (seg === 'STR') out.bedsStr += u.beds; else if (seg === 'COMMERCIAL') { out.bedsCommercial += u.beds; out.rows -= 1; } else out.bedsStudent += u.beds; }
   return out;
 }
 function countBy(arr, f) { const o = {}; for (const x of arr) { const k = f(x); o[k] = (o[k] || 0) + 1; } return Object.fromEntries(Object.entries(o).sort()); }

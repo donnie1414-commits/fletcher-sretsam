@@ -40,7 +40,7 @@ export function routeTenants(ctx) {
     const propIds = ids(t.property), ayIds = ids(t.ay);
     return {
       id: String(t.id), name: [t.firstname, t.lastname].filter(Boolean).join(' ') || t.entityid, email: t.email, phone: t.phone || t.mobilephone, status: t.status_name, statusId: t.entitystatus,
-      properties: propIds.map((p) => ({ id: p, name: (inv.propertiesById.get(p) || {}).name || p })), academicYears: ayIds.map((a) => ({ id: a, label: (ctx.ays().find((x) => x.id === a) || {}).label || a })),
+      properties: propIds.map((p) => ({ id: p, name: (inv.propertiesById.get(p) || {}).name || p, market: (inv.propertiesById.get(p) || {}).marketId || null })), academicYears: ayIds.map((a) => ({ id: a, label: (ctx.ays().find((x) => x.id === a) || {}).label || a })),
       leases: leasesByCust.get(String(t.id)) || [], ready: readyToAttach(t, leaseCtx), created: toISO(t.datecreated), version: String(t.lastmodifieddate || ''),
       desiredLocation: t.desired_location, school: t.school, duplicate: t.duplicate === 'T' || (t.email && dupEmails.has(String(t.email).toLowerCase())),
     };

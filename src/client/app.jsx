@@ -1,22 +1,64 @@
-// Client entry (step 5 shell). The React application (DataGrid, screens) starts at step 6 once the
-// engine tie-out is signed off (§10). This stub proves the File Cabinet <script src> path and the
-// bootstrap handshake under NetSuite's CSP; it renders the scope and degradation state and nothing else.
-import { STAGES, THEME, humanStages } from '../shared/constants.js';
+/** Client entry: four top-level items, one accent, shell-first. Everything else fetches its own JSON when opened (§3.6). */
+import { useEffect, useMemo, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import { getBootstrap, isPreview } from './api.js';
+import { useUrlState, usePref, useMedia } from './state.js';
+import { Segmented, Select, Button, cx } from './ui.jsx';
+import { Today } from './screens/Today.jsx';
+import { Pipeline } from './screens/Pipeline.jsx';
+import { People } from './screens/People.jsx';
+import { Reporting } from './screens/Reporting.jsx';
+import { ExceptionsDrawer, useExceptionCount } from './screens/ExceptionsDrawer.jsx';
+import { MARKETS, FUNDS, FUND_ORDER, BASES } from '../shared/constants.js';
+import { ayShort } from './format.js';
 
+function App({ boot }) {
+  const [url, setUrl] = useUrlState({ view: 'today', ay: String(boot.defaultAy || boot.currentAy), basis: 'proforma', fund: '', market: '', sub: 'summary', seg: 'tenants', q: '' });
+  const [theme, setTheme] = usePref('theme', 'auto');
+  const [density, setDensity] = usePref('density', 'comfortable');
+  const [present, setPresent] = useState(false);
+  const [drawer, setDrawer] = useState(false);
+  const isMobile = useMedia('(max-width: 720px)');
+  useEffect(() => { document.documentElement.setAttribute('data-theme', theme === 'auto' ? '' : theme); }, [theme]);
+  const sel = useMemo(() => ({ ay: Number(url.ay), basis: url.basis, fund: url.fund || null, market: url.market || null, q: url.q || '' }), [url.ay, url.basis, url.fund, url.market, url.q]);
+  const excCount = useExceptionCount(sel);
+  const go = (view, patch = {}) => setUrl({ view, ...patch });
+  const markets = MARKETS.filter((m) => boot.markets.includes(m.id));
+  const ays = boot.academicYears.map((a) => ({ value: String(a.year), label: `AY ${a.short}` }));
+  return (
+    <div className={cx('app', present && 'is-present', `density-${density}`)}>
+      <header className="top">
+        <div className="brand"><span className="brand-mark" aria-hidden="true" /> Amicus Leasing {isPreview() && <span className="pill pill-muted">preview · snapshot {boot.snapshotDate || ''}</span>}</div>
+        {!present && <nav className="nav" aria-label="Primary"><Segmented ariaLabel="Screen" value={url.view} onChange={(v) => go(v)} options={[{ value: 'today', label: 'Today' }, { value: 'pipeline', label: 'Pipeline' }, { value: 'people', label: 'People' }, { value: 'reporting', label: 'Reporting' }]} /></nav>}
+        <div className="controls">
+          <Select label="Year" value={url.ay} onChange={(v) => setUrl({ ay: v })} options={ays} />
+          <Segmented ariaLabel="Basis" value={url.basis} onChange={(v) => setUrl({ basis: v })} options={Object.values(BASES).map((b) => ({ value: b.id, label: b.id === 'proforma' ? 'Pro-forma' : 'Executed' }))} />
+          <Select label="Fund" value={url.fund} onChange={(v) => setUrl({ fund: v })} options={[{ value: '', label: 'All funds' }, ...FUND_ORDER.map((k) => ({ value: k, label: FUNDS[k].label }))]} />
+          <Select label="Market" value={url.market} onChange={(v) => setUrl({ market: v })} options={[{ value: '', label: boot.scope.all ? 'All markets' : 'My markets' }, ...markets.map((m) => ({ value: m.id, label: m.label }))]} />
+          {!present && <input className="search" type="search" placeholder="Search units, properties, tenants" aria-label="Search" defaultValue={url.q} onKeyDown={(e) => { if (e.key === 'Enter') setUrl({ q: e.target.value, view: url.view === 'people' ? 'people' : 'pipeline' }); }} onBlur={(e) => e.target.value !== url.q && setUrl({ q: e.target.value })} />}
+          <button type="button" className={cx('badge-btn', excCount > 0 && 'has')} onClick={() => setDrawer(true)} aria-label={`Exceptions: ${excCount ?? '…'}`} title="Exceptions">⚠ {excCount == null ? '…' : excCount}</button>
+          <Button small onClick={() => setTheme(theme === 'dark' ? 'light' : theme === 'light' ? 'auto' : 'dark')} title={`Theme: ${theme}`} aria-label="Toggle theme">{theme === 'dark' ? '☾' : theme === 'light' ? '☀' : '◐'}</Button>
+          <Button small onClick={() => setDensity(density === 'compact' ? 'comfortable' : 'compact')} title="Density" aria-label="Toggle density">{density === 'compact' ? '≡' : '☰'}</Button>
+          <Button small onClick={() => setPresent(!present)} title="Presentation mode" aria-label="Presentation mode">{present ? 'Exit' : '▭'}</Button>
+        </div>
+      </header>
+      {!boot.scope.all && boot.scope.marketIds.length === 0 && <div className="banner warn">You have no market access: {boot.scope.reason}. Ask an administrator to set your markets.</div>}
+      {boot.degraded && boot.degraded.length > 0 && url.view !== 'reporting' && <div className="banner">Some fields are not created yet, so these features are off: {boot.degraded.map((d) => d.feature || d.field).filter((v, i, a) => a.indexOf(v) === i).join(' · ')}.</div>}
+      <main className="main">
+        {url.view === 'today' && <Today sel={sel} go={go} openExceptions={() => setDrawer(true)} />}
+        {url.view === 'pipeline' && <Pipeline sel={sel} setSel={setUrl} density={density} isMobile={isMobile} bootstrap={boot} />}
+        {url.view === 'people' && <People sel={sel} seg={url.seg} setSeg={(v) => setUrl({ seg: v })} density={density} isMobile={isMobile} />}
+        {url.view === 'reporting' && <Reporting sel={sel} sub={url.sub} setSub={(v) => setUrl({ sub: v })} density={density} presentation={present} />}
+      </main>
+      <ExceptionsDrawer open={drawer} onClose={() => setDrawer(false)} sel={sel} />
+    </div>
+  );
+}
 function boot() {
-  const el = document.getElementById('al-bootstrap');
-  const root = document.getElementById('al-boot');
-  if (!el || !root) return;
-  let b; try { b = JSON.parse(el.textContent); } catch (e) { root.textContent = 'Bootstrap JSON unreadable: ' + e.message; return; }
-  const lines = [
-    `Signed in as ${b.session.name || b.session.userId}. Scope: ${b.scope.all ? 'all markets' : b.scope.marketIds.join(', ') || 'none'} (${b.scope.reason}).`,
-    `Academic years: ${b.academicYears.map((a) => a.short).join(', ')}; current ${b.currentAy}.`,
-    `Stages known to both sides: ${STAGES.length}; human-owned: ${humanStages().map((s) => s.label).join(' · ')}; live stage ids learned: ${Object.keys(b.ids.stage).length}.`,
-    b.degraded.length ? `Degraded features (missing fields): ${b.degraded.map((d) => `${d.table}.${d.field}`).join(', ')}.` : 'Schema probe: every optional field present.',
-    'Client bundle loaded from the File Cabinet under CSP: OK.',
-  ];
-  root.innerHTML = '';
-  root.style.borderLeft = `3px solid ${THEME.accent}`;
-  for (const t of lines) { const p = document.createElement('p'); p.textContent = t; root.appendChild(p); }
+  const el = document.getElementById('root');
+  const b = getBootstrap();
+  if (!el) return;
+  if (!b) { el.textContent = 'Bootstrap JSON missing.'; return; }
+  createRoot(el).render(<App boot={b} />);
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

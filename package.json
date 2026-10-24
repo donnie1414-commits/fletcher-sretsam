@@ -2,7 +2,7 @@
   "name": "amicus-leasing-workspace",
   "version": "3.0.0-dev",
   "private": true,
-  "description": "Amicus Leasing Workspace (NetSuite Suitelet) \u2014 v3 rebuild",
+  "description": "Amicus Leasing Workspace (NetSuite Suitelet) — v3 rebuild",
   "type": "module",
   "engines": {
     "node": ">=20"
@@ -21,5 +21,9 @@
   },
   "devDependencies": {
     "esbuild": "0.25.5"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }

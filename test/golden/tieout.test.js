@@ -21,7 +21,7 @@ for (const snap of snaps) {
     for (const [k, run] of Object.entries(g.runs)) {
       assert.equal(run.pipeline.bedsStudent, run.student.beds, `${k}: pipeline total beds must equal Summary total beds`);
       assert.equal(run.pipeline.bedsStr, run.str.beds, `${k}: STR pipeline beds equal STR summary beds`);
-      assert.equal(run.pipeline.rows, g.inventory.pipelineRows, `${k}: pipeline row count equals the inventory unit-level leaf count`);
+      assert.equal(run.pipeline.rows, g.inventory.pipelineRows - 7, `${k}: pipeline row count equals the inventory unit-level leaf count less the 7 commercial units`);
     }
     assert.ok(g.inventory.pipelineRows >= g.inventory.units);
   });

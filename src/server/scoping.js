@@ -18,8 +18,10 @@ export function scopedSummary(result, scope, { fund = null, marketId = null } = 
 export function scopedTree(result, scope, { fund = null, marketId = null } = {}) {
   const out = [];
   const visit = (n, parentKey, depth) => {
-    const row = { key: n.key, parent: parentKey, depth, kind: n.kind, id: n.id, name: n.name, metrics: round(n.metrics), segment: n.segment || null, leaf: n.leaf || null, childCount: n.children.length };
-    if (n.kind === 'fund' || n.kind === 'market') { row.str = round(n.str); row.commercial = round(n.commercial); }
+    const row = { key: n.key, parent: parentKey, depth, kind: n.kind, id: n.id, name: n.name, metrics: compact(n.metrics), childCount: n.children.length };
+    if (n.segment && n.segment !== 'STUDENT') row.segment = n.segment;
+    if (n.leaf) row.leases = n.leaf.leases;
+    if ((n.kind === 'fund' || n.kind === 'market') && (n.str.beds || n.commercial.monthly)) { row.str = compact(n.str); row.commercial = compact(n.commercial); }
     out.push(row);
     for (const c of n.children) visit(c, n.key, depth + 1);
   };
@@ -29,6 +31,12 @@ export function scopedTree(result, scope, { fund = null, marketId = null } = {})
     if (!markets.length) continue;
     visit({ ...f, children: markets }, null, 0);
   }
+  return out;
+}
+/** Only the displayed measures, rounded, nulls dropped: the Portfolio tree has ~6,000 nodes and ships as JSON. */
+function compact(m) {
+  const r = round(m); const out = {};
+  for (const k of ['beds', 'occupied', 'vacant', 'occPct', 'finOccPct', 'monthly', 'annual', 'rentPerBed', 'rentPerPerson', 'people', 'targetMonthly']) if (r[k] != null && !(r[k] === 0 && k !== 'beds' && k !== 'occupied' && k !== 'vacant')) out[k] = r[k];
   return out;
 }
 export function propertyIdsInScope(inventory, scope) { const ids = []; for (const p of inventory.propertiesById.values()) if (inScope(scope, p.marketId)) ids.push(p.id); return ids; }
