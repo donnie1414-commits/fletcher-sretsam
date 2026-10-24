@@ -1,0 +1,45 @@
+# Status — Amicus Leasing Workspace v3 rebuild
+
+Branch `claude/amicus-leasing-rebuild-v3-3gvip0`. Nothing has been deployed or written to NetSuite; every NetSuite call was a SuiteQL SELECT or a metadata read.
+
+## Where the order of work (§10) stands
+
+| Step | State | Evidence |
+|---|---|---|
+| 1. Schema probe, DAO, fixture snapshot, lead write-up | **done** | `docs/SCHEMA.md`, `src/server/schema.js` (+ missing-field degradation proven in `test/server/app.test.js`), `src/server/dao/*`, full snapshot of 7 tables + lists (`test/fixtures/snapshot-2026-10-23`, 12 MB live / 580 KB redacted+gzipped), `docs/LEAD-DISCOVERY.md` **awaiting your review** |
+| 2. Engine + tests + golden tie-out | **engine and tests done; tie-out needs your live numbers** | 80 rule tests, golden file for 3 AYs × 2 bases at every level, inventory ties (5,348 beds / 1,445 rows); `docs/TIE-OUT.md` has the table to fill from the live Suitelet |
+| 3. Overlap rule + delta report | **done behind the flag; awaiting sign-off** | `docs/OVERLAP-DELTA.md`: +30 beds / +$56k monthly in AY 26-27, nothing in 27-28 / 28-29; double-booked tenants 30 → 29 |
+| 4. Permission resolver + write module + audit + tests | **done** (18 tests) | `src/server/auth.js`, `src/server/writes.js`; capture-and-restore around a lease AY change is asserted |
+| 5. Shell, routing, JSON endpoints | **done** | `src/server/app.js`, `routes/*`; shell 2.2 KB + 1.2 KB bootstrap; 11 routes exercised offline against the snapshot |
+| 6. DataGrid + saved views | not started (gated on step 2 sign-off) | server side of saved views exists (`routes/savedViews.js`) |
+| 7–13. Reporting, Pipeline, Lease dialog, People, Tours, Exceptions, Today | server routes exist for Summary/Portfolio/Weekly/Pipeline/Tenants/Exceptions/Today; **no UI yet** | Leads blocked on §5.5.0 review; Tours blocked on the tour link field |
+| 14. Performance pass, deploy tooling, setup checklist | tooling done; checklist drafted | `tools/build.js` (budget + Node load check), `tools/deploy.js` (dry run by default, role/slot guards), `docs/SETUP-CHECKLIST.md` |
+
+## Decisions I need from you before continuing
+
+1. **Review `docs/LEAD-DISCOVERY.md`** — two questions at the end (which statuses; where the agent lives). Nothing in Leads is designed until then.
+2. **Tie-out**: paste the live Summary by market for AY 26-27 / 27-28 / 28-29, both bases, into `docs/TIE-OUT.md` (or send a screenshot). I cannot open the live Suitelet from this session.
+3. **Overlap rule sign-off** (`docs/OVERLAP-DELTA.md`). It stays off until you tick the box.
+4. **Assumptions A-2, A-4, A-5, A-6, A-8** in `docs/ASSUMPTIONS.md` change numbers; the rest are confirmations.
+5. **CSP experiment**: upload the two files in `tools/csp-probe/` (one Suitelet, one .js) and open the Suitelet once. It prints OK or FAILED. If FAILED, the fallback is to serve the bundle through the Suitelet itself (`?route=asset`) — a small change in `shell.js`, not a return to inlining.
+6. Run the four `[ADMIN]` queries in `tools/probe.js` from an Administrator session (events, tasks, scripts/workflows on customer and lease, employee market field). This role cannot see them.
+
+## What this role could not see
+
+`employee`, `calendarevent`, `task`, `phonecall`, `script`, `scriptdeployment`, `workflow`, File Cabinet search, `customrecord_serp_pandadoc_workspace`, `customrecord_serp_lease_document`. Everything else in the brief was read.
+
+## How to run
+
+```
+npm install
+npm test                 # rules + server + golden tie-out (106 tests)
+npm run build            # bundles dist/, enforces the 250 KB / 150 KB budgets, loads the Suitelet bundle in Node
+node tools/run-engine.mjs test/fixtures/snapshot-2026-10-23            # summary by market, 3 AYs × 2 bases
+node tools/run-engine.mjs test/fixtures/snapshot-2026-10-23 --overlap  # same, with §5.7.1 on
+node tools/overlap-delta.mjs test/fixtures/snapshot-2026-10-23         # regenerates docs/OVERLAP-DELTA.md
+node tools/golden.mjs --write "reason"                                  # only when a number is meant to move
+npm run snapshot -- --from-connector <dir-of-connector-result-files>   # or with NS_* read-only credentials
+npm run deploy                                                          # dry run; refuses without --yes and a deploy.map.json
+```
+
+`test/fixtures/live/` (unredacted, with tenant names/emails) is git-ignored on purpose. The committed `snapshot-2026-10-23` is the same data with people redacted; the engine produces identical numbers on both (checked).

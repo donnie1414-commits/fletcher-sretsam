@@ -1,0 +1,13 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test-and-budget:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      - run: npm run build          # runs tests, enforces the 250 KB / 150 KB budgets, loads the bundle in Node
+      - run: node tools/golden.mjs  # golden tie-out against the committed snapshot
+        env: { AMICUS_FIXTURE: test/fixtures/snapshot-2026-10-23 }

@@ -1,0 +1,25 @@
+{
+  "name": "amicus-leasing-workspace",
+  "version": "3.0.0-dev",
+  "private": true,
+  "description": "Amicus Leasing Workspace (NetSuite Suitelet) \u2014 v3 rebuild",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\"",
+    "test:rules": "node --test \"test/rules/*.test.js\"",
+    "test:server": "node --test \"test/server/*.test.js\"",
+    "build": "node tools/build.js",
+    "check:bundle": "node tools/build.js --check-only",
+    "snapshot": "node tools/snapshot.js",
+    "probe": "node tools/probe.js",
+    "probe:leads": "node tools/probe.js --suite leads",
+    "overlap:delta": "node tools/overlap-delta.js",
+    "deploy": "node tools/deploy.js"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.5"
+  }
+}

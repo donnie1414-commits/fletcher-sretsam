@@ -1,0 +1,5 @@
+/* Design tokens (§7): one accent, one warning, 4 type sizes, 4/8px spacing. Compiled by tools/build.js. */
+:root { --accent:#2F5FD0; --warn:#C2410C; --fg:#111; --fg-muted:#5B6472; --bg:#fff; --rule:#E3E6EA; --s1:4px; --s2:8px; --s3:16px; --s4:24px; --t1:12px; --t2:14px; --t3:18px; --t4:28px; font-variant-numeric: tabular-nums; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --fg:#E6E8EB; --fg-muted:#9AA3AF; --bg:#121417; --rule:#262B33; --accent:#7FA3F5; --warn:#F0864A; } }
+:root[data-theme="dark"] { --fg:#E6E8EB; --fg-muted:#9AA3AF; --bg:#121417; --rule:#262B33; --accent:#7FA3F5; --warn:#F0864A; }
+html, body { margin:0; background:var(--bg); color:var(--fg); font:var(--t2)/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }

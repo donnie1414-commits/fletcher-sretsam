@@ -1,0 +1,1909 @@
+{
+ "fixture": "snapshot-2026-10-23",
+ "history": [
+  {
+   "at": "2026-10-24T00:05:15.897Z",
+   "reason": "initial golden from the 2026-10-23 live snapshot; legacy collision rule (overlap flag off)"
+  },
+  {
+   "at": "2026-10-24T00:06:05.298Z",
+   "reason": "initial golden from the 2026-10-23 live snapshot; legacy collision rule (overlap flag off)"
+  }
+ ],
+ "inventory": {
+  "properties": 812,
+  "units": 1445,
+  "bedrooms": 5351,
+  "leaves": 5357,
+  "pipelineRows": 1445,
+  "beds": 5351,
+  "issues": {
+   "BEDROOM_PROPERTY_MISMATCH": 1,
+   "UNIT_ZERO_BEDS": 6
+  }
+ },
+ "flags": {
+  "requireOverlapForCollision": false
+ },
+ "runs": {
+  "2026:proforma": {
+   "student": {
+    "beds": 5348,
+    "occupied": 4907,
+    "occPct": 0.92,
+    "finOccPct": 0.87,
+    "monthly": 4579366.46,
+    "annual": 51838279.69,
+    "people": 4474,
+    "rentPerBed": 933.23,
+    "byType": {
+     "WH": 2780,
+     "UNIT": 2025,
+     "BED": 102
+    },
+    "carriedBeds": 12,
+    "targetMonthly": 2308086
+   },
+   "str": {
+    "beds": 0,
+    "occupied": 0,
+    "occPct": null,
+    "finOccPct": null,
+    "monthly": 0,
+    "annual": 0,
+    "people": 0,
+    "rentPerBed": null,
+    "byType": {
+     "WH": 0,
+     "UNIT": 0,
+     "BED": 0
+    },
+    "carriedBeds": 0,
+    "targetMonthly": 0
+   },
+   "commercial": {
+    "monthly": 0,
+    "annual": 0
+   },
+   "byFund": {
+    "A1": {
+     "beds": 1500,
+     "occupied": 1414,
+     "occPct": 0.94,
+     "finOccPct": 0.93,
+     "monthly": 1612415.27,
+     "annual": 19188053.24,
+     "people": 1311,
+     "rentPerBed": 1140.32,
+     "byType": {
+      "WH": 839,
+      "UNIT": 572,
+      "BED": 3
+     },
+     "carriedBeds": 1,
+     "targetMonthly": 606816
+    },
+    "A2": {
+     "beds": 2362,
+     "occupied": 2123,
+     "occPct": 0.9,
+     "finOccPct": 0.87,
+     "monthly": 1658552.48,
+     "annual": 19304583.76,
+     "people": 1921,
+     "rentPerBed": 781.23,
+     "byType": {
+      "WH": 1058,
+      "UNIT": 991,
+      "BED": 74
+     },
+     "carriedBeds": 11,
+     "targetMonthly": 1001672
+    },
+    "A3": {
+     "beds": 1486,
+     "occupied": 1370,
+     "occPct": 0.92,
+     "finOccPct": 0.8,
+     "monthly": 1308398.71,
+     "annual": 13345642.69,
+     "people": 1242,
+     "rentPerBed": 955.04,
+     "byType": {
+      "WH": 883,
+      "UNIT": 462,
+      "BED": 25
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 699598
+    }
+   },
+   "byMarket": {
+    "savannah": {
+     "beds": 247,
+     "occupied": 217,
+     "occPct": 0.88,
+     "finOccPct": 0.86,
+     "monthly": 222559,
+     "annual": 2634058,
+     "people": 192,
+     "rentPerBed": 1025.62,
+     "byType": {
+      "WH": 62,
+      "UNIT": 155,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 241979
+    },
+    "charleston": {
+     "beds": 60,
+     "occupied": 60,
+     "occPct": 1,
+     "finOccPct": 1,
+     "monthly": 106144.3,
+     "annual": 1273731.6,
+     "people": 41,
+     "rentPerBed": 1769.07,
+     "byType": {
+      "WH": 33,
+      "UNIT": 27,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 106144
+    },
+    "new-orleans": {
+     "beds": 116,
+     "occupied": 90,
+     "occPct": 0.78,
+     "finOccPct": 0.77,
+     "monthly": 146400,
+     "annual": 1750300,
+     "people": 82,
+     "rentPerBed": 1626.67,
+     "byType": {
+      "WH": 9,
+      "UNIT": 78,
+      "BED": 3
+     },
+     "carriedBeds": 1,
+     "targetMonthly": 183659
+    },
+    "lehigh": {
+     "beds": 1374,
+     "occupied": 1273,
+     "occPct": 0.93,
+     "finOccPct": 0.88,
+     "monthly": 1166047.5,
+     "annual": 13238195,
+     "people": 1086,
+     "rentPerBed": 915.98,
+     "byType": {
+      "WH": 916,
+      "UNIT": 329,
+      "BED": 28
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 1372739
+    },
+    "providence": {
+     "beds": 1299,
+     "occupied": 1246,
+     "occPct": 0.96,
+     "finOccPct": 0.95,
+     "monthly": 1349394.45,
+     "annual": 15999978.4,
+     "people": 1183,
+     "rentPerBed": 1082.98,
+     "byType": {
+      "WH": 823,
+      "UNIT": 423,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 29342
+    },
+    "troy": {
+     "beds": 410,
+     "occupied": 329,
+     "occPct": 0.8,
+     "finOccPct": 0.76,
+     "monthly": 208250,
+     "annual": 2368710,
+     "people": 317,
+     "rentPerBed": 632.98,
+     "byType": {
+      "WH": 124,
+      "UNIT": 139,
+      "BED": 66
+     },
+     "carriedBeds": 1,
+     "targetMonthly": 259898
+    },
+    "binghamton": {
+     "beds": 1162,
+     "occupied": 1060,
+     "occPct": 0.91,
+     "finOccPct": 0.9,
+     "monthly": 695461,
+     "annual": 8248051,
+     "people": 965,
+     "rentPerBed": 656.1,
+     "byType": {
+      "WH": 452,
+      "UNIT": 603,
+      "BED": 5
+     },
+     "carriedBeds": 10,
+     "targetMonthly": 114325
+    },
+    "oxford": {
+     "beds": 680,
+     "occupied": 632,
+     "occPct": 0.93,
+     "finOccPct": 0.73,
+     "monthly": 685110.21,
+     "annual": 6325255.69,
+     "people": 608,
+     "rentPerBed": 1084.04,
+     "byType": {
+      "WH": 361,
+      "UNIT": 271,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 0
+    }
+   },
+   "byFundMarket": {
+    "A1:savannah": {
+     "beds": 169,
+     "occupied": 146
+    },
+    "A1:charleston": {
+     "beds": 60,
+     "occupied": 60
+    },
+    "A1:new-orleans": {
+     "beds": 107,
+     "occupied": 81
+    },
+    "A1:lehigh": {
+     "beds": 88,
+     "occupied": 88
+    },
+    "A1:providence": {
+     "beds": 1076,
+     "occupied": 1039
+    },
+    "A2:savannah": {
+     "beds": 78,
+     "occupied": 71
+    },
+    "A2:new-orleans": {
+     "beds": 4,
+     "occupied": 4
+    },
+    "A2:lehigh": {
+     "beds": 663,
+     "occupied": 606
+    },
+    "A2:troy": {
+     "beds": 318,
+     "occupied": 261
+    },
+    "A2:binghamton": {
+     "beds": 1076,
+     "occupied": 974
+    },
+    "A2:providence": {
+     "beds": 223,
+     "occupied": 207
+    },
+    "A3:new-orleans": {
+     "beds": 5,
+     "occupied": 5
+    },
+    "A3:lehigh": {
+     "beds": 623,
+     "occupied": 579
+    },
+    "A3:troy": {
+     "beds": 92,
+     "occupied": 68
+    },
+    "A3:binghamton": {
+     "beds": 86,
+     "occupied": 86
+    },
+    "A3:oxford": {
+     "beds": 680,
+     "occupied": 632
+    }
+   },
+   "counted": 1263,
+   "placed": 1246,
+   "exceptions": {
+    "MULTI_BED": 4,
+    "MULTI_UNIT": 10,
+    "NO_STATUS": 18,
+    "PROP_HAS_WH": 2,
+    "TENANT_DOUBLE": 10,
+    "TERM_MISMATCH": 1,
+    "WH_PLUS": 1,
+    "ZERO_BEDS": 3
+   },
+   "tenantDoubles": 5,
+   "pipeline": {
+    "rows": 1445,
+    "bedsStudent": 5348,
+    "bedsStr": 0,
+    "bedsCommercial": 3
+   }
+  },
+  "2026:executed": {
+   "student": {
+    "beds": 5348,
+    "occupied": 4900,
+    "occPct": 0.92,
+    "finOccPct": 0.87,
+    "monthly": 4574299.79,
+    "annual": 51810679.66,
+    "people": 4469,
+    "rentPerBed": 933.53,
+    "byType": {
+     "WH": 2774,
+     "UNIT": 2024,
+     "BED": 102
+    },
+    "carriedBeds": 12,
+    "targetMonthly": 2308086
+   },
+   "str": {
+    "beds": 0,
+    "occupied": 0,
+    "occPct": null,
+    "finOccPct": null,
+    "monthly": 0,
+    "annual": 0,
+    "people": 0,
+    "rentPerBed": null,
+    "byType": {
+     "WH": 0,
+     "UNIT": 0,
+     "BED": 0
+    },
+    "carriedBeds": 0,
+    "targetMonthly": 0
+   },
+   "commercial": {
+    "monthly": 0,
+    "annual": 0
+   },
+   "byFund": {
+    "A1": {
+     "beds": 1500,
+     "occupied": 1414,
+     "occPct": 0.94,
+     "finOccPct": 0.93,
+     "monthly": 1612415.27,
+     "annual": 19188053.24,
+     "people": 1311,
+     "rentPerBed": 1140.32,
+     "byType": {
+      "WH": 839,
+      "UNIT": 572,
+      "BED": 3
+     },
+     "carriedBeds": 1,
+     "targetMonthly": 606816
+    },
+    "A2": {
+     "beds": 2362,
+     "occupied": 2121,
+     "occPct": 0.9,
+     "finOccPct": 0.87,
+     "monthly": 1657952.48,
+     "annual": 19304583.76,
+     "people": 1921,
+     "rentPerBed": 781.68,
+     "byType": {
+      "WH": 1058,
+      "UNIT": 989,
+      "BED": 74
+     },
+     "carriedBeds": 11,
+     "targetMonthly": 1001672
+    },
+    "A3": {
+     "beds": 1486,
+     "occupied": 1365,
+     "occPct": 0.92,
+     "finOccPct": 0.8,
+     "monthly": 1303932.04,
+     "annual": 13318042.66,
+     "people": 1237,
+     "rentPerBed": 955.26,
+     "byType": {
+      "WH": 877,
+      "UNIT": 463,
+      "BED": 25
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 699598
+    }
+   },
+   "byMarket": {
+    "savannah": {
+     "beds": 247,
+     "occupied": 217,
+     "occPct": 0.88,
+     "finOccPct": 0.86,
+     "monthly": 222709,
+     "annual": 2639308,
+     "people": 193,
+     "rentPerBed": 1026.31,
+     "byType": {
+      "WH": 62,
+      "UNIT": 155,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 241979
+    },
+    "charleston": {
+     "beds": 60,
+     "occupied": 60,
+     "occPct": 1,
+     "finOccPct": 1,
+     "monthly": 106144.3,
+     "annual": 1273731.6,
+     "people": 41,
+     "rentPerBed": 1769.07,
+     "byType": {
+      "WH": 33,
+      "UNIT": 27,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 106144
+    },
+    "new-orleans": {
+     "beds": 116,
+     "occupied": 90,
+     "occPct": 0.78,
+     "finOccPct": 0.77,
+     "monthly": 146400,
+     "annual": 1750300,
+     "people": 82,
+     "rentPerBed": 1626.67,
+     "byType": {
+      "WH": 9,
+      "UNIT": 78,
+      "BED": 3
+     },
+     "carriedBeds": 1,
+     "targetMonthly": 183659
+    },
+    "lehigh": {
+     "beds": 1374,
+     "occupied": 1278,
+     "occPct": 0.93,
+     "finOccPct": 0.88,
+     "monthly": 1170247.5,
+     "annual": 13288595,
+     "people": 1090,
+     "rentPerBed": 915.69,
+     "byType": {
+      "WH": 916,
+      "UNIT": 334,
+      "BED": 28
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 1372739
+    },
+    "providence": {
+     "beds": 1299,
+     "occupied": 1246,
+     "occPct": 0.96,
+     "finOccPct": 0.95,
+     "monthly": 1349394.45,
+     "annual": 15999978.4,
+     "people": 1183,
+     "rentPerBed": 1082.98,
+     "byType": {
+      "WH": 823,
+      "UNIT": 423,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 29342
+    },
+    "troy": {
+     "beds": 410,
+     "occupied": 329,
+     "occPct": 0.8,
+     "finOccPct": 0.76,
+     "monthly": 208250,
+     "annual": 2368710,
+     "people": 317,
+     "rentPerBed": 632.98,
+     "byType": {
+      "WH": 124,
+      "UNIT": 139,
+      "BED": 66
+     },
+     "carriedBeds": 1,
+     "targetMonthly": 259898
+    },
+    "binghamton": {
+     "beds": 1162,
+     "occupied": 1058,
+     "occPct": 0.91,
+     "finOccPct": 0.89,
+     "monthly": 694711,
+     "annual": 8242801,
+     "people": 964,
+     "rentPerBed": 656.63,
+     "byType": {
+      "WH": 452,
+      "UNIT": 601,
+      "BED": 5
+     },
+     "carriedBeds": 10,
+     "targetMonthly": 114325
+    },
+    "oxford": {
+     "beds": 680,
+     "occupied": 622,
+     "occPct": 0.91,
+     "finOccPct": 0.72,
+     "monthly": 676443.54,
+     "annual": 6247255.66,
+     "people": 599,
+     "rentPerBed": 1087.53,
+     "byType": {
+      "WH": 355,
+      "UNIT": 267,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 0
+    }
+   },
+   "byFundMarket": {
+    "A1:savannah": {
+     "beds": 169,
+     "occupied": 146
+    },
+    "A1:charleston": {
+     "beds": 60,
+     "occupied": 60
+    },
+    "A1:new-orleans": {
+     "beds": 107,
+     "occupied": 81
+    },
+    "A1:lehigh": {
+     "beds": 88,
+     "occupied": 88
+    },
+    "A1:providence": {
+     "beds": 1076,
+     "occupied": 1039
+    },
+    "A2:savannah": {
+     "beds": 78,
+     "occupied": 71
+    },
+    "A2:new-orleans": {
+     "beds": 4,
+     "occupied": 4
+    },
+    "A2:lehigh": {
+     "beds": 663,
+     "occupied": 606
+    },
+    "A2:troy": {
+     "beds": 318,
+     "occupied": 261
+    },
+    "A2:binghamton": {
+     "beds": 1076,
+     "occupied": 972
+    },
+    "A2:providence": {
+     "beds": 223,
+     "occupied": 207
+    },
+    "A3:new-orleans": {
+     "beds": 5,
+     "occupied": 5
+    },
+    "A3:lehigh": {
+     "beds": 623,
+     "occupied": 584
+    },
+    "A3:troy": {
+     "beds": 92,
+     "occupied": 68
+    },
+    "A3:binghamton": {
+     "beds": 86,
+     "occupied": 86
+    },
+    "A3:oxford": {
+     "beds": 680,
+     "occupied": 622
+    }
+   },
+   "counted": 1256,
+   "placed": 1243,
+   "exceptions": {
+    "MULTI_BED": 4,
+    "MULTI_UNIT": 6,
+    "NO_STATUS": 18,
+    "PROP_HAS_WH": 2,
+    "TENANT_DOUBLE": 8,
+    "TERM_MISMATCH": 1,
+    "WH_PLUS": 1,
+    "ZERO_BEDS": 3
+   },
+   "tenantDoubles": 4,
+   "pipeline": {
+    "rows": 1445,
+    "bedsStudent": 5348,
+    "bedsStr": 0,
+    "bedsCommercial": 3
+   }
+  },
+  "2027:proforma": {
+   "student": {
+    "beds": 5348,
+    "occupied": 2798,
+    "occPct": 0.52,
+    "finOccPct": 0.5,
+    "monthly": 3014067.12,
+    "annual": 33971278.91,
+    "people": 2469,
+    "rentPerBed": 1077.22,
+    "byType": {
+     "WH": 1788,
+     "UNIT": 1007,
+     "BED": 3
+    },
+    "carriedBeds": 4,
+    "targetMonthly": 4447827.59
+   },
+   "str": {
+    "beds": 0,
+    "occupied": 0,
+    "occPct": null,
+    "finOccPct": null,
+    "monthly": 0,
+    "annual": 0,
+    "people": 0,
+    "rentPerBed": null,
+    "byType": {
+     "WH": 0,
+     "UNIT": 0,
+     "BED": 0
+    },
+    "carriedBeds": 0,
+    "targetMonthly": 0
+   },
+   "commercial": {
+    "monthly": 0,
+    "annual": 0
+   },
+   "byFund": {
+    "A1": {
+     "beds": 1500,
+     "occupied": 783,
+     "occPct": 0.52,
+     "finOccPct": 0.52,
+     "monthly": 967318.52,
+     "annual": 11603962.24,
+     "people": 604,
+     "rentPerBed": 1235.4,
+     "byType": {
+      "WH": 550,
+      "UNIT": 233,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 1741960.8
+    },
+    "A2": {
+     "beds": 2362,
+     "occupied": 1058,
+     "occPct": 0.45,
+     "finOccPct": 0.44,
+     "monthly": 993745,
+     "annual": 11760790,
+     "people": 978,
+     "rentPerBed": 939.27,
+     "byType": {
+      "WH": 649,
+      "UNIT": 406,
+      "BED": 3
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 1948968.64
+    },
+    "A3": {
+     "beds": 1486,
+     "occupied": 957,
+     "occPct": 0.64,
+     "finOccPct": 0.55,
+     "monthly": 1053003.6,
+     "annual": 10606526.67,
+     "people": 887,
+     "rentPerBed": 1100.32,
+     "byType": {
+      "WH": 589,
+      "UNIT": 368,
+      "BED": 0
+     },
+     "carriedBeds": 4,
+     "targetMonthly": 756898.15
+    }
+   },
+   "byMarket": {
+    "savannah": {
+     "beds": 247,
+     "occupied": 13,
+     "occPct": 0.05,
+     "finOccPct": 0.05,
+     "monthly": 14750,
+     "annual": 175900,
+     "people": 12,
+     "rentPerBed": 1134.62,
+     "byType": {
+      "WH": 4,
+      "UNIT": 9,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 271586.31
+    },
+    "charleston": {
+     "beds": 60,
+     "occupied": 23,
+     "occPct": 0.38,
+     "finOccPct": 0.38,
+     "monthly": 36250,
+     "annual": 435000,
+     "people": 22,
+     "rentPerBed": 1576.09,
+     "byType": {
+      "WH": 10,
+      "UNIT": 13,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 109328.67
+    },
+    "new-orleans": {
+     "beds": 116,
+     "occupied": 82,
+     "occPct": 0.71,
+     "finOccPct": 0.71,
+     "monthly": 133450,
+     "annual": 1601400,
+     "people": 41,
+     "rentPerBed": 1627.44,
+     "byType": {
+      "WH": 51,
+      "UNIT": 31,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 192058
+    },
+    "lehigh": {
+     "beds": 1374,
+     "occupied": 826,
+     "occPct": 0.6,
+     "finOccPct": 0.58,
+     "monthly": 901235,
+     "annual": 10398570,
+     "people": 744,
+     "rentPerBed": 1091.08,
+     "byType": {
+      "WH": 588,
+      "UNIT": 238,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 1427239.83
+    },
+    "providence": {
+     "beds": 1299,
+     "occupied": 758,
+     "occPct": 0.58,
+     "finOccPct": 0.58,
+     "monthly": 898788.52,
+     "annual": 10767602.24,
+     "people": 616,
+     "rentPerBed": 1185.74,
+     "byType": {
+      "WH": 491,
+      "UNIT": 267,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 1407231.78
+    },
+    "troy": {
+     "beds": 410,
+     "occupied": 87,
+     "occPct": 0.21,
+     "finOccPct": 0.21,
+     "monthly": 58420,
+     "annual": 695040,
+     "people": 79,
+     "rentPerBed": 671.49,
+     "byType": {
+      "WH": 34,
+      "UNIT": 50,
+      "BED": 3
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 259898
+    },
+    "binghamton": {
+     "beds": 1162,
+     "occupied": 510,
+     "occPct": 0.44,
+     "finOccPct": 0.44,
+     "monthly": 371030,
+     "annual": 4436810,
+     "people": 461,
+     "rentPerBed": 727.51,
+     "byType": {
+      "WH": 255,
+      "UNIT": 255,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 780485
+    },
+    "oxford": {
+     "beds": 680,
+     "occupied": 499,
+     "occPct": 0.73,
+     "finOccPct": 0.56,
+     "monthly": 600143.6,
+     "annual": 5460956.67,
+     "people": 494,
+     "rentPerBed": 1202.69,
+     "byType": {
+      "WH": 355,
+      "UNIT": 144,
+      "BED": 0
+     },
+     "carriedBeds": 4,
+     "targetMonthly": 0
+    }
+   },
+   "byFundMarket": {
+    "A1:savannah": {
+     "beds": 169,
+     "occupied": 12
+    },
+    "A1:charleston": {
+     "beds": 60,
+     "occupied": 23
+    },
+    "A1:new-orleans": {
+     "beds": 107,
+     "occupied": 73
+    },
+    "A1:lehigh": {
+     "beds": 88,
+     "occupied": 80
+    },
+    "A1:providence": {
+     "beds": 1076,
+     "occupied": 595
+    },
+    "A2:savannah": {
+     "beds": 78,
+     "occupied": 1
+    },
+    "A2:new-orleans": {
+     "beds": 4,
+     "occupied": 4
+    },
+    "A2:lehigh": {
+     "beds": 663,
+     "occupied": 362
+    },
+    "A2:troy": {
+     "beds": 318,
+     "occupied": 73
+    },
+    "A2:binghamton": {
+     "beds": 1076,
+     "occupied": 455
+    },
+    "A2:providence": {
+     "beds": 223,
+     "occupied": 163
+    },
+    "A3:new-orleans": {
+     "beds": 5,
+     "occupied": 5
+    },
+    "A3:lehigh": {
+     "beds": 623,
+     "occupied": 384
+    },
+    "A3:troy": {
+     "beds": 92,
+     "occupied": 14
+    },
+    "A3:binghamton": {
+     "beds": 86,
+     "occupied": 55
+    },
+    "A3:oxford": {
+     "beds": 680,
+     "occupied": 499
+    }
+   },
+   "counted": 583,
+   "placed": 571,
+   "exceptions": {
+    "MULTI_BED": 3,
+    "MULTI_UNIT": 4,
+    "NO_STATUS": 49,
+    "PROP_HAS_WH": 2,
+    "TENANT_DOUBLE": 54,
+    "UNIT_ON_BED": 1,
+    "WH_MULTI": 2,
+    "WH_PLUS": 1,
+    "ZERO_BEDS": 2
+   },
+   "tenantDoubles": 27,
+   "pipeline": {
+    "rows": 1445,
+    "bedsStudent": 5348,
+    "bedsStr": 0,
+    "bedsCommercial": 3
+   }
+  },
+  "2027:executed": {
+   "student": {
+    "beds": 5348,
+    "occupied": 2314,
+    "occPct": 0.43,
+    "finOccPct": 0.41,
+    "monthly": 2611287.12,
+    "annual": 29218318.9,
+    "people": 2053,
+    "rentPerBed": 1128.47,
+    "byType": {
+     "WH": 1492,
+     "UNIT": 822,
+     "BED": 0
+    },
+    "carriedBeds": 4,
+    "targetMonthly": 4447827.59
+   },
+   "str": {
+    "beds": 0,
+    "occupied": 0,
+    "occPct": null,
+    "finOccPct": null,
+    "monthly": 0,
+    "annual": 0,
+    "people": 0,
+    "rentPerBed": null,
+    "byType": {
+     "WH": 0,
+     "UNIT": 0,
+     "BED": 0
+    },
+    "carriedBeds": 0,
+    "targetMonthly": 0
+   },
+   "commercial": {
+    "monthly": 0,
+    "annual": 0
+   },
+   "byFund": {
+    "A1": {
+     "beds": 1500,
+     "occupied": 714,
+     "occPct": 0.48,
+     "finOccPct": 0.48,
+     "monthly": 885688.52,
+     "annual": 10621002.24,
+     "people": 567,
+     "rentPerBed": 1240.46,
+     "byType": {
+      "WH": 537,
+      "UNIT": 177,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 1741960.8
+    },
+    "A2": {
+     "beds": 2362,
+     "occupied": 815,
+     "occPct": 0.35,
+     "finOccPct": 0.34,
+     "monthly": 809070,
+     "annual": 9550690,
+     "people": 751,
+     "rentPerBed": 992.72,
+     "byType": {
+      "WH": 493,
+      "UNIT": 322,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 1948968.64
+    },
+    "A3": {
+     "beds": 1486,
+     "occupied": 785,
+     "occPct": 0.53,
+     "finOccPct": 0.44,
+     "monthly": 916528.6,
+     "annual": 9046626.66,
+     "people": 735,
+     "rentPerBed": 1167.55,
+     "byType": {
+      "WH": 462,
+      "UNIT": 323,
+      "BED": 0
+     },
+     "carriedBeds": 4,
+     "targetMonthly": 756898.15
+    }
+   },
+   "byMarket": {
+    "savannah": {
+     "beds": 247,
+     "occupied": 1,
+     "occPct": 0,
+     "finOccPct": 0,
+     "monthly": 1500,
+     "annual": 13500,
+     "people": 1,
+     "rentPerBed": 1500,
+     "byType": {
+      "WH": 0,
+      "UNIT": 1,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 271586.31
+    },
+    "charleston": {
+     "beds": 60,
+     "occupied": 9,
+     "occPct": 0.15,
+     "finOccPct": 0.15,
+     "monthly": 11900,
+     "annual": 142800,
+     "people": 9,
+     "rentPerBed": 1322.22,
+     "byType": {
+      "WH": 5,
+      "UNIT": 4,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 109328.67
+    },
+    "new-orleans": {
+     "beds": 116,
+     "occupied": 73,
+     "occPct": 0.63,
+     "finOccPct": 0.63,
+     "monthly": 120350,
+     "annual": 1444200,
+     "people": 35,
+     "rentPerBed": 1648.63,
+     "byType": {
+      "WH": 47,
+      "UNIT": 26,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 192058
+    },
+    "lehigh": {
+     "beds": 1374,
+     "occupied": 676,
+     "occPct": 0.49,
+     "finOccPct": 0.47,
+     "monthly": 775830,
+     "annual": 8893710,
+     "people": 614,
+     "rentPerBed": 1147.68,
+     "byType": {
+      "WH": 447,
+      "UNIT": 229,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 1427239.83
+    },
+    "providence": {
+     "beds": 1299,
+     "occupied": 724,
+     "occPct": 0.56,
+     "finOccPct": 0.56,
+     "monthly": 867858.52,
+     "annual": 10396442.24,
+     "people": 609,
+     "rentPerBed": 1198.7,
+     "byType": {
+      "WH": 491,
+      "UNIT": 233,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 1407231.78
+    },
+    "troy": {
+     "beds": 410,
+     "occupied": 27,
+     "occPct": 0.07,
+     "finOccPct": 0.07,
+     "monthly": 18010,
+     "annual": 216120,
+     "people": 25,
+     "rentPerBed": 667.04,
+     "byType": {
+      "WH": 7,
+      "UNIT": 20,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 259898
+    },
+    "binghamton": {
+     "beds": 1162,
+     "occupied": 331,
+     "occPct": 0.28,
+     "finOccPct": 0.28,
+     "monthly": 242945,
+     "annual": 2899790,
+     "people": 289,
+     "rentPerBed": 733.97,
+     "byType": {
+      "WH": 140,
+      "UNIT": 191,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 780485
+    },
+    "oxford": {
+     "beds": 680,
+     "occupied": 473,
+     "occPct": 0.7,
+     "finOccPct": 0.53,
+     "monthly": 572893.6,
+     "annual": 5211756.66,
+     "people": 471,
+     "rentPerBed": 1211.19,
+     "byType": {
+      "WH": 355,
+      "UNIT": 118,
+      "BED": 0
+     },
+     "carriedBeds": 4,
+     "targetMonthly": 0
+    }
+   },
+   "byFundMarket": {
+    "A1:savannah": {
+     "beds": 169,
+     "occupied": 0
+    },
+    "A1:charleston": {
+     "beds": 60,
+     "occupied": 9
+    },
+    "A1:new-orleans": {
+     "beds": 107,
+     "occupied": 64
+    },
+    "A1:lehigh": {
+     "beds": 88,
+     "occupied": 80
+    },
+    "A1:providence": {
+     "beds": 1076,
+     "occupied": 561
+    },
+    "A2:savannah": {
+     "beds": 78,
+     "occupied": 1
+    },
+    "A2:new-orleans": {
+     "beds": 4,
+     "occupied": 4
+    },
+    "A2:lehigh": {
+     "beds": 663,
+     "occupied": 319
+    },
+    "A2:troy": {
+     "beds": 318,
+     "occupied": 27
+    },
+    "A2:binghamton": {
+     "beds": 1076,
+     "occupied": 301
+    },
+    "A2:providence": {
+     "beds": 223,
+     "occupied": 163
+    },
+    "A3:new-orleans": {
+     "beds": 5,
+     "occupied": 5
+    },
+    "A3:lehigh": {
+     "beds": 623,
+     "occupied": 277
+    },
+    "A3:troy": {
+     "beds": 92,
+     "occupied": 0
+    },
+    "A3:binghamton": {
+     "beds": 86,
+     "occupied": 30
+    },
+    "A3:oxford": {
+     "beds": 680,
+     "occupied": 473
+    }
+   },
+   "counted": 457,
+   "placed": 457,
+   "exceptions": {
+    "NO_STATUS": 49,
+    "ZERO_BEDS": 2
+   },
+   "tenantDoubles": 0,
+   "pipeline": {
+    "rows": 1445,
+    "bedsStudent": 5348,
+    "bedsStr": 0,
+    "bedsCommercial": 3
+   }
+  },
+  "2028:proforma": {
+   "student": {
+    "beds": 5348,
+    "occupied": 989,
+    "occPct": 0.18,
+    "finOccPct": 0.17,
+    "monthly": 1346516.4,
+    "annual": 15144117.54,
+    "people": 950,
+    "rentPerBed": 1361.49,
+    "byType": {
+     "WH": 795,
+     "UNIT": 194,
+     "BED": 0
+    },
+    "carriedBeds": 56,
+    "targetMonthly": 4680472.59
+   },
+   "str": {
+    "beds": 0,
+    "occupied": 0,
+    "occPct": null,
+    "finOccPct": null,
+    "monthly": 0,
+    "annual": 0,
+    "people": 0,
+    "rentPerBed": null,
+    "byType": {
+     "WH": 0,
+     "UNIT": 0,
+     "BED": 0
+    },
+    "carriedBeds": 0,
+    "targetMonthly": 0
+   },
+   "commercial": {
+    "monthly": 0,
+    "annual": 0
+   },
+   "byFund": {
+    "A1": {
+     "beds": 1500,
+     "occupied": 604,
+     "occPct": 0.4,
+     "finOccPct": 0.37,
+     "monthly": 831067.44,
+     "annual": 9212791.84,
+     "people": 580,
+     "rentPerBed": 1375.94,
+     "byType": {
+      "WH": 511,
+      "UNIT": 93,
+      "BED": 0
+     },
+     "carriedBeds": 27,
+     "targetMonthly": 1816711.8
+    },
+    "A2": {
+     "beds": 2362,
+     "occupied": 284,
+     "occPct": 0.12,
+     "finOccPct": 0.11,
+     "monthly": 394252.53,
+     "annual": 4490682.83,
+     "people": 278,
+     "rentPerBed": 1388.21,
+     "byType": {
+      "WH": 192,
+      "UNIT": 92,
+      "BED": 0
+     },
+     "carriedBeds": 15,
+     "targetMonthly": 2066062.64
+    },
+    "A3": {
+     "beds": 1486,
+     "occupied": 101,
+     "occPct": 0.07,
+     "finOccPct": 0.07,
+     "monthly": 121196.43,
+     "annual": 1440642.87,
+     "people": 92,
+     "rentPerBed": 1199.96,
+     "byType": {
+      "WH": 92,
+      "UNIT": 9,
+      "BED": 0
+     },
+     "carriedBeds": 14,
+     "targetMonthly": 797698.15
+    }
+   },
+   "byMarket": {
+    "savannah": {
+     "beds": 247,
+     "occupied": 0,
+     "occPct": 0,
+     "finOccPct": 0,
+     "monthly": 0,
+     "annual": 0,
+     "people": 0,
+     "rentPerBed": null,
+     "byType": {
+      "WH": 0,
+      "UNIT": 0,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 283937.31
+    },
+    "charleston": {
+     "beds": 60,
+     "occupied": 0,
+     "occPct": 0,
+     "finOccPct": 0,
+     "monthly": 0,
+     "annual": 0,
+     "people": 0,
+     "rentPerBed": null,
+     "byType": {
+      "WH": 0,
+      "UNIT": 0,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 112328.67
+    },
+    "new-orleans": {
+     "beds": 116,
+     "occupied": 28,
+     "occPct": 0.24,
+     "finOccPct": 0.24,
+     "monthly": 44800,
+     "annual": 537600,
+     "people": 19,
+     "rentPerBed": 1600,
+     "byType": {
+      "WH": 10,
+      "UNIT": 18,
+      "BED": 0
+     },
+     "carriedBeds": 22,
+     "targetMonthly": 197858
+    },
+    "lehigh": {
+     "beds": 1374,
+     "occupied": 242,
+     "occPct": 0.18,
+     "finOccPct": 0.18,
+     "monthly": 291725,
+     "annual": 3500700,
+     "people": 217,
+     "rentPerBed": 1205.48,
+     "byType": {
+      "WH": 222,
+      "UNIT": 20,
+      "BED": 0
+     },
+     "carriedBeds": 23,
+     "targetMonthly": 1495939.83
+    },
+    "providence": {
+     "beds": 1299,
+     "occupied": 708,
+     "occPct": 0.55,
+     "finOccPct": 0.5,
+     "monthly": 1000364.97,
+     "annual": 11004014.67,
+     "people": 702,
+     "rentPerBed": 1412.94,
+     "byType": {
+      "WH": 556,
+      "UNIT": 152,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 1471931.78
+    },
+    "troy": {
+     "beds": 410,
+     "occupied": 7,
+     "occPct": 0.02,
+     "finOccPct": 0.02,
+     "monthly": 5055,
+     "annual": 60660,
+     "people": 8,
+     "rentPerBed": 722.14,
+     "byType": {
+      "WH": 7,
+      "UNIT": 0,
+      "BED": 0
+     },
+     "carriedBeds": 7,
+     "targetMonthly": 279898
+    },
+    "binghamton": {
+     "beds": 1162,
+     "occupied": 0,
+     "occPct": 0,
+     "finOccPct": 0,
+     "monthly": 0,
+     "annual": 0,
+     "people": 0,
+     "rentPerBed": null,
+     "byType": {
+      "WH": 0,
+      "UNIT": 0,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 838579
+    },
+    "oxford": {
+     "beds": 680,
+     "occupied": 4,
+     "occPct": 0.01,
+     "finOccPct": 0,
+     "monthly": 4571.43,
+     "annual": 41142.87,
+     "people": 4,
+     "rentPerBed": 1142.86,
+     "byType": {
+      "WH": 0,
+      "UNIT": 4,
+      "BED": 0
+     },
+     "carriedBeds": 4,
+     "targetMonthly": 0
+    }
+   },
+   "byFundMarket": {
+    "A1:savannah": {
+     "beds": 169,
+     "occupied": 0
+    },
+    "A1:charleston": {
+     "beds": 60,
+     "occupied": 0
+    },
+    "A1:new-orleans": {
+     "beds": 107,
+     "occupied": 28
+    },
+    "A1:lehigh": {
+     "beds": 88,
+     "occupied": 20
+    },
+    "A1:providence": {
+     "beds": 1076,
+     "occupied": 556
+    },
+    "A2:savannah": {
+     "beds": 78,
+     "occupied": 0
+    },
+    "A2:new-orleans": {
+     "beds": 4,
+     "occupied": 0
+    },
+    "A2:lehigh": {
+     "beds": 663,
+     "occupied": 125
+    },
+    "A2:troy": {
+     "beds": 318,
+     "occupied": 7
+    },
+    "A2:binghamton": {
+     "beds": 1076,
+     "occupied": 0
+    },
+    "A2:providence": {
+     "beds": 223,
+     "occupied": 152
+    },
+    "A3:new-orleans": {
+     "beds": 5,
+     "occupied": 0
+    },
+    "A3:lehigh": {
+     "beds": 623,
+     "occupied": 97
+    },
+    "A3:troy": {
+     "beds": 92,
+     "occupied": 0
+    },
+    "A3:binghamton": {
+     "beds": 86,
+     "occupied": 0
+    },
+    "A3:oxford": {
+     "beds": 680,
+     "occupied": 4
+    }
+   },
+   "counted": 151,
+   "placed": 151,
+   "exceptions": {
+    "NO_STATUS": 7,
+    "ZERO_BEDS": 2
+   },
+   "tenantDoubles": 0,
+   "pipeline": {
+    "rows": 1445,
+    "bedsStudent": 5348,
+    "bedsStr": 0,
+    "bedsCommercial": 3
+   }
+  },
+  "2028:executed": {
+   "student": {
+    "beds": 5348,
+    "occupied": 919,
+    "occPct": 0.17,
+    "finOccPct": 0.16,
+    "monthly": 1271766.4,
+    "annual": 14247117.54,
+    "people": 889,
+    "rentPerBed": 1383.86,
+    "byType": {
+     "WH": 735,
+     "UNIT": 184,
+     "BED": 0
+    },
+    "carriedBeds": 39,
+    "targetMonthly": 4680472.59
+   },
+   "str": {
+    "beds": 0,
+    "occupied": 0,
+    "occPct": null,
+    "finOccPct": null,
+    "monthly": 0,
+    "annual": 0,
+    "people": 0,
+    "rentPerBed": null,
+    "byType": {
+     "WH": 0,
+     "UNIT": 0,
+     "BED": 0
+    },
+    "carriedBeds": 0,
+    "targetMonthly": 0
+   },
+   "commercial": {
+    "monthly": 0,
+    "annual": 0
+   },
+   "byFund": {
+    "A1": {
+     "beds": 1500,
+     "occupied": 600,
+     "occPct": 0.4,
+     "finOccPct": 0.37,
+     "monthly": 825467.44,
+     "annual": 9145591.84,
+     "people": 579,
+     "rentPerBed": 1375.78,
+     "byType": {
+      "WH": 507,
+      "UNIT": 93,
+      "BED": 0
+     },
+     "carriedBeds": 23,
+     "targetMonthly": 1816711.8
+    },
+    "A2": {
+     "beds": 2362,
+     "occupied": 256,
+     "occPct": 0.11,
+     "finOccPct": 0.1,
+     "monthly": 363502.53,
+     "annual": 4121682.83,
+     "people": 255,
+     "rentPerBed": 1419.93,
+     "byType": {
+      "WH": 174,
+      "UNIT": 82,
+      "BED": 0
+     },
+     "carriedBeds": 7,
+     "targetMonthly": 2066062.64
+    },
+    "A3": {
+     "beds": 1486,
+     "occupied": 63,
+     "occPct": 0.04,
+     "finOccPct": 0.04,
+     "monthly": 82796.43,
+     "annual": 979842.87,
+     "people": 55,
+     "rentPerBed": 1314.23,
+     "byType": {
+      "WH": 54,
+      "UNIT": 9,
+      "BED": 0
+     },
+     "carriedBeds": 9,
+     "targetMonthly": 797698.15
+    }
+   },
+   "byMarket": {
+    "savannah": {
+     "beds": 247,
+     "occupied": 0,
+     "occPct": 0,
+     "finOccPct": 0,
+     "monthly": 0,
+     "annual": 0,
+     "people": 0,
+     "rentPerBed": null,
+     "byType": {
+      "WH": 0,
+      "UNIT": 0,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 283937.31
+    },
+    "charleston": {
+     "beds": 60,
+     "occupied": 0,
+     "occPct": 0,
+     "finOccPct": 0,
+     "monthly": 0,
+     "annual": 0,
+     "people": 0,
+     "rentPerBed": null,
+     "byType": {
+      "WH": 0,
+      "UNIT": 0,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 112328.67
+    },
+    "new-orleans": {
+     "beds": 116,
+     "occupied": 24,
+     "occPct": 0.21,
+     "finOccPct": 0.21,
+     "monthly": 39200,
+     "annual": 470400,
+     "people": 18,
+     "rentPerBed": 1633.33,
+     "byType": {
+      "WH": 6,
+      "UNIT": 18,
+      "BED": 0
+     },
+     "carriedBeds": 18,
+     "targetMonthly": 197858
+    },
+    "lehigh": {
+     "beds": 1374,
+     "occupied": 176,
+     "occPct": 0.13,
+     "finOccPct": 0.13,
+     "monthly": 222575,
+     "annual": 2670900,
+     "people": 157,
+     "rentPerBed": 1264.63,
+     "byType": {
+      "WH": 166,
+      "UNIT": 10,
+      "BED": 0
+     },
+     "carriedBeds": 10,
+     "targetMonthly": 1495939.83
+    },
+    "providence": {
+     "beds": 1299,
+     "occupied": 708,
+     "occPct": 0.55,
+     "finOccPct": 0.5,
+     "monthly": 1000364.97,
+     "annual": 11004014.67,
+     "people": 702,
+     "rentPerBed": 1412.94,
+     "byType": {
+      "WH": 556,
+      "UNIT": 152,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 1471931.78
+    },
+    "troy": {
+     "beds": 410,
+     "occupied": 7,
+     "occPct": 0.02,
+     "finOccPct": 0.02,
+     "monthly": 5055,
+     "annual": 60660,
+     "people": 8,
+     "rentPerBed": 722.14,
+     "byType": {
+      "WH": 7,
+      "UNIT": 0,
+      "BED": 0
+     },
+     "carriedBeds": 7,
+     "targetMonthly": 279898
+    },
+    "binghamton": {
+     "beds": 1162,
+     "occupied": 0,
+     "occPct": 0,
+     "finOccPct": 0,
+     "monthly": 0,
+     "annual": 0,
+     "people": 0,
+     "rentPerBed": null,
+     "byType": {
+      "WH": 0,
+      "UNIT": 0,
+      "BED": 0
+     },
+     "carriedBeds": 0,
+     "targetMonthly": 838579
+    },
+    "oxford": {
+     "beds": 680,
+     "occupied": 4,
+     "occPct": 0.01,
+     "finOccPct": 0,
+     "monthly": 4571.43,
+     "annual": 41142.87,
+     "people": 4,
+     "rentPerBed": 1142.86,
+     "byType": {
+      "WH": 0,
+      "UNIT": 4,
+      "BED": 0
+     },
+     "carriedBeds": 4,
+     "targetMonthly": 0
+    }
+   },
+   "byFundMarket": {
+    "A1:savannah": {
+     "beds": 169,
+     "occupied": 0
+    },
+    "A1:charleston": {
+     "beds": 60,
+     "occupied": 0
+    },
+    "A1:new-orleans": {
+     "beds": 107,
+     "occupied": 24
+    },
+    "A1:lehigh": {
+     "beds": 88,
+     "occupied": 20
+    },
+    "A1:providence": {
+     "beds": 1076,
+     "occupied": 556
+    },
+    "A2:savannah": {
+     "beds": 78,
+     "occupied": 0
+    },
+    "A2:new-orleans": {
+     "beds": 4,
+     "occupied": 0
+    },
+    "A2:lehigh": {
+     "beds": 663,
+     "occupied": 97
+    },
+    "A2:troy": {
+     "beds": 318,
+     "occupied": 7
+    },
+    "A2:binghamton": {
+     "beds": 1076,
+     "occupied": 0
+    },
+    "A2:providence": {
+     "beds": 223,
+     "occupied": 152
+    },
+    "A3:new-orleans": {
+     "beds": 5,
+     "occupied": 0
+    },
+    "A3:lehigh": {
+     "beds": 623,
+     "occupied": 59
+    },
+    "A3:troy": {
+     "beds": 92,
+     "occupied": 0
+    },
+    "A3:binghamton": {
+     "beds": 86,
+     "occupied": 0
+    },
+    "A3:oxford": {
+     "beds": 680,
+     "occupied": 4
+    }
+   },
+   "counted": 136,
+   "placed": 136,
+   "exceptions": {
+    "NO_STATUS": 7,
+    "ZERO_BEDS": 2
+   },
+   "tenantDoubles": 0,
+   "pipeline": {
+    "rows": 1445,
+    "bedsStudent": 5348,
+    "bedsStr": 0,
+    "bedsCommercial": 3
+   }
+  }
+ }
+}

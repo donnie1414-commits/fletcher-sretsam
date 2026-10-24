@@ -1,0 +1,62 @@
+{
+  "source": "test/fixtures/live",
+  "redactedAt": "2026-10-24T00:05:14.869Z",
+  "tables": {
+    "academic_years": {
+      "rows": 6,
+      "sha256": "4088bd5fb1b984e2f059b34ce96c788ab2c27801241467b472802b2b08c075da",
+      "redacted": false
+    },
+    "customers": {
+      "rows": 8338,
+      "sha256": "fb0fd768eff713314d96f5cfb07758ee75e299a5d304b20ca4de91595785fb75",
+      "redacted": true
+    },
+    "leases": {
+      "rows": 2559,
+      "sha256": "8462f94d782299b5970e93d46dbbc52ffc12a919f6d43321bad89e97a3815312",
+      "redacted": true
+    },
+    "lists": {
+      "rows": 10,
+      "sha256": "6aa096b327713b5661ea31eabb45f1df5426f8eab6aad9ed5752082705bdb084",
+      "redacted": false
+    },
+    "properties": {
+      "rows": 815,
+      "sha256": "644ad6522087a3bb1d8051d0c3cf01c05a927fae7811c9d9be9fdd525310b971",
+      "redacted": false
+    },
+    "stage_log": {
+      "rows": 28,
+      "sha256": "19d4356512b8a9bf42dc6afcdc2fcd6707917134aeab29bb415efb8d809d973e",
+      "redacted": false
+    },
+    "stage_notes": {
+      "rows": 2,
+      "sha256": "856eec2ba9511850befae3fa767e0f3bbbdfdad6683e486cf5bf323c9b76ab94",
+      "redacted": true
+    },
+    "stage_rows": {
+      "rows": 4384,
+      "sha256": "978e6274e408ee34933d007dcef950fcf3733f4445438fa971bf114bf9f58dd8",
+      "redacted": true
+    },
+    "subsidiaries": {
+      "rows": 16,
+      "sha256": "6f279a35851fab63cde1a8941c509265dd1bbabd2b2dada0d712977da7f4d8fc",
+      "redacted": false
+    },
+    "targets": {
+      "rows": 3130,
+      "sha256": "8c8b0cfa6b7a8a6f9a9c2ac56f4525cab971e2368af0e20f75b4a3c4bc6838d3",
+      "redacted": false
+    },
+    "units": {
+      "rows": 6802,
+      "sha256": "99d76219bf9941981b587cbf017e92e0b8d0a6abd3c128a863045b0230ad8d8e",
+      "redacted": false
+    }
+  },
+  "pulledAt": "2026-10-23T23:53:46.026Z"
+}

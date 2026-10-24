@@ -1,0 +1,124 @@
+/**
+ * Wiring: resolve permissions, run queries, run the engine, return JSON. Thin by design (§4).
+ * createApp(N) → { handle(context) }   where N = { query, record, runtime, log, file, url, cache, encode, crypto }
+ */
+import { createSchema } from './schema.js';
+import { createSuiteQL } from './dao/suiteql.js';
+import { createPortfolioDao } from './dao/portfolio.js';
+import { createPipelineDao } from './dao/pipeline.js';
+import { createPeopleDao } from './dao/people.js';
+import { createAuth } from './auth.js';
+import { createWrites } from './writes.js';
+import { prepare, runEngine, lookupsFromLists } from '../shared/rules/index.js';
+import { ayForDate, toISO, ayYearFromLabel, ayShort } from '../shared/rules/dates.js';
+import { scopedSummary, scopedTree, inScope, propertyIdsInScope } from './scoping.js';
+import { routeBootstrap, routeLists } from './routes/bootstrap.js';
+import { routeSummary, routePortfolio, routeWeekly } from './routes/reporting.js';
+import { routePipeline } from './routes/pipeline.js';
+import { routeTenants, routeLeads } from './routes/people.js';
+import { routeExceptions } from './routes/exceptions.js';
+import { routeToday } from './routes/today.js';
+import { routeSavedViews } from './routes/savedViews.js';
+import { routeWrite } from './routes/write.js';
+import { renderShell } from './shell.js';
+import { MARKETS, UAS, LEASE, CUSTOMER, TOUR, SAVED_VIEW, FEATURE_FLAGS } from '../shared/constants.js';
+
+export function createApp(N) {
+  const log = N.log;
+  const schema = createSchema({ query: N.query, log, cache: N.cache ? safeCache(N.cache) : null });
+  const sq = createSuiteQL({ query: N.query, log });
+  const dao = { portfolio: createPortfolioDao({ sq, schema }), pipeline: createPipelineDao({ sq, schema }), people: createPeopleDao({ sq, schema }) };
+  const auth = createAuth({ runtime: N.runtime, sq, schema, log });
+
+  /** Per-request context: scope, params, lazily loaded portfolio + engine runs. */
+  function makeCtx(context) {
+    const params = context.request.parameters || {};
+    const scope = auth.resolve();
+    const today = toISO(new Date());
+    const flags = { ...FEATURE_FLAGS, requireOverlapForCollision: readFlag(N.runtime, 'custscript_al_overlap_rule', FEATURE_FLAGS.requireOverlapForCollision) };
+    let portfolio = null; const runs = new Map(); let ayRows = null;
+    const ctx = {
+      N, sq, dao, schema, auth, scope, params, today, flags, log,
+      ays() { if (!ayRows) ayRows = dao.portfolio.academicYears().filter((a) => a.isinactive !== 'T' && ayYearFromLabel(a.name) != null).map((a) => ({ id: String(a.id), year: ayYearFromLabel(a.name), label: a.name, short: ayShort(ayYearFromLabel(a.name)), start: toISO(a.start_date), end: toISO(a.end_date) })).sort((a, b) => a.year - b.year); return ayRows; },
+      ayIdFor(year) { const a = ctx.ays().find((x) => x.year === year); return a ? a.id : null; },
+      currentAy() { return ayForDate(today); },
+      selectedAy() { const y = Number(params.ay); return Number.isFinite(y) && y > 2000 ? y : ctx.currentAy(); },
+      basis() { return params.basis === 'executed' ? 'executed' : 'proforma'; },
+      /** Load everything the engine needs for the AYs in play (selected, prior, next). */
+      load() {
+        if (portfolio) return portfolio;
+        const years = [ctx.selectedAy() - 1, ctx.selectedAy(), ctx.selectedAy() + 1];
+        const ayIds = years.map((y) => ctx.ayIdFor(y)).filter(Boolean);
+        const lists = dao.portfolio.lists();
+        const fixture = { properties: dao.portfolio.properties(), units: dao.portfolio.units(), leases: dao.portfolio.leases(null), targets: dao.portfolio.targets(ayIds), academic_years: dao.portfolio.academicYears(), lists };
+        portfolio = { fixture, prepared: prepare(fixture, lookupsFromLists(lists)), lookups: lookupsFromLists(lists), ayIds };
+        return portfolio;
+      },
+      run(ay = ctx.selectedAy(), basis = ctx.basis()) {
+        const k = `${ay}:${basis}`; if (runs.has(k)) return runs.get(k);
+        const p = ctx.load(); const r = runEngine(p.fixture, { ay, basis, flags, prepared: p.prepared, withPrior: false }); runs.set(k, r); return r;
+      },
+      marketOfProperty(propertyId) { const p = ctx.load().prepared.inventory.propertiesById.get(String(propertyId)); return p ? p.marketId : null; },
+      scopedSummary: (r, sel) => scopedSummary(r, scope, sel), scopedTree: (r, sel) => scopedTree(r, scope, sel), inScope: (m) => inScope(scope, m),
+      propertyIdsInScope: () => propertyIdsInScope(ctx.load().prepared.inventory, scope),
+      selection() { return { fund: params.fund || null, marketId: params.market && inScope(scope, params.market) ? params.market : null }; },
+      probeAll() { for (const fn of [dao.portfolio.probe, dao.pipeline.probe, dao.people.probe]) { try { fn(); } catch (e) { log.error({ title: 'probeAll', details: e && e.message }); } } },
+    };
+    ctx.writes = createWrites({ record: N.record, sq, runtime: N.runtime, log, schema, auth, marketOf: (type, id, fields) => marketOf(ctx, type, id, fields) });
+    return ctx;
+  }
+
+  const routes = { bootstrap: routeBootstrap, lists: routeLists, summary: routeSummary, portfolio: routePortfolio, weekly: routeWeekly, pipeline: routePipeline, tenants: routeTenants, leads: routeLeads, exceptions: routeExceptions, today: routeToday, savedviews: routeSavedViews, write: routeWrite };
+
+  function handle(context) {
+    const route = String((context.request.parameters || {}).route || '').toLowerCase();
+    const method = context.request.method;
+    if (!route) { const ctx = makeCtx(context); context.response.write(renderShell(ctx)); return; }
+    const started = Date.now();
+    let status = 200, body;
+    try {
+      const fn = routes[route];
+      if (!fn) { status = 404; body = { error: `unknown route ${route}` }; }
+      else if (route === 'write' && method !== 'POST') { status = 405; body = { error: 'POST only' }; }
+      else {
+        const ctx = makeCtx(context);
+        if (method === 'POST' && (context.request.headers || {})['X-Requested-With'] !== 'AmicusLeasing' && (context.request.headers || {})['x-requested-with'] !== 'AmicusLeasing') { status = 403; body = { error: 'missing X-Requested-With header' }; }
+        else body = fn(ctx, method === 'POST' ? parseBody(context.request.body) : null);
+      }
+    } catch (e) {
+      status = 500; body = { error: 'server error', message: e && e.message, code: e && e.code };
+      log.error({ title: `route ${route} failed`, details: (e && e.stack) || String(e) });
+    }
+    body = body || {};
+    if (body.meta && body.meta.status) status = body.meta.status;
+    body.meta = { ...(body.meta || {}), route, ms: Date.now() - started, status };
+    context.response.setHeader({ name: 'Content-Type', value: 'application/json; charset=utf-8' });
+    context.response.setHeader({ name: 'Cache-Control', value: 'no-store' });
+    context.response.write(JSON.stringify(body));
+  }
+  return { handle, schema, auth, dao };
+}
+
+/** The record's OWN market, recomputed server-side for every write (§5.9). */
+export function marketOf(ctx, type, id, fields) {
+  const sq = ctx.sq;
+  if (type === UAS.TYPE) { const r = sq.one(`SELECT ${UAS.PROPERTY} AS property FROM ${UAS.TYPE} WHERE id = ?`, [Number(id)]); return r ? ctx.marketOfProperty(r.property) : null; }
+  if (type === 'customrecord_ad_uas_note') { const r = sq.one(`SELECT s.${UAS.PROPERTY} AS property FROM ${UAS.TYPE} s WHERE s.id = ?`, [Number(fields.custrecord_ad_note_status)]); return r ? ctx.marketOfProperty(r.property) : null; }
+  if (type === LEASE.TYPE) { const prop = fields[LEASE.PROPERTY] ?? (id ? (sq.one(`SELECT ${LEASE.PROPERTY} AS property FROM ${LEASE.TYPE} WHERE id = ?`, [Number(id)]) || {}).property : null); return ctx.marketOfProperty(prop); }
+  if (type === CUSTOMER.TYPE) {
+    // A tenant's market is any of their properties; a tenant with none belongs to the fixing queue of every scoped user (A-9).
+    // Assigned properties must themselves be in scope.
+    const assigned = Array.isArray(fields[CUSTOMER.PROPERTY]) ? fields[CUSTOMER.PROPERTY] : [];
+    for (const p of assigned) { const m = ctx.marketOfProperty(p); if (!ctx.inScope(m)) return m || 'unknown'; }
+    const links = sq.few(`SELECT maptwo AS property FROM ${CUSTOMER.PROPERTY_MAP} WHERE mapone = ?`, [Number(id)]);
+    if (!links.length) return ctx.scope.all ? 'unknown' : ctx.scope.marketIds[0] || null;
+    for (const l of links) { const m = ctx.marketOfProperty(l.property); if (ctx.inScope(m)) return m; }
+    return ctx.marketOfProperty(links[0].property);
+  }
+  if (type === TOUR.TYPE) { const unit = fields[TOUR.UNIT]; if (!unit) return null; const inv = ctx.load().prepared.inventory; const u = inv.unitsById.get(String(unit)) || (inv.bedroomsById.get(String(unit)) && inv.unitsById.get(inv.bedroomsById.get(String(unit)).unitId)); return u ? ctx.marketOfProperty(u.propertyId) : null; }
+  if (type === SAVED_VIEW.TYPE) return ctx.scope.all ? 'unknown' : ctx.scope.marketIds[0] || null; // owner-scoped, checked in the route
+  return null;
+}
+function parseBody(body) { if (!body) return {}; if (typeof body === 'object') return body; try { return JSON.parse(body); } catch (e) { return {}; } }
+function readFlag(runtime, name, dflt) { try { const v = runtime.getCurrentScript().getParameter({ name }); if (v == null || v === '') return dflt; return v === true || v === 'T' || v === 'true'; } catch (e) { return dflt; } }
+function safeCache(cacheMod) { try { return cacheMod.getCache({ name: 'amicus_leasing_schema', scope: cacheMod.Scope.PROTECTED }); } catch (e) { return null; } }
