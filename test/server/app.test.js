@@ -13,7 +13,7 @@ const fx = snaps.length ? loadFixture(path.join('test/fixtures', snaps[snaps.len
 
 function request(app, params = {}, method = 'GET', body = null) {
   let out = ''; const headers = {};
-  app.handle({ request: { parameters: params, method, body, headers: { 'X-Requested-With': 'AmicusLeasing' } }, response: { write: (s) => { out += s; }, setHeader: ({ name, value }) => { headers[name] = value; } } });
+  app.handle({ request: { parameters: params, method, body, headers: { 'X-Requested-With': 'AmicusLeasing' } }, response: { write: (s) => { out += s; }, setHeader: ({ name, value }) => { headers[name] = value; }, writeFile: ({ file: f }) => { headers['Content-Type'] = f.fileType === 'STYLESHEET' ? 'text/css' : 'application/javascript'; headers['Inline'] = 'T'; out += f.getContents(); } } });
   return { text: out, headers, json: () => JSON.parse(out) };
 }
 test('server path against the snapshot', { skip: fx ? false : 'no snapshot' }, async (t) => {
@@ -65,12 +65,13 @@ test('server path against the snapshot', { skip: fx ? false : 'no snapshot' }, a
     assert.ok(p.rows.every((r) => r.market === 'lehigh' || r.market === 'troy'));
   });
   await t.test('assets are served through the Suitelet, same-origin, from the File Cabinet ids in the parameters', () => {
-    const withFiles = createApp({ ...N, runtime: fakeRuntime({ roleId: 3, params: { custscript_al_client_js: 229898, custscript_al_client_css: 229899 } }), file: { load: ({ id }) => ({ id, getContents: () => (id === 229898 ? '(()=>{/*bundle*/})();' : ':root{}') }) } });
+    const withFiles = createApp({ ...N, runtime: fakeRuntime({ roleId: 3, params: { custscript_al_client_js: 229898, custscript_al_client_css: 229899 } }), file: { load: ({ id }) => ({ id, fileType: id === 229898 ? 'JAVASCRIPT' : 'STYLESHEET', getContents: () => (id === 229898 ? '(()=>{/*bundle*/})();' : ':root{}') }) } });
     const shell = request(withFiles, { script: '123', deploy: '1', compid: 'ACME' });
     assert.ok(shell.text.includes('/app/site/hosting/scriptlet.nl?script=123&deploy=1&compid=ACME&route=asset&kind=js&v=229898'), 'the script tag points back at the Suitelet');
     assert.ok(shell.text.includes('route=asset&kind=css&v=229899'));
-    const js = request(withFiles, { route: 'asset', kind: 'js' }); assert.equal(js.headers['Content-Type'], 'application/javascript; charset=utf-8'); assert.equal(js.text, '(()=>{/*bundle*/})();');
-    const css = request(withFiles, { route: 'asset', kind: 'css' }); assert.equal(css.headers['Content-Type'], 'text/css; charset=utf-8'); assert.equal(css.text, ':root{}');
+    const js = request(withFiles, { route: 'asset', kind: 'js' }); assert.equal(js.headers['Content-Type'], 'application/javascript'); assert.equal(js.headers['Inline'], 'T'); assert.equal(js.text, '(()=>{/*bundle*/})();');
+    const css = request(withFiles, { route: 'asset', kind: 'css' }); assert.equal(css.headers['Content-Type'], 'text/css'); assert.equal(css.text, ':root{}');
+    const broken = createApp({ ...withFiles, file: { load: () => { throw Object.assign(new Error('Insufficient permission'), { name: 'INSUFFICIENT_PERMISSION' }); } } }); void broken;
     const none = request(app, { route: 'asset', kind: 'js' }); assert.ok(none.text.includes('not configured'));
   });
   await t.test('write route requires POST + header and returns per-row results', () => {

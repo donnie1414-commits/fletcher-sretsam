@@ -3689,25 +3689,37 @@ function fileId(ctx, kind) {
   }
 }
 function serveAsset(ctx, context) {
+  const plain = (text) => {
+    try {
+      context.response.setHeader({ name: "Content-Type", value: "text/plain; charset=utf-8" });
+    } catch (e) {
+    }
+    context.response.write(text);
+  };
   const kind = String((ctx.params || {}).kind || "").toLowerCase();
-  const id = fileId(ctx, kind);
-  if (!ASSET_PARAMS[kind] || !id) {
-    context.response.setHeader({ name: "Content-Type", value: "text/plain" });
-    context.response.write(`asset ${kind} is not configured`);
-    return;
-  }
-  let f;
+  let id = null;
   try {
-    f = ctx.N.file.load({ id });
+    id = fileId(ctx, kind);
+    if (!ASSET_PARAMS[kind] || !id) {
+      plain(`asset "${kind}" is not configured: set ${ASSET_PARAMS[kind] || "kind=js|css"} on the deployment`);
+      return;
+    }
+    const f = ctx.N.file.load({ id });
+    try {
+      context.response.setHeader({ name: "Cache-Control", value: "private, max-age=86400" });
+    } catch (e) {
+    }
+    if (typeof context.response.writeFile === "function") {
+      context.response.writeFile({ file: f, isInline: true });
+      return;
+    }
+    context.response.setHeader({ name: "Content-Type", value: kind === "css" ? "text/css; charset=utf-8" : "application/javascript; charset=utf-8" });
+    context.response.write(f.getContents());
   } catch (e) {
-    ctx.log.error({ title: "asset load", details: `${ASSET_PARAMS[kind]}=${id}: ${e && e.message}` });
-    context.response.setHeader({ name: "Content-Type", value: "text/plain" });
-    context.response.write(`could not load file ${id}: ${e && e.message}`);
-    return;
+    ctx.log && ctx.log.error && ctx.log.error({ title: `asset ${kind} failed`, details: `${ASSET_PARAMS[kind]}=${id}: ${e && e.name}: ${e && e.message}
+${e && e.stack}` });
+    plain(`asset "${kind}" (file ${id}) failed: ${e && e.name}: ${e && e.message}`);
   }
-  context.response.setHeader({ name: "Content-Type", value: kind === "css" ? "text/css; charset=utf-8" : "application/javascript; charset=utf-8" });
-  context.response.setHeader({ name: "Cache-Control", value: "private, max-age=86400" });
-  context.response.write(f.getContents());
 }
 
 // src/server/app.js
