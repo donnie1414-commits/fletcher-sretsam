@@ -13,7 +13,7 @@ import { MARKETS, FUNDS, FUND_ORDER, BASES } from '../shared/constants.js';
 import { ayShort } from './format.js';
 
 function App({ boot }) {
-  const [url, setUrl] = useUrlState({ view: 'today', ay: String(boot.defaultAy || boot.currentAy), basis: 'proforma', fund: '', market: '', sub: 'summary', seg: 'tenants', q: '' });
+  const [url, setUrl] = useUrlState({ view: 'today', ay: String(boot.defaultAy || boot.currentAy), basis: 'proforma', fund: '', market: '', sub: 'summary', rt: 'occrev', seg: 'tenants', q: '' });
   const [theme, setTheme] = usePref('theme', 'auto');
   const [density, setDensity] = usePref('density', 'comfortable');
   const [present, setPresent] = useState(false);
@@ -47,10 +47,10 @@ function App({ boot }) {
       <main className="main">
         {url.view === 'today' && <Today sel={sel} go={go} openExceptions={() => setDrawer(true)} />}
         {url.view === 'pipeline' && <Pipeline sel={sel} setSel={setUrl} density={density} isMobile={isMobile} bootstrap={boot} />}
-        {url.view === 'people' && <People sel={sel} seg={url.seg} setSeg={(v) => setUrl({ seg: v })} density={density} isMobile={isMobile} />}
-        {url.view === 'reporting' && <Reporting sel={sel} sub={url.sub} setSub={(v) => setUrl({ sub: v })} density={density} presentation={present} />}
+        {url.view === 'people' && <People sel={sel} seg={url.seg} setSeg={(v) => setUrl({ seg: v })} density={density} isMobile={isMobile} bootstrap={boot} />}
+        {url.view === 'reporting' && <Reporting sel={sel} sub={url.sub} setSub={(v) => setUrl({ sub: v })} rt={url.rt} setRt={(v) => setUrl({ rt: v })} density={density} presentation={present} boot={boot} />}
       </main>
-      <ExceptionsDrawer open={drawer} onClose={() => setDrawer(false)} sel={sel} />
+      <ExceptionsDrawer open={drawer} onClose={() => setDrawer(false)} sel={sel} bootstrap={boot} />
     </div>
   );
 }

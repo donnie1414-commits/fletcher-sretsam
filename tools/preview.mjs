@@ -29,10 +29,16 @@ const boot = JSON.parse(/<script type="application\/json" id="al-bootstrap">([\s
 boot.snapshotDate = today; boot.session.name = 'Preview (administrator scope)';
 write('bootstrap', boot); files.push('bootstrap');
 write('lists', JSON.parse(call({ route: 'lists' }))); files.push('lists');
-const combos = [];
-for (const ay of boot.academicYears.map((a) => a.year).filter((y) => y >= 2026 && y <= 2028)) for (const basis of ['proforma', 'executed']) {
+const combos = []; let previewWeeks = [];
+for (const ay of boot.academicYears.map((a) => a.year).filter((y) => y >= 2026 && y <= 2029)) for (const basis of ['proforma', 'executed']) {
   const combo = `${ay}-${basis}`; combos.push(combo);
-  for (const route of ['summary', 'portfolio', 'weekly', 'exceptions', 'today']) { const j = JSON.parse(call({ route, ay: String(ay), basis })); j.currentAy = boot.currentAy; write(`${route}-${combo}`, j); files.push(`${route}-${combo}`); }
+  for (const route of ['summary', 'portfolio', 'weekly', 'exceptions', 'today', 'velocity']) { const j = JSON.parse(call({ route, ay: String(ay), basis })); j.currentAy = boot.currentAy; write(`${route}-${combo}`, j); files.push(`${route}-${combo}`); }
+  // the weekly tab's week picker: the current week and the three before it, by market and by fund
+  const wk = JSON.parse(call({ route: 'weekly', ay: String(ay), basis }));
+  const weeks = wk.weekOptions.slice(0, 4).map((o) => o.value);
+  for (const w of weeks) for (const groupBy of ['market', 'fund']) { const name = `weekly-${combo}${groupBy === 'fund' ? '-fund' : ''}-${w}`; write(name, JSON.parse(call({ route: 'weekly', ay: String(ay), basis, week: w, groupBy }))); files.push(name); }
+  write(`weekly-${combo}-fund`, JSON.parse(call({ route: 'weekly', ay: String(ay), basis, groupBy: 'fund' }))); files.push(`weekly-${combo}-fund`);
+  previewWeeks = weeks;
   const first = JSON.parse(call({ route: 'pipeline', ay: String(ay), basis, pageSize: '500' }));
   const rows = [...first.rows]; for (let pg = 1; pg * 500 < first.total; pg++) rows.push(...JSON.parse(call({ route: 'pipeline', ay: String(ay), basis, pageSize: '500', page: String(pg) })).rows);
   write(`pipeline-${combo}`, { ...first, rows, page: 0 }); files.push(`pipeline-${combo}`);
@@ -51,7 +57,7 @@ const html = `<title>Amicus Leasing</title>
 <div id="root"></div>
 <div class="pv-note">Preview of the rebuilt workspace running the real engine over the NetSuite snapshot of ${today} (people redacted). Nothing here writes to NetSuite.</div>
 <script type="application/json" id="al-bootstrap">${bootJson}</script>
-<script>window.__AL_PREVIEW = ${JSON.stringify({ base: 'data/', files, combos, defaultAy: boot.defaultAy })};</script>
+<script>window.__AL_PREVIEW = ${JSON.stringify({ base: 'data/', files, combos, weeks: previewWeeks.slice().sort(), defaultAy: boot.defaultAy })};</script>
 <script src="app.js"></script>
 `;
 fs.writeFileSync(path.join(out, 'index.html'), html);

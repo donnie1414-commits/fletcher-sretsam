@@ -5,7 +5,8 @@ export function fakeQuery(fixture, { missingFields = ['custrecord_ad_uas_lease_t
     const t = /FROM\s+([a-z0-9_]+)/i.exec(sql)[1].toLowerCase();
     if (sql.includes('ROWNUM <= 1') && !sql.includes('ROWNUM rn')) return [{}];
     const map = { customrecord_serp_property_record: 'properties', customrecord_serp_units_bedrooms: 'units', customrecord_serp_lease_record: 'leases', customrecord_serp_academic_yr_details: 'targets', customrecord_serp_academic_yr_list: 'academic_years', customrecord_ad_unit_ay_status: 'stage_rows', customrecord_ad_uas_note: 'stage_notes', customrecord_ad_uas_stage_log: 'stage_log', customer: 'customers', subsidiary: 'subsidiaries' };
-    if (t === 'employee') return [{ markets: employeeMarkets }];
+    if (t === 'systemnote') throw new Error('Search error occurred: Record "systemnote" was not found.');
+    if (t === 'employee') { if (/firstname|entityid/.test(sql)) return fixture.employees || []; return [{ markets: employeeMarkets }]; }
     if (t === 'entitystatus') return fixture.lists.entitystatus.map((s) => ({ id: s.key, name: s.name, entitytype: s.entitytype, inactive: s.inactive || 'F' }));
     if (t.startsWith('customlist')) return fixture.lists[t] || [];
     if (t === 'customrecord_ad_write_audit' || t === 'customrecord_ad_saved_view') return [];
@@ -19,7 +20,16 @@ export function fakeQuery(fixture, { missingFields = ['custrecord_ad_uas_lease_t
     if (/isinactive = 'F'/.test(sql)) rows = rows.filter((r) => r.isinactive !== 'T');
     const ayIn = /custrecord_serp_academic_year IN \(([^)]*)\)|custrecord_ad_uas_ay IN \(([^)]*)\)/.exec(sql);
     if (ayIn) { const ids = new Set((ayIn[1] || ayIn[2]).split(',').map((x) => Number(x))); rows = rows.filter((r) => ids.has(Number(r.ay))); }
+    if (t === 'customrecord_ad_uas_note') {
+      let notes = fixture.stage_notes || [];
+      const ayIn = /custrecord_ad_uas_ay IN \(([^)]*)\)/.exec(sql);
+      if (ayIn) { const ids = new Set(ayIn[1].split(',').map(Number)); const rowAy = new Map((fixture.stage_rows || []).map((r) => [String(r.id), Number(r.ay)])); notes = notes.filter((n) => ids.has(rowAy.get(String(n.status_row)))); }
+      const rowIn = /custrecord_ad_note_status IN \(([^)]*)\)/.exec(sql);
+      if (rowIn) { const ids = new Set(rowIn[1].split(',').map((x) => x.trim())); notes = notes.filter((n) => ids.has(String(n.status_row))); }
+      return notes.map((n) => ({ ...n, author_name: n.author_name || `Employee ${n.author}` }));
+    }
     if (t === 'customer') {
+      const idIn = /c\.id IN \(([^)]*)\)/.exec(sql); if (idIn) { const ids = new Set(idIn[1].split(',').map((x) => x.trim())); rows = rows.filter((r) => ids.has(String(r.id))); }
       if (/stage = 'CUSTOMER'/.test(sql)) rows = rows.filter((r) => r.stage === 'CUSTOMER');
       if (/NOT EXISTS \(SELECT 1 FROM map_customer_custentity_serp_ent_property/.test(sql)) rows = rows.filter((r) => !r.property);
       if (/NOT EXISTS \(SELECT 1 FROM map_customer_custentity_serp_academic_year/.test(sql)) rows = rows.filter((r) => !r.ay);

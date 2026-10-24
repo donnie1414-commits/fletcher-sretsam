@@ -11,15 +11,19 @@ import { createAuth } from './auth.js';
 import { createWrites } from './writes.js';
 import { prepare, runEngine, lookupsFromLists } from '../shared/rules/index.js';
 import { ayForDate, toISO, ayYearFromLabel, ayShort } from '../shared/rules/dates.js';
-import { scopedSummary, scopedTree, inScope, propertyIdsInScope } from './scoping.js';
+import { scopedSummary, scopedTree, inScope, propertyIdsInScope, keepFor } from './scoping.js';
 import { routeBootstrap, routeLists } from './routes/bootstrap.js';
-import { routeSummary, routePortfolio, routeWeekly } from './routes/reporting.js';
+import { routeSummary, routePortfolio, routeWeekly, routeVelocity } from './routes/reporting.js';
+import { routeUnitHistory } from './routes/unitHistory.js';
+import { routeTeam } from './routes/team.js';
 import { routePipeline } from './routes/pipeline.js';
 import { routeTenants, routeLeads } from './routes/people.js';
 import { routeExceptions } from './routes/exceptions.js';
 import { routeToday } from './routes/today.js';
 import { routeSavedViews } from './routes/savedViews.js';
 import { routeWrite } from './routes/write.js';
+import { routeLeaseDialog } from './routes/leaseDialog.js';
+import { routeNotes } from './routes/notes.js';
 import { renderShell } from './shell.js';
 import { MARKETS, UAS, LEASE, CUSTOMER, TOUR, SAVED_VIEW, FEATURE_FLAGS } from '../shared/constants.js';
 
@@ -54,10 +58,13 @@ export function createApp(N) {
         portfolio = { fixture, prepared: prepare(fixture, lookupsFromLists(lists)), lookups: lookupsFromLists(lists), ayIds };
         return portfolio;
       },
-      run(ay = ctx.selectedAy(), basis = ctx.basis()) {
-        const k = `${ay}:${basis}`; if (runs.has(k)) return runs.get(k);
-        const p = ctx.load(); const r = runEngine(p.fixture, { ay, basis, flags, prepared: p.prepared, withPrior: false }); runs.set(k, r); return r;
+      /** One engine run per AY × basis per request; the prior year rides along (withPrior) so YoY, pace and same-store need no second call. */
+      run(ay = ctx.selectedAy(), basis = ctx.basis(), withPrior = true) {
+        const k = `${ay}:${basis}:${withPrior ? 1 : 0}`; if (runs.has(k)) return runs.get(k);
+        if (withPrior && runs.has(`${ay}:${basis}:0`)) runs.delete(`${ay}:${basis}:0`);
+        const p = ctx.load(); const r = runEngine(p.fixture, { ay, basis, flags, prepared: p.prepared, withPrior }); runs.set(k, r); return r;
       },
+      keep(sel = ctx.selection()) { return keepFor(scope, sel); },
       marketOfProperty(propertyId) { const p = ctx.load().prepared.inventory.propertiesById.get(String(propertyId)); return p ? p.marketId : null; },
       scopedSummary: (r, sel) => scopedSummary(r, scope, sel), scopedTree: (r, sel) => scopedTree(r, scope, sel), inScope: (m) => inScope(scope, m),
       propertyIdsInScope: () => propertyIdsInScope(ctx.load().prepared.inventory, scope),
@@ -68,7 +75,7 @@ export function createApp(N) {
     return ctx;
   }
 
-  const routes = { bootstrap: routeBootstrap, lists: routeLists, summary: routeSummary, portfolio: routePortfolio, weekly: routeWeekly, pipeline: routePipeline, tenants: routeTenants, leads: routeLeads, exceptions: routeExceptions, today: routeToday, savedviews: routeSavedViews, write: routeWrite };
+  const routes = { bootstrap: routeBootstrap, lists: routeLists, summary: routeSummary, portfolio: routePortfolio, weekly: routeWeekly, velocity: routeVelocity, pipeline: routePipeline, unithistory: routeUnitHistory, team: routeTeam, tenants: routeTenants, leads: routeLeads, exceptions: routeExceptions, today: routeToday, savedviews: routeSavedViews, write: routeWrite, leasedialog: routeLeaseDialog, notes: routeNotes };
 
   function handle(context) {
     const route = String((context.request.parameters || {}).route || '').toLowerCase();
@@ -102,8 +109,8 @@ export function createApp(N) {
 /** The record's OWN market, recomputed server-side for every write (§5.9). */
 export function marketOf(ctx, type, id, fields) {
   const sq = ctx.sq;
-  if (type === UAS.TYPE) { const r = sq.one(`SELECT ${UAS.PROPERTY} AS property FROM ${UAS.TYPE} WHERE id = ?`, [Number(id)]); return r ? ctx.marketOfProperty(r.property) : null; }
-  if (type === 'customrecord_ad_uas_note') { const r = sq.one(`SELECT s.${UAS.PROPERTY} AS property FROM ${UAS.TYPE} s WHERE s.id = ?`, [Number(fields.custrecord_ad_note_status)]); return r ? ctx.marketOfProperty(r.property) : null; }
+  if (type === UAS.TYPE) { if (id == null) { if (fields[UAS.PROPERTY]) return ctx.marketOfProperty(fields[UAS.PROPERTY]); const u = ctx.load().prepared.inventory.unitsById.get(String(fields[UAS.UNIT])); return u ? ctx.marketOfProperty(u.propertyId) : null; } const r = sq.one(`SELECT ${UAS.PROPERTY} AS property FROM ${UAS.TYPE} WHERE id = ?`, [Number(id)]); return r ? ctx.marketOfProperty(r.property) : null; }
+  if (type === 'customrecord_ad_uas_note') { const r = sq.one(`SELECT s.${UAS.PROPERTY} AS property, s.${UAS.UNIT} AS unit FROM ${UAS.TYPE} s WHERE s.id = ?`, [Number(fields.custrecord_ad_note_status)]); if (!r) return null; if (r.property) return ctx.marketOfProperty(r.property); const u = ctx.load().prepared.inventory.unitsById.get(String(r.unit)); return u ? ctx.marketOfProperty(u.propertyId) : null; }
   if (type === LEASE.TYPE) { const prop = fields[LEASE.PROPERTY] ?? (id ? (sq.one(`SELECT ${LEASE.PROPERTY} AS property FROM ${LEASE.TYPE} WHERE id = ?`, [Number(id)]) || {}).property : null); return ctx.marketOfProperty(prop); }
   if (type === CUSTOMER.TYPE) {
     // A tenant's market is any of their properties; a tenant with none belongs to the fixing queue of every scoped user (A-9).

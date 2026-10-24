@@ -9,7 +9,7 @@ export function routeToday(ctx) {
   const tomorrow = addDays(ctx.today, 1);
   const followups = rows.filter((r) => r.followup && r.followup <= tomorrow).sort((a, b) => a.followup.localeCompare(b.followup));
   const stale = rows.filter((r) => r.stage !== 'NONE' && r.stageSource !== 'lease' && (r.daysInStage || 0) > STALE_STAGE_DAYS).sort((a, b) => b.daysInStage - a.daysInStage);
-  const ex = routeExceptions(ctx);
+  const ex = routeExceptions(ctx, null, { full: false });
   const blocked = ctx.dao.people.tenants({ filters: { stage: 'CUSTOMER', missingProperty: true, scopePropertyIds: ctx.scope.all ? null : ctx.propertyIdsInScope() }, page: 0, pageSize: 25 });
   const blockedAy = ctx.dao.people.tenants({ filters: { stage: 'CUSTOMER', missingAy: true, scopePropertyIds: ctx.scope.all ? null : ctx.propertyIdsInScope() }, page: 0, pageSize: 25 });
   return {

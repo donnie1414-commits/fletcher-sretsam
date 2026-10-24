@@ -6,7 +6,7 @@
  *   { leafResults: Map(leafKey → LeafResult), leaseResults: Map(leaseId → LeaseResult),
  *     exceptions: Exception[], counted: number, placed: number }
  */
-import { BASES, DEFAULT_BASIS, FEATURE_FLAGS, EXCEPTION_CODES, OVERLAP_TOLERANCE_DAYS } from '../constants.js';
+import { BASES, DEFAULT_BASIS, FEATURE_FLAGS, EXCEPTION_CODES, OVERLAP_TOLERANCE_DAYS, SEGMENTS } from '../constants.js';
 import { levelOf } from './inventory.js';
 import { yearEntry } from './lease.js';
 import { collides, overlapDays } from './overlap.js';
@@ -47,7 +47,9 @@ export function resolveScope(inv, l) {
   } else return fail('UNKNOWN_TYPE', l.typeKey);
 
   scope.beds = scope.leaves.reduce((s, x) => s + x.beds, 0);
-  if (scope.beds === 0) return { ...fail('ZERO_BEDS', `${scope.level} has 0 beds`), ...{ level: scope.level, propertyId: scope.propertyId, unitId: scope.unitId, bedroomId: scope.bedroomId } };
+  // A rent-only segment (commercial, land, office) has no beds by design: its leases place for their rent (§5.8, A-21).
+  const rentOnly = !(SEGMENTS[property.segment] || SEGMENTS.STUDENT).beds;
+  if (scope.beds === 0 && !rentOnly) return { ...fail('ZERO_BEDS', `${scope.level} has 0 beds`), ...{ level: scope.level, propertyId: scope.propertyId, unitId: scope.unitId, bedroomId: scope.bedroomId } };
   return { ok: true, code: null, detail: notes.join('; ') || null, ...scope };
 }
 
@@ -59,6 +61,7 @@ function exc(code, l, scope, ay, extra = {}) {
     propertyId: scope?.propertyId ?? l.propertyId ?? null, unitId: scope?.unitId ?? null, bedroomId: scope?.bedroomId ?? null,
     linkId: l.unitId, typeKey: l.typeKey, statusKey: l.statusKey, start: l.start, end: l.end, monthlyRent: l.monthlyRent,
     detail: extra.detail ?? scope?.detail ?? null, partners: extra.partners || [], overlapDays: extra.overlapDays ?? null,
+    version: l.lastModified || null, ayId: l.ayFieldRaw == null ? null : String(l.ayFieldRaw),
   };
 }
 
@@ -145,7 +148,7 @@ export function placeLeases({ inventory: inv, leases, ay, basis = DEFAULT_BASIS,
     r.status = 'placed'; placed++;
     const people = splitPeople(r.lease.tenantCount, r.scope.leaves.map((x) => x.beds));
     r.scope.leaves.forEach((leaf, k) => {
-      const share = leaf.beds / r.scope.beds;
+      const share = r.scope.beds ? leaf.beds / r.scope.beds : 1 / r.scope.leaves.length;
       leafResults.get(leaf.key).placements.push({
         leaseId: r.lease.id, typeKey: r.lease.typeKey, statusKey: r.lease.statusKey, months: r.year.months, carried: r.year.carried,
         monthlyShare: r.lease.monthlyRent * share, revenueShare: r.year.revenue * share, people: people[k],
@@ -171,6 +174,10 @@ function finishLeaf(lr) {
   lr.typeKey = primary ? primary.typeKey : null;
   lr.carriedOnly = ps.length > 0 && ps.every((p) => p.carried);
   lr.sequential = ps.length > 1;
+  // term shown on Leasing Details: earliest start, latest end across the placements
+  lr.start = ps.reduce((d, p) => (p.start && (!d || compare(p.start, d) < 0) ? p.start : d), null);
+  lr.end = ps.reduce((d, p) => (p.end && (!d || compare(p.end, d) > 0) ? p.end : d), null);
+  lr.types = [...new Set(ps.map((p) => p.typeKey).filter(Boolean))];
 }
 
 function groupBy(arr, keyFn) { const m = new Map(); for (const x of arr) { const k = keyFn(x); if (k == null) continue; if (!m.has(k)) m.set(k, []); m.get(k).push(x); } return m; }

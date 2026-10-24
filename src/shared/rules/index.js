@@ -9,10 +9,11 @@ import { buildInventory } from './inventory.js';
 import { normalizeLease } from './lease.js';
 import { placeLeases } from './placement.js';
 import { rollup, applyTargets, compareMetrics } from './metrics.js';
+import { markSameStore } from './samestore.js';
 import { ayYearFromLabel } from './dates.js';
-import { leasingEvents, weeklyReport } from './weekly.js';
+import { weeklyReport } from './weekly.js';
 
-export { buildInventory, normalizeLease, placeLeases, rollup, weeklyReport, leasingEvents };
+export { buildInventory, normalizeLease, placeLeases, rollup, weeklyReport, markSameStore };
 
 /** id → AY start year from the Academic Year list rows. */
 export function ayLookup(academicYears = []) {
@@ -33,8 +34,12 @@ export function lookupsFromLists(lists = {}) {
   return out;
 }
 
+const num = (v) => (v == null || v === '' ? null : Number(v));
 export function normalizeTargets(targets = [], ayYears = {}) {
-  return targets.filter((t) => t.isinactive !== 'T').map((t) => ({ id: String(t.id), unitId: t.unit == null ? null : String(t.unit), propertyId: t.property == null ? null : String(t.property), ay: ayYears[String(t.ay)] ?? null, beds: t.beds ?? null, targetPerBed: t.target_per_bed ?? null, targetMonthly: t.target_monthly ?? null, prevYearPerBed: t.prev_year_per_bed ?? null }));
+  return targets.filter((t) => t.isinactive !== 'T').map((t) => ({
+    id: String(t.id), unitId: t.unit == null ? null : String(t.unit), propertyId: t.property == null ? null : String(t.property), ay: ayYears[String(t.ay)] ?? null,
+    beds: num(t.beds), targetPerBed: num(t.target_per_bed), targetMonthly: num(t.target_monthly), settlePerBed: num(t.settle_per_bed), settleMonthly: num(t.settle_monthly), prevYearPerBed: num(t.prev_year_per_bed), nextAvailable: t.next_available || null,
+  }));
 }
 
 export function prepare(fixture, opts = {}) {
@@ -46,19 +51,23 @@ export function prepare(fixture, opts = {}) {
   return { inventory, leases, targets, ayYears };
 }
 
+/**
+ * One academic year on one basis, with the prior year placed on the same inventory so every node
+ * carries its year-over-year and same-store figures (withPrior). The prior year is itself a full run,
+ * so the Summary can also show the prior year's own totals.
+ */
 export function runEngine(fixture, { ay, basis = DEFAULT_BASIS, flags = FEATURE_FLAGS, prepared = null, withPrior = true } = {}) {
   const prep = prepared || prepare(fixture);
-  const run = (year) => {
-    const placement = placeLeases({ inventory: prep.inventory, leases: prep.leases, ay: year, basis, flags });
-    applyTargets(prep.inventory, placement.leafResults, prep.targets, year);
-    const r = rollup(prep.inventory, placement);
-    return { placement, ...r };
-  };
-  const cur = run(ay);
-  const prior = withPrior ? run(ay - 1) : null;
+  const place = (year) => { const placement = placeLeases({ inventory: prep.inventory, leases: prep.leases, ay: year, basis, flags }); const targetIssues = applyTargets(prep.inventory, placement.leafResults, prep.targets, year); return { placement, targetIssues }; };
+  const priorP = withPrior ? place(ay - 1) : null;
+  const curP = place(ay);
+  const sameStore = markSameStore(prep.inventory, curP.placement, priorP ? priorP.placement : null);
+  const cur = rollup(prep.inventory, curP.placement, priorP ? priorP.placement : null);
+  const prior = priorP ? rollup(prep.inventory, priorP.placement, null) : null;
   const comparison = prior ? {
     total: compareMetrics(cur.summary.student, prior.summary.student),
     byMarket: cur.summary.byMarketTotal.map((m) => ({ marketId: m.marketId, delta: compareMetrics(m.metrics, (prior.summary.byMarketTotal.find((x) => x.marketId === m.marketId) || {}).metrics) })),
   } : null;
-  return { ay, basis, flags, inventory: prep.inventory, leases: prep.leases, targets: prep.targets, placement: cur.placement, tree: cur.tree, summary: cur.summary, exceptions: cur.placement.exceptions, tenantDoubles: cur.placement.tenantDoubles, prior: prior ? { summary: prior.summary, placement: prior.placement } : null, comparison };
+  return { ay, basis, flags, inventory: prep.inventory, leases: prep.leases, targets: prep.targets, ayYears: prep.ayYears, placement: curP.placement, targetIssues: curP.targetIssues, tree: cur.tree, summary: cur.summary, exceptions: curP.placement.exceptions, tenantDoubles: curP.placement.tenantDoubles, sameStore,
+    prior: prior ? { ay: ay - 1, summary: prior.summary, tree: prior.tree, placement: priorP.placement } : null, comparison };
 }

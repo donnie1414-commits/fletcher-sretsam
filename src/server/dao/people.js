@@ -58,6 +58,11 @@ export function createPeopleDao({ sq, schema }) {
     return sq.few(`SELECT LOWER(email) AS email, COUNT(*) AS n FROM ${C} WHERE isinactive = 'F' AND email IS NOT NULL GROUP BY LOWER(email) HAVING COUNT(*) > 1`);
   }
   function statusList() { return sq.few(`SELECT key AS id, name, entitytype, inactive FROM entitystatus ORDER BY entitytype, key`); }
+  /** The @mention picker: employees with the Lease KPI Markets field set (the leasing team). Degrades to [] when the role cannot read employees. */
+  function team() {
+    try { return sq.few(`SELECT e.id, e.firstname, e.lastname, e.entityid FROM employee e WHERE e.isinactive = 'F' AND e.custentity_lkr_markets IS NOT NULL ORDER BY e.entityid`).map((e) => ({ id: String(e.id), name: [e.firstname, e.lastname].filter(Boolean).join(' ') || e.entityid })).filter((e) => e.name); }
+    catch (e) { try { return sq.few(`SELECT e.id, e.entityid FROM employee e WHERE e.isinactive = 'F' AND e.custentity_lkr_markets IS NOT NULL ORDER BY e.entityid`).map((e) => ({ id: String(e.id), name: e.entityid })); } catch (e2) { return []; } }
+  }
   function probe() { select(); }
-  return { tenants, byIds, propertyLinks, ayLinks, leaseLinks, duplicates, statusList, probe };
+  return { tenants, byIds, propertyLinks, ayLinks, leaseLinks, duplicates, statusList, team, probe };
 }

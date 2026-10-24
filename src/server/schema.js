@@ -62,5 +62,7 @@ export function createSchema({ query, log, cache = null, cacheTtl = 3600 }) {
     log && log.error && log.error({ title: 'schema degraded', details: `${table}.${s.field} missing — feature "${s.feature || alias(s)}" is off` });
   }
   const alias = (s) => s.as || s.field;
-  return { probe, projection, degraded, reset: () => probeCache.clear() };
+  /** Record a feature that is off for a reason other than a missing column (a table the role cannot read). Once per feature. */
+  function degradeFeature(entry) { if (!degraded.some((d) => d.table === entry.table && d.feature === entry.feature)) degraded.push({ table: entry.table, field: entry.field || '*', feature: entry.feature || null, reason: entry.reason || null }); }
+  return { probe, projection, degraded, degradeFeature, reset: () => probeCache.clear() };
 }

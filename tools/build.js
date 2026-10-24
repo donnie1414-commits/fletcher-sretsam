@@ -5,7 +5,7 @@
  *   --skip-tests   (CI runs tests separately)
  *
  * Server: src/server/suitelet.js → dist/amicus_leasing_sl.js  (one AMD module; N/* stay external)
- * Client: src/client/app.jsx    → dist/amicus_leasing_app.js  (one IIFE, React bundled when it arrives)
+ * Client: src/client/app.jsx    → dist/amicus_leasing_app.js  (one IIFE; React-API source over preact/compat)
  * Styles: src/styles/app.css     → dist/amicus_leasing_app.css
  * Then: load the server bundle in Node with a fake `define` and assert onRequest is a function (§8.7).
  */
@@ -34,7 +34,10 @@ async function buildServer() {
   return wrapped.length;
 }
 async function buildClient() {
-  const r = await esbuild.build({ entryPoints: ['src/client/app.jsx'], bundle: true, write: false, format: 'iife', platform: 'browser', target: ['es2018'], minify: true, sourcemap: false, jsx: 'automatic', legalComments: 'none', define: { 'process.env.NODE_ENV': '"production"' }, logLevel: 'silent' });
+  // The source is written against the React API; the bundle ships preact/compat under it (same API, ~120 KB smaller),
+  // which is what keeps the client inside the 250 KB budget with every v2 screen in it. Flip REACT_RUNTIME=react to bundle React itself.
+  const alias = process.env.REACT_RUNTIME === 'react' ? {} : { react: 'preact/compat', 'react-dom/client': 'preact/compat/client', 'react-dom': 'preact/compat', 'react/jsx-runtime': 'preact/jsx-runtime' };
+  const r = await esbuild.build({ entryPoints: ['src/client/app.jsx'], bundle: true, write: false, format: 'iife', platform: 'browser', target: ['es2018'], minify: true, sourcemap: false, jsx: 'automatic', jsxImportSource: process.env.REACT_RUNTIME === 'react' ? 'react' : 'preact', alias, legalComments: 'none', define: { 'process.env.NODE_ENV': '"production"' }, logLevel: 'silent' });
   const code = r.outputFiles[0].text.replace(/\r\n/g, '\n');
   fs.writeFileSync('dist/amicus_leasing_app.js', code);
   const css = await esbuild.build({ entryPoints: ['src/styles/app.css'], bundle: true, write: false, minify: true, logLevel: 'silent' });

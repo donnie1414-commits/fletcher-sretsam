@@ -28,11 +28,17 @@ export function createPipelineDao({ sq, schema }) {
     if (!rowIds.length) return [];
     return sq.inChunks(rowIds, (chunk) => sq.few(`SELECT id, custrecord_ad_note_status AS status_row, custrecord_ad_note_text AS text, custrecord_ad_note_date AS note_date, custrecord_ad_note_author AS author, BUILTIN.DF(custrecord_ad_note_author) AS author_name, custrecord_ad_note_mentions AS mentions, created FROM ${UAS_NOTE.TYPE} WHERE isinactive = 'F' AND custrecord_ad_note_status IN (${sqlIn(chunk)}) ORDER BY created, id`));
   }
+  /** Every note for an academic year, oldest first (the thread starts at zero rows and grows slowly; one query beats 1,400). */
+  function notesForAy(ayId) {
+    if (!ayId) return [];
+    try { return sq.all(`SELECT n.id, n.custrecord_ad_note_status AS status_row, n.custrecord_ad_note_text AS text, n.custrecord_ad_note_date AS note_date, n.custrecord_ad_note_author AS author, BUILTIN.DF(n.custrecord_ad_note_author) AS author_name, n.custrecord_ad_note_mentions AS mentions, n.created FROM ${UAS_NOTE.TYPE} n JOIN ${UAS.TYPE} s ON s.id = n.custrecord_ad_note_status WHERE n.isinactive = 'F' AND s.isinactive = 'F' AND s.${UAS.AY} IN (${sqlIn([ayId])}) ORDER BY n.created, n.id`); }
+    catch (e) { return []; }
+  }
   function stageLog(rowIds) {
     if (!rowIds.length) return [];
     return sq.inChunks(rowIds, (chunk) => sq.few(`SELECT id, custrecord_ad_log_status AS status_row, custrecord_ad_log_from AS from_stage, custrecord_ad_log_to AS to_stage, custrecord_ad_log_source AS source, custrecord_ad_log_user AS user_id, custrecord_ad_log_date AS log_date FROM customrecord_ad_uas_stage_log WHERE custrecord_ad_log_status IN (${sqlIn(chunk)}) ORDER BY id`));
   }
   function rowVersion(id) { return sq.one(`SELECT id, lastmodified, ${UAS.STAGE} AS stage, ${UAS.STAGE_SOURCE} AS stage_source FROM ${UAS.TYPE} WHERE id = ?`, [Number(id)]); }
   function probe() { schema.projection(UAS.TYPE, SPECS()); }
-  return { stageRows, notes, stageLog, rowVersion, probe };
+  return { stageRows, notes, notesForAy, stageLog, rowVersion, probe };
 }

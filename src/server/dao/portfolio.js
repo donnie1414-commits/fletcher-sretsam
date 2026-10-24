@@ -83,6 +83,8 @@ export function createPortfolioDao({ sq, schema }) {
       { field: 'custrecord_serp_academic_year', as: 'ay' }, { field: 'custrecord_serp_unit_number_of_beds', as: 'beds', optional: true },
       { field: 'custrecord_serp_target_rent_perbed', as: 'target_per_bed', optional: true, feature: 'target rent' },
       { field: 'custrecord_serp_target_rent_monthly', as: 'target_monthly', optional: true, feature: 'target rent' },
+      { field: 'custrecord_serp_settle_rent_perbed', as: 'settle_per_bed', optional: true, feature: 'settle rent' },
+      { field: 'custrecord_serp_settle_rent_monthly', as: 'settle_monthly', optional: true, feature: 'settle rent' },
       { field: 'custrecord_serp_previous_year_rentbed', as: 'prev_year_per_bed', optional: true },
       { field: 'custrecord_serp_next_available_date', as: 'next_available', optional: true },
     ];
@@ -91,7 +93,17 @@ export function createPortfolioDao({ sq, schema }) {
     const where = ["isinactive = 'F'"]; if (ayIds && ayIds.length) where.push(`custrecord_serp_academic_year IN (${sqlIn(ayIds)})`);
     return sq.all(`SELECT ${select} FROM ${T} WHERE ${where.join(' AND ')} ORDER BY id`);
   }
+  /** Lease records made inactive (system notes), all academic years. The role may not see systemnote: degrade to an empty list and say so. */
+  let inactCache = null;
+  function inactivations() {
+    if (inactCache) return inactCache;
+    try {
+      const rows = sq.all(`SELECT sn.recordid AS id, l.name, l.${LEASE.PROPERTY} AS property_id, l.${LEASE.UNIT} AS unit_id, BUILTIN.DF(l.${LEASE.UNIT}) AS unit_name, l.${LEASE.AY} AS ay, l.${LEASE.STATUS} AS status, l.${LEASE.TENANT_COUNT} AS tenants, l.${LEASE.MONTHLY_RENT} AS monthly_rent, l.isinactive AS inactive_now, TO_CHAR(sn.date, 'YYYY-MM-DD HH24:MI') AS changed, BUILTIN.DF(sn.name) AS changed_by FROM systemnote sn JOIN ${L} l ON l.id = sn.recordid WHERE sn.recordtypeid = (SELECT internalid FROM customrecordtype WHERE scriptid = 'CUSTOMRECORD_SERP_LEASE_RECORD') AND sn.field = 'CUSTOMRECORDENTRY.BINACTIVE' AND sn.newvalue = 'T' ORDER BY sn.date DESC`);
+      inactCache = { rows, available: true };
+    } catch (e) { schema.degradeFeature && schema.degradeFeature({ table: 'systemnote', field: '*', feature: 'weekly: lease records made inactive', reason: e && e.message }); inactCache = { rows: [], available: false }; }
+    return inactCache;
+  }
   function subsidiaries() { return sq.few('SELECT id, name, parent FROM subsidiary ORDER BY id'); }
   function probe() { schema.projection(P, PROPERTY_SPECS()); schema.projection(U, UNIT_SPECS()); schema.projection(L, LEASE_SPECS()); schema.projection(T, TARGET_SPECS()); }
-  return { academicYears, lists, properties, units, leases, targets, subsidiaries, probe };
+  return { academicYears, lists, properties, units, leases, targets, subsidiaries, inactivations, probe };
 }

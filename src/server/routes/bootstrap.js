@@ -22,5 +22,7 @@ export function routeBootstrap(ctx) {
 export function routeLists(ctx) {
   const lists = ctx.dao.portfolio.lists();
   const live = (k) => (lists[k] || []).filter((x) => x.isinactive !== 'T').map((x) => ({ id: String(x.id), name: x.name }));
-  return { schools: live('customlist_serp_schools'), hearUs: live('customlist_serp_hear_us_list'), cities: live('customlist_serp_cities'), stageList: (lists.customlist_ad_leasing_stage || []).map((x) => ({ id: String(x.id), name: x.name, inactive: x.isinactive === 'T' })), tenantStatuses: ctx.dao.people.statusList().filter((s) => s.entitytype === 'CUSTOMER') };
+  const inv = ctx.load().prepared.inventory;
+  const properties = [...inv.propertiesById.values()].filter((p) => ctx.inScope(p.marketId)).map((p) => ({ id: p.id, name: p.name, market: p.marketId, units: p.units.map((id) => { const u = inv.unitsById.get(id); return { id: u.id, name: u.name, beds: u.beds, bedrooms: u.bedrooms.map((b) => ({ id: b.id, name: b.name })) }; }) })).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  return { markets: MARKETS.filter((m) => ctx.inScope(m.id)).map((m) => ({ id: m.id, label: m.label, calendar: m.calendar })), properties, schools: live('customlist_serp_schools'), hearUs: live('customlist_serp_hear_us_list'), cities: live('customlist_serp_cities'), stageList: (lists.customlist_ad_leasing_stage || []).map((x) => ({ id: String(x.id), name: x.name, inactive: x.isinactive === 'T' })), tenantStatuses: ctx.dao.people.statusList().filter((s) => s.entitytype === 'CUSTOMER') };
 }

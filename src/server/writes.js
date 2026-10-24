@@ -16,7 +16,8 @@ import { validateHumanStageChange } from '../shared/rules/stages.js';
 
 /** record type → { create: bool, fields: Set(field ids) } */
 export const ALLOWLIST = Object.freeze({
-  [UAS.TYPE]: { create: false, fields: new Set([UAS.STAGE, UAS.MANUAL_STAGE, UAS.STAGE_SOURCE, UAS.STAGE_DATE, UAS.LAST_OFFER, UAS.FOLLOWUP, UAS.EXPECTED_TENANTS, UAS.LEASE_TERMS]) },
+  // create = provisioning a missing unit × AY row (the v2 "provisioning gap"): unit, AY, property and name are creation-only
+  [UAS.TYPE]: { create: true, fields: new Set([UAS.STAGE, UAS.MANUAL_STAGE, UAS.STAGE_SOURCE, UAS.STAGE_DATE, UAS.LAST_OFFER, UAS.FOLLOWUP, UAS.EXPECTED_TENANTS, UAS.LEASE_TERMS, UAS.UNIT, UAS.AY, UAS.PROPERTY, 'name']) },
   [UAS_NOTE.TYPE]: { create: true, fields: new Set(['custrecord_ad_note_status', 'custrecord_ad_note_text', 'custrecord_ad_note_date', 'custrecord_ad_note_author', 'custrecord_ad_note_mentions', 'name']) },
   [LEASE.TYPE]: { create: true, fields: new Set([LEASE.UNIT, LEASE.PROPERTY, 'custrecord_serp_lease_type_test', LEASE.START, LEASE.END, LEASE.AY, LEASE.STATUS, 'isinactive', LEASE.TENANTS,
     // creation-only fields (lease dialog): checked in applyCreate, never on update
@@ -26,6 +27,7 @@ export const ALLOWLIST = Object.freeze({
   // App-owned record (§4.2 saved views): not in the §5.9 table, declared here explicitly rather than smuggled in.
   [SAVED_VIEW.TYPE]: { create: true, fields: new Set([SAVED_VIEW.OWNER, SAVED_VIEW.WORKSPACE, SAVED_VIEW.NAME, SAVED_VIEW.JSON, SAVED_VIEW.IS_DEFAULT, SAVED_VIEW.SHARED_MARKETS, 'isinactive', 'name']) },
 });
+const UAS_CREATE_ONLY = new Set([UAS.UNIT, UAS.AY, UAS.PROPERTY, 'name']);
 const LEASE_UPDATE_FIELDS = new Set([LEASE.UNIT, LEASE.PROPERTY, 'custrecord_serp_lease_type_test', LEASE.START, LEASE.END, LEASE.AY, LEASE.STATUS, 'isinactive', LEASE.TENANTS]);
 const TENANT_WIPING_FIELDS = new Set([LEASE.AY, LEASE.PROPERTY]);
 
@@ -66,7 +68,9 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
     for (const f of Object.keys(fields)) {
       if (!rule.fields.has(f)) throw new WriteError('DENIED_FIELD', `field ${f} on ${change.recordType} is not allowed`, { field: f });
       if (!isCreate && change.recordType === LEASE.TYPE && !LEASE_UPDATE_FIELDS.has(f)) throw new WriteError('DENIED_FIELD', `field ${f} may only be set when creating a lease`, { field: f });
+      if (!isCreate && change.recordType === UAS.TYPE && UAS_CREATE_ONLY.has(f)) throw new WriteError('DENIED_FIELD', `field ${f} may only be set when provisioning a status row`, { field: f });
     }
+    if (change.recordType === UAS.TYPE && isCreate && (!fields[UAS.UNIT] || !fields[UAS.AY])) throw new WriteError('BAD_CHANGE', 'a status row needs a unit and an academic year');
     if (change.recordType === UAS.TYPE && Object.prototype.hasOwnProperty.call(fields, UAS.STAGE)) {
       const v = validateHumanStageChange(fields[UAS.STAGE]);
       if (!v.ok) throw new WriteError('STAGE_LEASE_DRIVEN', v.reason, { field: UAS.STAGE });
@@ -139,6 +143,7 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
     }
     const rec = record.create({ type: change.recordType, isDynamic: false });
     for (const [f, v] of Object.entries(fields)) rec.setValue({ fieldId: f, value: Array.isArray(v) ? v.map(Number) : v });
+    if (change.recordType === UAS.TYPE && Object.prototype.hasOwnProperty.call(fields, UAS.STAGE)) { rec.setValue({ fieldId: UAS.MANUAL_STAGE, value: fields[UAS.STAGE] }); rec.setValue({ fieldId: UAS.STAGE_SOURCE, value: 1 }); rec.setValue({ fieldId: UAS.STAGE_DATE, value: clock().slice(0, 10) }); }
     const id = rec.save();
     audit(scope, change, id, '*create*', null, JSON.stringify(fields));
     return { ok: true, created: true, recordType: change.recordType, recordId: String(id), after: fields };
@@ -157,6 +162,8 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
         const prior = priorResult(change && change.changeId);
         if (prior) { results.push({ changeId: change.changeId, ...prior }); continue; }
         const { isCreate, fields } = validateChange(change);
+        // '$prev' links a change to the record the previous change in this batch created (a note on a freshly provisioned status row)
+        for (const [f, v] of Object.entries(fields)) if (v === '$prev') { const prev = results[results.length - 1]; if (!prev || !prev.ok || !prev.recordId) throw new WriteError('BAD_CHANGE', `${f} refers to the previous change, which did not create a record`); fields[f] = Number(prev.recordId); }
         const market = marketOf(change.recordType, change.recordId, fields);
         if (!auth.can(scope, market)) throw new WriteError('DENIED_MARKET', `record is in market "${market || 'unknown'}" which is outside your scope`);
         const r = isCreate ? applyCreate(scope, change, fields) : applyUpdate(scope, change, fields);

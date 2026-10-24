@@ -1,5 +1,5 @@
 {
- "fixture": "snapshot-2026-10-23",
+ "fixture": "live",
  "history": [
   {
    "at": "2026-10-24T00:05:15.897Z",
@@ -12,6 +12,10 @@
   {
    "at": "2026-10-24T00:38:08.481Z",
    "reason": "pipeline row/bed invariant now excludes commercial units (§6.3); engine numbers unchanged"
+  },
+  {
+   "at": "2026-10-24T01:18:16.873Z",
+   "reason": "Commercial/land/office leases place for rent on zero-bed units (A-21): commercial monthly was 0; student figures unchanged"
   }
  ],
  "inventory": {
@@ -335,8 +339,7 @@
     "PROP_HAS_WH": 2,
     "TENANT_DOUBLE": 10,
     "TERM_MISMATCH": 1,
-    "WH_PLUS": 1,
-    "ZERO_BEDS": 3
+    "WH_PLUS": 1
    },
    "tenantDoubles": 5,
    "pipeline": {
@@ -651,8 +654,7 @@
     "PROP_HAS_WH": 2,
     "TENANT_DOUBLE": 8,
     "TERM_MISMATCH": 1,
-    "WH_PLUS": 1,
-    "ZERO_BEDS": 3
+    "WH_PLUS": 1
    },
    "tenantDoubles": 4,
    "pipeline": {
@@ -698,8 +700,8 @@
     "targetMonthly": 0
    },
    "commercial": {
-    "monthly": 0,
-    "annual": 0
+    "monthly": 3004.82,
+    "annual": 36057.84
    },
    "byFund": {
     "A1": {
@@ -958,8 +960,8 @@
      "occupied": 499
     }
    },
-   "counted": 583,
-   "placed": 571,
+   "counted": 585,
+   "placed": 573,
    "exceptions": {
     "MULTI_BED": 3,
     "MULTI_UNIT": 4,
@@ -968,8 +970,7 @@
     "TENANT_DOUBLE": 54,
     "UNIT_ON_BED": 1,
     "WH_MULTI": 2,
-    "WH_PLUS": 1,
-    "ZERO_BEDS": 2
+    "WH_PLUS": 1
    },
    "tenantDoubles": 27,
    "pipeline": {
@@ -1015,8 +1016,8 @@
     "targetMonthly": 0
    },
    "commercial": {
-    "monthly": 0,
-    "annual": 0
+    "monthly": 3004.82,
+    "annual": 36057.84
    },
    "byFund": {
     "A1": {
@@ -1275,11 +1276,10 @@
      "occupied": 473
     }
    },
-   "counted": 457,
-   "placed": 457,
+   "counted": 459,
+   "placed": 459,
    "exceptions": {
-    "NO_STATUS": 49,
-    "ZERO_BEDS": 2
+    "NO_STATUS": 49
    },
    "tenantDoubles": 0,
    "pipeline": {
@@ -1325,8 +1325,8 @@
     "targetMonthly": 0
    },
    "commercial": {
-    "monthly": 0,
-    "annual": 0
+    "monthly": 928.82,
+    "annual": 11145.84
    },
    "byFund": {
     "A1": {
@@ -1585,11 +1585,10 @@
      "occupied": 4
     }
    },
-   "counted": 151,
-   "placed": 151,
+   "counted": 152,
+   "placed": 152,
    "exceptions": {
-    "NO_STATUS": 7,
-    "ZERO_BEDS": 2
+    "NO_STATUS": 7
    },
    "tenantDoubles": 0,
    "pipeline": {
@@ -1635,8 +1634,8 @@
     "targetMonthly": 0
    },
    "commercial": {
-    "monthly": 0,
-    "annual": 0
+    "monthly": 928.82,
+    "annual": 11145.84
    },
    "byFund": {
     "A1": {
@@ -1895,11 +1894,10 @@
      "occupied": 4
     }
    },
-   "counted": 136,
-   "placed": 136,
+   "counted": 137,
+   "placed": 137,
    "exceptions": {
-    "NO_STATUS": 7,
-    "ZERO_BEDS": 2
+    "NO_STATUS": 7
    },
    "tenantDoubles": 0,
    "pipeline": {

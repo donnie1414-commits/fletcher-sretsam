@@ -33,6 +33,7 @@ test('server path against the snapshot', { skip: fx ? false : 'no snapshot' }, a
     const s = request(app, { route: 'summary', ay: '2027', basis: 'proforma' }).json();
     assert.equal(s.student.beds, 5348);
     const first = request(app, { route: 'pipeline', ay: '2027', pageSize: '500' }).json();
+    assert.ok(first.stageBeds && typeof first.breachCount === 'number' && typeof first.needsActionCount === 'number');
     assert.equal(first.total, 1445 - 7, 'commercial units (the office + six storefronts) are not leasing rows'); assert.equal(first.totalBeds, s.student.beds, 'pipeline total beds equals Summary total beds exactly');
     const rows = [...first.rows]; for (let pg = 1; pg * 500 < first.total; pg++) rows.push(...request(app, { route: 'pipeline', ay: '2027', pageSize: '500', page: String(pg) }).json().rows);
     assert.equal(rows.length, 1438);
@@ -42,8 +43,14 @@ test('server path against the snapshot', { skip: fx ? false : 'no snapshot' }, a
     assert.equal(first.stageRowCount, 1446);
   });
   await t.test('portfolio, weekly, exceptions, today and tenants respond', () => {
-    const port = request(app, { route: 'portfolio', ay: '2027' }).json(); assert.ok(port.nodes.length > 6000); assert.equal(port.nodes[0].kind, 'fund');
-    const w = request(app, { route: 'weekly', ay: '2027' }).json(); assert.equal(w.shiftDays, 364); assert.ok(w.panels.week && w.panels.ay);
+    const first = request(app, { route: 'pipeline', ay: '2027', pageSize: '25' }).json();
+    const port = request(app, { route: 'portfolio', ay: '2027' }).json(); assert.ok(port.nodes.length > 6000); assert.equal(port.nodes[0].kind, 'fund'); assert.ok(port.vacancy && port.nodes.some((n) => n.metrics.pOccupied > 0) && port.nodes.some((n) => n.leaf && n.leaf.type));
+    const w = request(app, { route: 'weekly', ay: '2027' }).json(); assert.equal(w.shiftDays, 364); assert.ok(w.cmp.week && w.cmp.year && Array.isArray(w.history) && w.history.length > 10); assert.ok(w.byGroup.length >= 5); assert.equal(w.inactivationsAvailable, false, 'systemnote is not visible to the role: the section degrades, the tab does not');
+    const s27 = request(app, { route: 'summary', ay: '2027' }).json(); assert.ok(s27.kpi.byMarket.length >= 5 && s27.byLeaseType.length === 3 && s27.ties.people && s27.ties.mrev && s27.vacancy.fullUnits > 0, 'summary carries the v2 blocks'); assert.ok(s27.pace && s27.kpi.total.lyWkOcc > 0, 'same-date-last-year pace');
+    const v = request(app, { route: 'velocity', ay: '2027' }).json(); assert.ok(v.ays.length >= 2 && v.proforma.length > 500);
+    const exf = request(app, { route: 'exceptions', ay: '2027' }).json(); assert.ok(Array.isArray(exf.blocking) && Array.isArray(exf.leaseQuality) && Array.isArray(exf.tenantQuality) && Array.isArray(exf.records));
+    const uh = request(app, { route: 'unithistory', ay: '2027', unit: first.rows[0].key }).json(); assert.ok(uh.unit && uh.years.length >= 2);
+    const team = request(app, { route: 'team' }).json(); assert.ok(Array.isArray(team.team));
     const ex = request(app, { route: 'exceptions', ay: '2027' }).json(); assert.ok(ex.groups.length >= 1); assert.ok(ex.groups.every((g, i, a) => i === 0 || a[i - 1].severity <= g.severity));
     const today = request(app, { route: 'today', ay: '2027' }).json(); assert.ok(today.exceptions.count >= 0 && today.blockedTenants);
     const ten = request(app, { route: 'tenants', pageSize: '25' }).json(); assert.equal(ten.rows.length, 25); assert.ok(ten.rows.every((r) => r.ready && Array.isArray(r.ready.reasons)));

@@ -429,6 +429,7 @@ export function leaseDrivenStages() { return STAGES.filter((s) => s.owner === ST
 export function foldStage(value, overrides = STAGE_ID_OVERRIDES) {
   if (value == null || String(value).trim() === '') return 'NONE';
   const v = String(value);
+  if (STAGES.some((s) => s.key === v)) return v; // already a stage key (a probed id → key lookup feeds effectiveStage)
   if (Object.prototype.hasOwnProperty.call(overrides, v)) return overrides[v];
   const n = normLabel(v);
   if (Object.prototype.hasOwnProperty.call(RETIRED_STAGE_FOLD, n)) return RETIRED_STAGE_FOLD[n];
