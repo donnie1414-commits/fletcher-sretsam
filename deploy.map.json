@@ -1,0 +1,5 @@
+{
+  "dist/amicus_leasing_sl.js": { "fileId": 229897, "role": "suitelet-entry" },
+  "dist/amicus_leasing_app.js": { "fileId": 229898, "role": "client-bundle" },
+  "dist/amicus_leasing_app.css": { "fileId": 229899, "role": "client-styles" }
+}

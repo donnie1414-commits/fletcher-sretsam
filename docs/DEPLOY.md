@@ -26,14 +26,14 @@ If the account blocks `.js` uploads through Add File, use Documents › Files �
 ## 2. Create the Suitelet script record
 
 1. Customization › Scripting › Scripts › **New**.
-2. Pick **Select File** › the `amicus_leasing_sl.js` you just uploaded. Click **Create Script Record**. NetSuite reads the `@NScriptType Suitelet` header and opens the Suitelet form.
+2. Pick **Select File** › the `amicus_leasing_sl.js` you just uploaded (internal id **229897** as of 2026-10-24). Click **Create Script Record**. NetSuite reads the `@NScriptType Suitelet` header and opens the Suitelet form.
 3. Fill in: Name `Amicus Leasing Workspace`; ID `_al_leasing_workspace` (NetSuite prefixes `customscript`).
 4. **Parameters** subtab › New Parameter, five times. Type the ID starting at the underscore; NetSuite adds `custscript`.
 
 | ID to type | Label | Type | Notes |
 |---|---|---|---|
-| `_al_client_js` | Client bundle file id | Integer Number | the `.js` file id from step 1 |
-| `_al_client_css` | Client styles file id | Integer Number | the `.css` file id from step 1 |
+| `_al_client_js` | Client bundle file id | Integer Number | the `.js` file id from step 1 (uploaded 2026-10-24: **229898**) |
+| `_al_client_css` | Client styles file id | Integer Number | the `.css` file id from step 1 (uploaded 2026-10-24: **229899**) |
 | `_al_overlap_rule` | Overlap rule (§5.7.1) | Check Box | leave **off** until OVERLAP-DELTA.md is signed off |
 | `_lkr_markets` | Markets | Free-Form Text | same meaning as on the old report: comma-separated market names, blank = no narrowing |
 | `_lkr_user_lock` | Lock viewers to their markets | Check Box | **on**. Off means everyone sees every market |
