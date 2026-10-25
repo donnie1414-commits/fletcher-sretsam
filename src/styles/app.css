@@ -193,3 +193,21 @@ table.dense th { background:var(--surface); } table.dense tfoot td { background:
 .fix-chip, .acitem, .notebtn, .tree-toggle-text, .linkish { color:inherit; } .linkish { color:var(--accent); } .fix-chip { background:var(--surface-2); }
 .chart-tick { fill:var(--fg-muted); } .chart text { fill:var(--fg-muted); }
 .vel-3, .legend .sw.vel-3 { stroke:#8B7BB8; background:#8B7BB8; }
+/* ---- colour semantics (v2 KPI palette): green = good / ahead, amber = watch, red = behind / late ---- */
+:root { --good:#1F7A46; --good-soft:#E0F0E6; --caution:#9A6A0B; --caution-soft:#F7EEDA; --bad:#B3261E; --bad-soft:#F6E3E1; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --good:#7CD39A; --good-soft:#1C3326; --caution:#E6C46A; --caution-soft:#3A3220; --bad:#F09A94; --bad-soft:#3C2622; } }
+:root[data-theme="dark"] { --good:#7CD39A; --good-soft:#1C3326; --caution:#E6C46A; --caution-soft:#3A3220; --bad:#F09A94; --bad-soft:#3C2622; }
+.delta.up { color:var(--good); } .delta.down { color:var(--bad); } .figure-delta .up { color:var(--good); } .figure-delta .down { color:var(--bad); }
+.pill-occ { font-variant-numeric:tabular-nums; min-width:56px; justify-content:center; display:inline-flex; } .pill-ok { background:var(--good-soft); color:var(--good); border:0; } .pill-warn { background:var(--caution-soft); color:var(--caution); border:0; } .pill-bad { background:var(--bad-soft); color:var(--bad); border:0; }
+.tile.tone-ok { border-top-color:var(--good); } .tile.tone-ok .tile-value { color:var(--good); } .tile.tone-warn { border-top-color:var(--caution); } .tile.tone-warn .tile-value { color:var(--caution); } .tile.tone-bad { border-top-color:var(--bad); } .tile.tone-bad .tile-value { color:var(--bad); }
+.tile.tone-ok .tile-bar i { background:var(--good); } .tile.tone-warn .tile-bar i { background:var(--caution); } .tile.tone-bad .tile-bar i { background:var(--bad); }
+.stat.tone-ok b { color:var(--good); } .stat.tone-warn b { color:var(--caution); } .stat.tone-bad b { color:var(--bad); }
+.bad-text { color:var(--bad); } .caution-text { color:var(--caution); } .good-text { color:var(--good); } .age.stale { color:var(--bad); } .age.old { color:var(--caution); } .due { color:var(--bad); }
+.tag { display:inline-block; border-radius:5px; padding:1px 7px; font-size:var(--t1); font-weight:500; } .tag-whole-house { background:var(--st-RENEWAL_OFFERED-bg); color:var(--st-RENEWAL_OFFERED-fg); } .tag-unit { background:var(--st-IN_NEGOTIATIONS-bg); color:var(--st-IN_NEGOTIATIONS-fg); } .tag-bedroom { background:var(--st-READY_FOR_LEASE-bg); color:var(--st-READY_FOR_LEASE-fg); } .tag-mixed { background:var(--st-OFFLINE-bg); color:var(--st-OFFLINE-fg); } .tag-unknown { background:var(--bg-sunken); color:var(--fg-muted); }
+.dot-2 { background:var(--bad); } .dot-1 { background:var(--caution); } .badge-btn.has { color:var(--bad); background:var(--bad-soft); }
+.ties.ok { color:var(--good); } .ties.bad { color:var(--bad); } .warn-note { color:var(--bad); } .pill-done { background:var(--good-soft); color:var(--good); }
+.chart-line-1, .pace .chart-line-1 { stroke:var(--caution); } .chart-label.ly { fill:var(--caution); }
+/* legend swatches: the chart lines' own colours (specificity above the generic .legend .sw) */
+.legend .sw.sw-0 { background:var(--accent); } .legend .sw.sw-1 { background:var(--caution); } .legend .sw.vel-0 { background:var(--accent); } .legend .sw.vel-1 { background:var(--caution); } .legend .sw.vel-2 { background:var(--fg-muted); } .legend .sw.vel-3 { background:#8B7BB8; } .vel-1 { stroke:var(--caution); }
+/* back to NetSuite */
+.ns-back { font-size:var(--t1); color:var(--fg-muted); text-decoration:none; margin-right:var(--s2); padding:3px 8px; border-radius:6px; border:1px solid var(--rule); white-space:nowrap; } .ns-back:hover { color:var(--accent); border-color:var(--accent); }

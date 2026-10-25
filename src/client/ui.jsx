@@ -75,5 +75,6 @@ export function Modal({ open, onClose, title, children, width = 720, foot }) {
 }
 export function Toggle({ label, checked, onChange }) { const id = useId(); return <label className="toggle" htmlFor={id}><input id={id} type="checkbox" checked={!!checked} onChange={(e) => onChange(e.target.checked)} /><span>{label}</span></label>; }
 export function Dot({ level }) { return <span className={cx('dot', `dot-${level}`)} aria-hidden="true" />; }
-export function OccPill({ r, d }) { if (!isNum(r)) return <span className="muted">–</span>; const tone = isNum(d) ? (d >= -0.0005 ? 'ok' : d >= -0.03 ? 'warn' : 'bad') : (r >= 0.95 ? 'ok' : r >= 0.8 ? 'warn' : 'bad'); return <span className={cx('pill', `pill-${r === 0 && d === 0 ? 'muted' : tone}`)}>{(r * 100).toFixed(1)}%</span>; }
+/** v2 occupancy pill: green / amber / red by occupancy, or by pace against last year when a delta is given. */
+export function OccPill({ r, d }) { if (!isNum(r)) return <span className="muted">–</span>; const tone = isNum(d) ? (d >= -0.0005 ? 'ok' : d >= -0.03 ? 'warn' : 'bad') : (r >= 0.95 ? 'ok' : r >= 0.8 ? 'warn' : 'bad'); return <span className={cx('pill', 'pill-occ', `pill-${r === 0 && d === 0 ? 'muted' : tone}`)}>{(r * 100).toFixed(1)}%</span>; }
 export { sign };

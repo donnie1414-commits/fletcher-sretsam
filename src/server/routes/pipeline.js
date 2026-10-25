@@ -62,7 +62,7 @@ export function buildPipelineRows(ctx, ay, basis) {
       rowId: s ? String(s.id) : null, version: s ? String(s.lastmodified) : null, missingStatusRow: !s && !u.propertyOnly,
       tours: 0, lastTour: null, // §5.6: filled once the tour link field exists (schema.degraded says so)
       targetMonthly, targetPerBed: targetMonthly != null && u.beds ? targetMonthly / u.beds : null, settleMonthly, settlePerBed: settleMonthly != null && u.beds ? settleMonthly / u.beds : null, nextTargetMonthly, nextTargetPerBed: nextTargetMonthly != null && u.beds ? nextTargetMonthly / u.beds : null,
-      monthlyRent, breach: monthlyRent != null && settleMonthly > 0 && monthlyRent < settleMonthly, vsTarget: monthlyRent != null && targetMonthly ? monthlyRent - targetMonthly : null,
+      monthlyRent, signedPerBed: monthlyRent != null && u.beds ? monthlyRent / u.beds : null, breach: monthlyRent != null && settleMonthly > 0 && monthlyRent < settleMonthly, vsTarget: monthlyRent != null && targetMonthly ? monthlyRent - targetMonthly : null, vsTargetPerBed: monthlyRent != null && targetMonthly && u.beds ? (monthlyRent - targetMonthly) / u.beds : null,
       sent: governing ? governing.lease.sentDate : null, signed: governing ? governing.lease.signedDate : null, leaseStart: governing ? governing.lease.start : null, leaseEnd: governing ? governing.lease.end : null, twoYear,
       priorRent: priorRent == null ? null : Number(priorRent.toFixed(2)), priorOcc, priorTenantCount: priorTenantIds.length, priorTenantIds,
       lastOffer: s ? s.last_offer : null, expectedTenants: s ? s.expected_tenants : null, followup, notes: s ? s.notes : null, leaseTerms: s && s.lease_terms ? safeJson(s.lease_terms) : null,

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useRoute } from '../../hooks.js';
 import { recordUrl } from '../../api.js';
-import { Tile, Disclosure, Skeleton, ErrorBox, Button, Toggle, Table, Pill, Section } from '../../ui.jsx';
+import { Tile, Disclosure, Skeleton, ErrorBox, Button, Toggle, Table, Pill, Section, OccPill } from '../../ui.jsx';
 import { fmtInt, fmtMoney, fmtMoney2, fmtMoneyK, fmtPct, fmtPts, fmtGrowth, fmtSigned, fmtDate, ayShort, toCSV, downloadCSV, occTone, paceTone, isNum } from '../../format.js';
 import { summaryColumns, DeltaPts, DeltaGrowth } from './columns.jsx';
 
@@ -21,7 +21,7 @@ export function Summary({ sel, presentation }) {
   const cols = summaryColumns({ hasPace, ly, lyAsOf: data.pace ? fmtDate(data.pace.lyAsOf) : '' });
   const tiesOk = data.ties.people && data.ties.mrev && data.ties.trev;
   const tcols = [
-    { label: 'Occupied Beds', value: (r) => fmtInt(r.occ), note: 'Beds under this type' }, { label: 'Share', value: (r) => fmtPct(r.occShare), note: 'Of all occupied beds' }, { label: 'Occ. %', value: (r) => fmtPct(r.occPct), note: 'Of total beds' },
+    { label: 'Occupied Beds', value: (r) => fmtInt(r.occ), note: 'Beds under this type' }, { label: 'Share', value: (r) => fmtPct(r.occShare), note: 'Of all occupied beds' }, { label: 'Occ. %', value: (r) => <OccPill r={r.occPct} d={hasPace ? r.lyWkDelta : null} />, note: 'Of total beds' },
     ...(hasPace ? [{ label: `Same date ${ly}`, value: (r) => fmtPct(r.lyWkOccPct), note: '' }, { label: 'vs same date', value: (r) => <DeltaPts v={r.lyWkDelta} />, note: '' }] : []),
     ...(ly ? [{ label: `${ly} final`, value: (r) => fmtPct(r.pOccPct), note: '' }, { label: 'vs final', value: (r) => <DeltaPts v={r.occDelta} />, note: '' }] : []),
     { label: 'Fin. Occ. %', value: (r) => fmtPct(r.finPct), note: '' }, { label: 'Leases', value: (r) => fmtInt(r.leases), note: '' }, { label: 'Excluded', value: (r) => fmtInt(r.excluded), note: '' }, { label: 'People', value: (r) => fmtInt(r.people), note: '' },
@@ -44,11 +44,11 @@ export function Summary({ sel, presentation }) {
       <GroupTable title="By Market" note={`Market = property City. Expand a market for its funds.${ly ? ` LY = ${ly}.` : ''}`} groups={data.kpi.byMarket} total={p} cols={cols} desc={desc} csvName={`summary-by-market-${sel.ay}-${sel.basis}.csv`} />
       <GroupTable title="By Fund" note={`Fund = top-level subsidiary (Amicus I / II / III). Expand a fund for its markets.${ly ? ` LY = ${ly}.` : ''}`} groups={data.kpi.byFund} total={p} cols={cols} desc={desc} csvName={`summary-by-fund-${sel.ay}-${sel.basis}.csv`} />
       <Section title="By Lease Type" note="Whole House covers every bed in a property (or the linked house). Unit covers every bed in a unit. Bedroom covers one bedroom.">
-        <Table cols={[{ label: 'Lease Type', align: 'l', value: (r) => <Pill tone={r.key === 'WH' ? 'done' : r.key === 'UNIT' ? 'active' : 'muted'}>{r.name}</Pill>, foot: () => 'Total', note: 'Whole House / Unit / Bedroom' }, ...tcols.map((c) => ({ ...c, foot: () => c.value(typeTotal) }))]} rows={data.byLeaseType} keyOf={(r) => r.key} foot={typeTotal} notes={desc} rowClass={(r) => (r.leases || r.excluded || r.pLeases ? '' : 'zero')} />
+        <Table cols={[{ label: 'Lease Type', align: 'l', value: (r) => <span className={`tag tag-${r.key === 'WH' ? 'whole-house' : r.key === 'UNIT' ? 'unit' : 'bedroom'}`}>{r.name}</span>, foot: () => 'Total', note: 'Whole House / Unit / Bedroom' }, ...tcols.map((c) => ({ ...c, foot: () => c.value(typeTotal) }))]} rows={data.byLeaseType} keyOf={(r) => r.key} foot={typeTotal} notes={desc} rowClass={(r) => (r.leases || r.excluded || r.pLeases ? '' : 'zero')} />
       </Section>
       {data.str && data.str.properties > 0 && <Disclosure defaultOpen summary={<span>Short-term rentals <span className="count">{fmtInt(data.str.properties)} {data.str.properties === 1 ? 'property' : 'properties'} · {fmtInt(data.str.total.beds)} beds · {fmtMoney(data.str.total.trev)}</span></span>}>
         <p className="muted small">Nightly and short-stay lettings. <strong>Not</strong> in any figure above: the booking cycle has nothing to do with the academic year and rent per bed runs several times the student rate, so mixing them would distort pre-lease and rent/bed.</p>
-        <Table cols={[{ label: 'Property', align: 'l', value: (r) => <a className="link" href={recordUrl('property', r.id)} target="_blank" rel="noreferrer">{r.name}</a> }, { label: 'Market', align: 'l', value: (r) => r.market }, { label: 'Fund', align: 'l', value: (r) => r.fund }, { label: 'Beds', value: (r) => fmtInt(r.beds) }, { label: 'Occupied', value: (r) => fmtInt(r.occ) }, { label: 'Occ. %', value: (r) => fmtPct(r.occPct) }, { label: 'Leases', value: (r) => fmtInt(r.leases) }, { label: 'Excluded', value: (r) => fmtInt(r.excluded) }, { label: 'Rent / Bed', value: (r) => fmtMoney(r.rentBed) }, { label: 'Total Revenue', value: (r) => fmtMoney(r.trev) }]} rows={data.str.rows} />
+        <Table cols={[{ label: 'Property', align: 'l', value: (r) => <a className="link" href={recordUrl('property', r.id)} target="_blank" rel="noreferrer">{r.name}</a> }, { label: 'Market', align: 'l', value: (r) => r.market }, { label: 'Fund', align: 'l', value: (r) => r.fund }, { label: 'Beds', value: (r) => fmtInt(r.beds) }, { label: 'Occupied', value: (r) => fmtInt(r.occ) }, { label: 'Occ. %', value: (r) => <OccPill r={r.occPct} /> }, { label: 'Leases', value: (r) => fmtInt(r.leases) }, { label: 'Excluded', value: (r) => fmtInt(r.excluded) }, { label: 'Rent / Bed', value: (r) => fmtMoney(r.rentBed) }, { label: 'Total Revenue', value: (r) => fmtMoney(r.trev) }]} rows={data.str.rows} />
       </Disclosure>}
       {data.commercial && data.commercial.properties > 0 && <Disclosure defaultOpen={data.commercial.leases > 0} summary={<span>Commercial, land &amp; office <span className="count">{fmtInt(data.commercial.leased)} of {fmtInt(data.commercial.properties)} leased · {fmtMoney(data.commercial.annual)}/yr</span></span>}>
         <p className="muted small">No student beds, so these are reported on rent alone and never touch occupancy. Annual is monthly × 12: Total Rent on these records holds a year, not the contract value, so a multi-year commercial lease would read short.</p>

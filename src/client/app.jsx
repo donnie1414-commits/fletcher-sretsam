@@ -28,7 +28,7 @@ function App({ boot }) {
   return (
     <div className={cx('app', present && 'is-present', `density-${density}`)}>
       <header className="top">
-        <div className="brand"><span className="brand-mark" aria-hidden="true" /> Amicus Leasing {isPreview() && <span className="pill pill-muted">preview · snapshot {boot.snapshotDate || ''}</span>}</div>
+        <div className="brand">{!isPreview() && <a className="ns-back" href="/app/center/card.nl" title="Back to NetSuite">← NetSuite</a>}<span className="brand-mark" aria-hidden="true" /> Amicus Leasing {isPreview() && <span className="pill pill-muted">preview · snapshot {boot.snapshotDate || ''}</span>}</div>
         {!present && <nav className="nav" aria-label="Primary"><Segmented ariaLabel="Screen" value={url.view} onChange={(v) => go(v)} options={[{ value: 'today', label: 'Today' }, { value: 'pipeline', label: 'Pipeline' }, { value: 'people', label: 'People' }, { value: 'reporting', label: 'Reporting' }]} /></nav>}
         <div className="controls">
           <Select label="Year" value={url.ay} onChange={(v) => setUrl({ ay: v })} options={ays} />
