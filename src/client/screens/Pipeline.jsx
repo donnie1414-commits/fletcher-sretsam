@@ -6,16 +6,17 @@ import { Button, Select, Pill, ErrorBox, Dot, Toggle, Stat, cx } from '../ui.jsx
 import { fmtInt, fmtMoney, fmtPct, fmtDate, toCSV, downloadCSV } from '../format.js';
 import { STAGES, stageByKey, STAGE_OWNER, UAS } from '../../shared/constants.js';
 import { pickerStages, funnel } from '../../shared/rules/stages.js';
+import { UNIT_BEDS, HOUSE_BEDS } from '../../shared/rules/views.js';
 import { SavedViews } from './SavedViews.jsx';
-import { HistoryDrawer } from './pipeline/HistoryDrawer.jsx';
+import { HistoryDrawer, UnitHistory } from './pipeline/HistoryDrawer.jsx';
 import { NotesDrawer } from './pipeline/NotesDrawer.jsx';
 import { LeaseDialog } from './pipeline/LeaseDialog.jsx';
 
 const PICKER = pickerStages().map((s) => ({ value: s.key, label: s.label }));
-const stageTone = (k) => (k === 'FULLY_EXECUTED' ? 'done' : k === 'LEASE_OUT' ? 'pending' : k === 'OFFLINE' || k === 'RENEWAL_DECLINED' ? 'warn' : k === 'NONE' ? 'muted' : 'active');
-export function StagePill({ stageKey, days }) { const s = stageByKey(stageKey); return <span className={cx('pill', `pill-${stageTone(stageKey)}`)} title={s.owner === STAGE_OWNER.LEASE ? 'Lease-driven: set by the lease record' : ''}>{s.label}{stageKey !== 'NONE' && days != null && days > 0 && <span className="pill-days"> · {days}d</span>}</span>; }
+/** One muted colour per stage (CSS .st-<KEY>), shared by the pills, the distribution bar and the legend. */
+export function StagePill({ stageKey, days }) { const s = stageByKey(stageKey); return <span className={cx('pill', 'pill-stage', `st-${stageKey}`)} title={s.owner === STAGE_OWNER.LEASE ? 'Lease-driven: set by the lease record' : ''}><i className="st-dot" aria-hidden="true" />{s.label}{stageKey !== 'NONE' && days != null && days > 0 && <span className="pill-days"> · {days}d</span>}</span>; }
 const FIELD_MAP = { stage: UAS.STAGE, lastOffer: UAS.LAST_OFFER, expectedTenants: UAS.EXPECTED_TENANTS, followup: UAS.FOLLOWUP };
-const SORT_KEY = { targetMonthly: 'target', free: 'available', unit: 'unit' };
+const SORT_KEY = { targetMonthly: 'target', free: 'available', unit: 'unit', propertyBeds: 'propertyBeds' };
 const CHUNK = 50;
 
 /**
@@ -24,7 +25,9 @@ const CHUNK = 50;
  * filters, a leasing-history drawer per row, a notes thread with @mentions, and the lease dialog.
  */
 export function Pipeline({ sel, setSel, density, isMobile, bootstrap }) {
-  const [view, setView] = useState({ stage: '', availability: '', needsAction: '', mentions: '', breach: '', q: sel.q || '', sort: 'property', dir: 'asc', page: 0, pageSize: 100 });
+  const [view, setView] = useState({ stage: '', availability: '', unitBeds: '', houseBeds: '', needsAction: '', mentions: '', breach: '', q: sel.q || '', sort: 'property', dir: 'asc', page: 0, pageSize: 100 });
+  const [expanded, setExpanded] = useState(() => new Set());
+  const toggleExpand = (k) => setExpanded((x) => { const n = new Set(x); n.has(k) ? n.delete(k) : n.add(k); return n; });
   useEffect(() => { setView((v) => ({ ...v, q: sel.q || '', page: 0 })); }, [sel.q]);
   const params = { ay: sel.ay, basis: sel.basis, fund: sel.fund, market: sel.market, ...view };
   const { data, error, loading } = useRoute('pipeline', params);
@@ -76,8 +79,9 @@ export function Pipeline({ sel, setSel, density, isMobile, bootstrap }) {
 
   const stageOf = (r) => (edits[r.key] && edits[r.key].stage) || r.stage;
   const columns = useMemo(() => [
-    { key: 'unit', label: 'Property / Unit', width: 260, render: (v, r) => <span className="unit-cell"><button type="button" className="chevbtn" aria-label="Leasing history" onClick={(e) => { e.stopPropagation(); setDrawer({ kind: 'history', row: r }); }}>▸</button><span><strong>{r.unit === '(whole property)' ? r.property : v}</strong><span className="muted small"> {r.unit === '(whole property)' ? 'whole property' : r.property} · {r.marketLabel || r.market}</span>{r.leases[0] && <span className="small"> <a className={cx('link', !r.leases[0].placed && 'struck')} href={recordUrl('lease', r.leases[0].id)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>{r.leases[0].name}</a>{r.twoYear && <Pill tone="muted" title="One lease record covering more than one academic year">yr {r.twoYear.year}/{r.twoYear.of}</Pill>}{r.leases.length > 1 && <span className="muted"> +{r.leases.length - 1}</span>}</span>}{r.draftLease && <span className="small"> <a className="link" href={recordUrl('lease', r.draftLease.id)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>{r.draftLease.name}</a> <Pill tone="warn" title="No Lease Status, so it is not in the leasing statistics">no status</Pill></span>}</span></span> },
-    { key: 'beds', label: 'Beds', type: 'number', width: 92, title: (v, r) => `${r.taken} taken of ${r.beds}${r.occupiedBy !== 'Vacant' ? ` · ${r.occupiedBy}` : ''}`, render: (v, r) => <span><strong>{v}</strong>{r.free > 0 && r.free < r.beds && <span className="muted small"> {r.free} free</span>}{r.free === r.beds && r.beds > 0 && <span className="small warn-text"> vacant</span>}{r.occupiedBy === 'Mixed' && <span className="muted small"> mixed</span>}</span> },
+    { key: 'unit', label: 'Property / Unit', width: 280, render: (v, r) => <span className="unit-cell"><button type="button" className={cx('chevbtn', expanded.has(r.key) && 'is-open')} aria-label="Leasing history" aria-expanded={expanded.has(r.key)} onClick={(e) => { e.stopPropagation(); toggleExpand(r.key); }}>▸</button><span><strong>{r.unit === '(whole property)' ? r.property : v}</strong><span className="muted small"> {r.unit === '(whole property)' ? 'whole property' : r.property} · {r.marketLabel || r.market}</span>{r.leases[0] && <span className="small"> <a className={cx('link', !r.leases[0].placed && 'struck')} href={recordUrl('lease', r.leases[0].id)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>{r.leases[0].name}</a>{r.twoYear && <Pill tone="muted" title="One lease record covering more than one academic year">yr {r.twoYear.year}/{r.twoYear.of}</Pill>}{r.leases.length > 1 && <span className="muted"> +{r.leases.length - 1}</span>}</span>}{r.draftLease && <span className="small"> <a className="link" href={recordUrl('lease', r.draftLease.id)} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>{r.draftLease.name}</a> <Pill tone="warn" title="No Lease Status, so it is not in the leasing statistics">no status</Pill></span>}</span></span> },
+    { key: 'beds', label: 'Unit beds', type: 'number', width: 96, title: (v, r) => `${r.taken} taken of ${r.beds}${r.occupiedBy !== 'Vacant' ? ` · ${r.occupiedBy}` : ''}`, render: (v, r) => <span className="beds-cell"><strong>{v}</strong>{r.free > 0 && r.free < r.beds && <span className="muted small">{r.free} free</span>}{r.free === r.beds && r.beds > 0 && <span className="small warn-text">vacant</span>}{r.occupiedBy === 'Mixed' && <span className="muted small">mixed</span>}</span> },
+    { key: 'propertyBeds', label: 'House beds', type: 'number', width: 96, title: (v, r) => `${r.propertyUnits} unit${r.propertyUnits === 1 ? '' : 's'} at ${r.property}`, render: (v, r) => <span className="beds-cell"><strong>{v}</strong><span className="muted small">{r.propertyUnits} unit{r.propertyUnits === 1 ? '' : 's'}</span></span> },
     { key: 'stage', label: 'Leasing stage', width: 250, type: 'select', options: PICKER, editable: false, value: stageOf, render: (v, r) => <span className="stage-cell">{r.editable
       ? <Select small ariaLabel="Leasing stage" value={v} onChange={(x) => onEdit(r.key, 'stage', x)} options={PICKER} renderValue={(o) => <StagePill stageKey={o.value} />} renderOption={(o) => <StagePill stageKey={o.value} />} />
       : <><StagePill stageKey={v} days={r.daysInStage} /><span className="muted small">{r.unitId ? 'set by the lease' : 'no unit record'}</span></>}
@@ -89,7 +93,7 @@ export function Pipeline({ sel, setSel, density, isMobile, bootstrap }) {
     { key: 'expectedTenants', label: 'Expected tenants', width: 200, type: 'text', editable: (r) => r.editable, render: (v, r) => (r.editable ? <span>{v || <span className="muted">names…</span>}</span> : <span className="muted small">{r.priorTenantCount ? `${r.priorTenantCount} on the prior lease` : 'on the lease'}</span>) },
     { key: 'followup', label: 'Follow-up', width: 120, type: 'date', editable: (r) => r.editable, render: (v, r) => <span className={cx(v && v <= data?.today && r.editable && 'due')}>{v ? fmtDate(v) : <span className="muted">–</span>}</span> },
     { key: 'noteCount', label: 'Notes', width: 220, sortable: false, render: (v, r) => <button type="button" className="notebtn" onClick={(e) => { e.stopPropagation(); setDrawer({ kind: 'notes', row: r }); }}>{r.lastNote && r.lastNote.mentions.length > 0 && <span className="atb">@</span>}<span className={cx('notetext', !r.lastNote && 'none')}>{r.lastNote ? r.lastNote.text : r.notes ? r.notes : 'Add a note'}</span>{v > 0 && <span className="ncount">{v}</span>}</button> },
-  ], [data && data.today, rows, edits]); // eslint-disable-line
+  ], [data && data.today, rows, edits, expanded]); // eslint-disable-line
   const onSort = (key) => setView((v) => ({ ...v, sort: SORT_KEY[key] || key, dir: v.sort === (SORT_KEY[key] || key) && v.dir === 'asc' ? 'desc' : 'asc', page: 0 }));
   const sortState = { key: Object.keys(SORT_KEY).find((k) => SORT_KEY[k] === view.sort) || view.sort, dir: view.dir };
   const stageCounts = data ? data.stageCounts : {}, stageBeds = data ? data.stageBeds : {};
@@ -110,12 +114,14 @@ export function Pipeline({ sel, setSel, density, isMobile, bootstrap }) {
     <div className="screen">
       {data && <div className="pl-band">
         <Stat value={fmtInt(data.total)} label="Units" /><Stat value={fmtInt(data.totalBeds)} label="Beds" /><Stat value={fmtPct(execPct)} label="Executed" tone="ok" /><Stat value={fmtInt(stageCounts.LEASE_OUT || 0)} label="Out unsigned" tone="warn" /><Stat value={fmtInt(stageCounts.NONE || 0)} label="No stage" /><Stat value={fmtInt(stageCounts.OFFLINE || 0)} label="Offline" /><Stat value={fmtInt(data.breachCount)} label="Below settle" tone={data.breachCount ? 'bad' : ''} /><Stat value={fmtInt(data.needsActionCount)} label="Need action" tone={data.needsActionCount ? 'warn' : ''} />
-        <div className="pl-bar-wrap"><div className="pl-bar">{data.totalBeds > 0 && funnel().map((s) => { const b = stageBeds[s.key] || 0; return b ? <i key={s.key} className={`st-${stageTone(s.key)} st-${s.key}`} style={{ width: `${(b / data.totalBeds) * 100}%` }} title={`${s.label}: ${fmtInt(stageCounts[s.key] || 0)} units, ${fmtInt(b)} beds`} /> : null; })}</div><div className="legend small">{funnel().map((s) => <span key={s.key}><i className={`sw st-${stageTone(s.key)} st-${s.key}`} />{s.label}</span>)}</div></div>
+        <div className="pl-bar-wrap"><div className="pl-bar">{data.totalBeds > 0 && funnel().map((s) => { const b = stageBeds[s.key] || 0; return b ? <i key={s.key} className={`st-${s.key}`} style={{ width: `${(b / data.totalBeds) * 100}%` }} title={`${s.label}: ${fmtInt(stageCounts[s.key] || 0)} units, ${fmtInt(b)} beds`} /> : null; })}</div><div className="legend small">{funnel().map((s) => <span key={s.key}><i className={`sw st-${s.key}`} />{s.label} <span className="muted">{fmtInt(stageCounts[s.key] || 0)}</span></span>)}</div></div>
       </div>}
       {data && data.missingStatusRows > 0 && <p className="muted small">{fmtInt(data.missingStatusRows)} unit{data.missingStatusRows === 1 ? ' has' : 's have'} no status record for this academic year. Saving an edit creates it.</p>}
       <div className="toolbar wrap">
         <Select label="Stage" value={view.stage} onChange={(v) => setView({ ...view, stage: v, page: 0 })} options={[{ value: '', label: `All (${fmtInt(data?.total)})` }, ...STAGES.map((s) => ({ value: s.key, label: `${s.label} (${stageCounts[s.key] || 0})` }))]} />
         <Select label="Availability" value={view.availability} onChange={(v) => setView({ ...view, availability: v, page: 0 })} options={[{ value: '', label: 'Any' }, { value: 'free', label: 'Has free beds' }, { value: 'full', label: 'Fully taken' }]} />
+        <Select label="Unit beds" value={view.unitBeds} onChange={(v) => setView({ ...view, unitBeds: v, page: 0 })} options={[{ value: '', label: 'Any' }, ...UNIT_BEDS.map(([k]) => ({ value: k, label: k }))]} />
+        <Select label="House beds" value={view.houseBeds} onChange={(v) => setView({ ...view, houseBeds: v, page: 0 })} options={[{ value: '', label: 'Any' }, ...HOUSE_BEDS.map(([k]) => ({ value: k, label: k }))]} />
         <Toggle label="Needs action" checked={!!view.needsAction} onChange={() => toggleFilter('needsAction')} />
         <Toggle label="Mentions me" checked={!!view.mentions} onChange={() => setView((v) => ({ ...v, mentions: v.mentions ? '' : 'me', page: 0 }))} />
         <Toggle label="Below settle" checked={!!view.breach} onChange={() => toggleFilter('breach')} />
@@ -125,7 +131,8 @@ export function Pipeline({ sel, setSel, density, isMobile, bootstrap }) {
       </div>
       {selection.size > 0 && <div className="bulkbar"><span>{selection.size} selected</span><Select label="Set stage on selected" value="" onChange={(v) => v && applyToSelected('stage', v)} options={[{ value: '', label: '…' }, ...PICKER]} /><Button small onClick={() => setSelection(new Set())}>Clear</Button></div>}
       {error ? <ErrorBox error={error} /> : (
-        <DataGrid columns={columns} rows={rows} rowKey="key" edits={edits} onEdit={onEdit} results={results} selection={selection} onSelectionChange={setSelection} sort={sortState} onSort={onSort} loading={loading} density={density} isMobile={isMobile} cardRenderer={card}
+        <DataGrid className="pl" columns={columns} rows={rows} rowKey="key" edits={edits} onEdit={onEdit} results={results} selection={selection} onSelectionChange={setSelection} sort={sortState} onSort={onSort} loading={loading} density={density} rowHeight={{ comfortable: 64, compact: 44 }} isMobile={isMobile} cardRenderer={card}
+          expanded={expanded} expandedHeight={360} renderExpanded={(r) => <UnitHistory row={r} sel={sel} onOpenNotes={(x) => setDrawer({ kind: 'notes', row: x })} onOpenLease={(x) => setDrawer({ kind: 'lease', row: x })} />}
           empty={{ title: 'No units match these filters', body: 'Widen the stage or availability filter, or clear the search.' }}
           footer={data && data.total > view.pageSize && <div className="pager"><Button small disabled={view.page === 0} onClick={() => setView({ ...view, page: view.page - 1 })}>‹ Prev</Button><span>{view.page * view.pageSize + 1}–{Math.min(data.total, (view.page + 1) * view.pageSize)} of {fmtInt(data.total)}</span><Button small disabled={(view.page + 1) * view.pageSize >= data.total} onClick={() => setView({ ...view, page: view.page + 1 })}>Next ›</Button></div>} />
       )}

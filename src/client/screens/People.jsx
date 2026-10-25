@@ -44,37 +44,37 @@ export function Tenants({ sel, density, isMobile, bootstrap }) {
         <Button small onClick={() => downloadCSV('tenants.csv', toCSV(rows, columns))}>CSV</Button>
         {data && <span className="muted">{fmtInt(data.total)} tenants</span>}
       </div>
-      {selection.size > 0 && <div className="bulkbar"><span>{selection.size} selected</span><span className="muted small">Bulk assign appends to the existing values (never replaces).</span><Button small onClick={() => setAssign('property')}>Assign property…</Button><Button small onClick={() => setAssign('ay')}>Assign academic year…</Button><Button small onClick={() => setSelection(new Set())}>Clear</Button></div>}
+      {selection.size > 0 && <div className="bulkbar"><span>{selection.size} selected</span><span className="muted small">Property and academic year append to the existing values; status replaces it.</span><Button small onClick={() => setAssign('property')}>Assign property…</Button><Button small onClick={() => setAssign('ay')}>Assign academic year…</Button><Button small onClick={() => setAssign('status')}>Set status…</Button><Button small onClick={() => setSelection(new Set())}>Clear</Button></div>}
       {error ? <ErrorBox error={error} /> : (
         <DataGrid columns={columns} rows={rows} rowKey="id" selection={selection} onSelectionChange={setSelection} loading={loading} density={density} isMobile={isMobile}
           cardRenderer={(r) => <div className="card-body"><div className="card-top"><strong>{r.name}</strong>{r.ready.ready ? <Pill tone="done">ready</Pill> : <Pill tone="warn">blocked</Pill>}</div><div className="card-row muted">{r.status} · {r.properties.map((p) => p.name).join(', ') || 'no property'} · {r.academicYears.map((a) => a.label.replace('AY ', '')).join(', ') || 'no AY'}</div>{!r.ready.ready && <div className="card-row warn-text">{r.ready.reasons.join('; ')}</div>}{r.desiredLocation && <div className="card-row muted">asked for {r.desiredLocation}</div>}</div>}
           empty={{ title: view.view === 'needs-attention' ? 'Nobody is blocked' : 'No tenants match', body: view.view === 'needs-attention' ? 'Every tenant in your markets has a Property and an Academic Year.' : 'Try another status or clear the search.' }}
           footer={data && data.total > view.pageSize && <div className="pager"><Button small disabled={view.page === 0} onClick={() => setView({ ...view, page: view.page - 1 })}>‹ Prev</Button><span>{view.page * view.pageSize + 1}–{Math.min(data.total, (view.page + 1) * view.pageSize)} of {fmtInt(data.total)}</span><Button small disabled={(view.page + 1) * view.pageSize >= data.total} onClick={() => setView({ ...view, page: view.page + 1 })}>Next ›</Button></div>} />
       )}
-      {assign && <AssignDialog kind={assign} rows={rows.filter((r) => selection.has(r.id))} bootstrap={bootstrap} onClose={() => setAssign(null)} onDone={() => { setAssign(null); setSelection(new Set()); invalidate('tenants'); invalidate('today'); }} />}
+      {assign && <AssignDialog kind={assign} rows={rows.filter((r) => selection.has(r.id))} bootstrap={bootstrap} statuses={statuses} onClose={() => setAssign(null)} onDone={() => { setAssign(null); setSelection(new Set()); invalidate('tenants'); invalidate('today'); }} />}
     </div>
   );
 }
-/** Bulk Property / Academic Year assignment: appends to the tenant's existing multi-select (§6.5), one write per tenant, per-row results. */
-function AssignDialog({ kind, rows, bootstrap, onClose, onDone }) {
+/** Bulk Property / Academic Year / Status: property and AY append to the tenant's existing multi-select (§6.5), status replaces; one write per tenant, per-row results. */
+function AssignDialog({ kind, rows, bootstrap, statuses = [], onClose, onDone }) {
   const lists = useRoute('lists', {}, kind === 'property');
   const [value, setValue] = useState('');
   const [busy, setBusy] = useState(false);
   const [out, setOut] = useState(null);
-  const options = kind === 'property' ? (lists.data ? lists.data.properties.map((p) => ({ value: p.id, label: `${p.name} (${p.market})` })) : []) : bootstrap.academicYears.map((a) => ({ value: a.id, label: a.label }));
-  const field = kind === 'property' ? CUSTOMER.PROPERTY : CUSTOMER.AY;
+  const options = kind === 'property' ? (lists.data ? lists.data.properties.map((p) => ({ value: p.id, label: `${p.name} (${p.market})` })) : []) : kind === 'status' ? statuses.map((st) => ({ value: String(st.id), label: st.name })) : bootstrap.academicYears.map((a) => ({ value: a.id, label: a.label }));
+  const field = kind === 'property' ? CUSTOMER.PROPERTY : kind === 'status' ? 'entitystatus' : CUSTOMER.AY;
   const apply = async () => {
     setBusy(true);
-    const changes = rows.map((r) => { const have = (kind === 'property' ? r.properties : r.academicYears).map((x) => x.id); return { changeId: `assign:${r.id}:${kind}:${Date.now()}`, recordType: CUSTOMER.TYPE, recordId: r.id, version: r.version || undefined, fields: { [field]: [...new Set([...have, value])].map(Number) } }; });
+    const changes = rows.map((r) => { if (kind === 'status') return { changeId: `assign:${r.id}:status:${Date.now()}`, recordType: CUSTOMER.TYPE, recordId: r.id, version: r.version || undefined, fields: { entitystatus: Number(value) } }; const have = (kind === 'property' ? r.properties : r.academicYears).map((x) => x.id); return { changeId: `assign:${r.id}:${kind}:${Date.now()}`, recordType: CUSTOMER.TYPE, recordId: r.id, version: r.version || undefined, fields: { [field]: [...new Set([...have, value])].map(Number) } }; });
     const res = await post('write', { changes });
     setBusy(false); setOut(res);
     if ((res.results || []).some((x) => x.ok)) setTimeout(onDone, 800);
   };
   return (
-    <Modal open onClose={onClose} title={kind === 'property' ? `Assign a property to ${rows.length} tenant${rows.length === 1 ? '' : 's'}` : `Assign an academic year to ${rows.length} tenant${rows.length === 1 ? '' : 's'}`} width={560}
-      foot={<div className="toolbar"><span className="muted small">{isPreview() ? 'Preview: nothing is written.' : 'Appends to each tenant’s existing values; properties must be in your markets.'}</span><span className="spacer" /><Button small onClick={onClose}>Cancel</Button><Button kind="primary" small disabled={!value || busy} onClick={apply}>{busy ? 'Applying…' : 'Apply'}</Button></div>}>
-      <Select label={kind === 'property' ? 'Property' : 'Academic year'} value={value} onChange={setValue} options={[{ value: '', label: '…' }, ...options]} />
-      <ul className="small muted" style={{ maxHeight: 200, overflow: 'auto' }}>{rows.map((r) => <li key={r.id}>{r.name} <span>— currently {kind === 'property' ? (r.properties.map((p) => p.name).join(', ') || 'none') : (r.academicYears.map((a) => a.label).join(', ') || 'none')}</span></li>)}</ul>
+    <Modal open onClose={onClose} title={`${kind === 'property' ? 'Assign a property to' : kind === 'status' ? 'Set the status of' : 'Assign an academic year to'} ${rows.length} tenant${rows.length === 1 ? '' : 's'}`} width={560}
+      foot={<div className="toolbar"><span className="muted small">{isPreview() ? 'Preview: nothing is written.' : kind === 'status' ? 'Replaces each tenant’s status.' : 'Appends to each tenant’s existing values; properties must be in your markets.'}</span><span className="spacer" /><Button small onClick={onClose}>Cancel</Button><Button kind="primary" small disabled={!value || busy} onClick={apply}>{busy ? 'Applying…' : 'Apply'}</Button></div>}>
+      <Select label={kind === 'property' ? 'Property' : kind === 'status' ? 'Status' : 'Academic year'} value={value} onChange={setValue} options={[{ value: '', label: '…' }, ...options]} />
+      <ul className="small muted" style={{ maxHeight: 200, overflow: 'auto' }}>{rows.map((r) => <li key={r.id}>{r.name} <span>— currently {kind === 'property' ? (r.properties.map((p) => p.name).join(', ') || 'none') : kind === 'status' ? (r.status || 'none') : (r.academicYears.map((a) => a.label).join(', ') || 'none')}</span></li>)}</ul>
       {out && <div className="small">{(out.results || []).map((x) => <div key={x.changeId} className={x.ok ? 'okbox' : 'errorbox'}>{x.ok ? 'Written' : `${x.code}: ${x.message}`}</div>)}</div>}
     </Modal>
   );

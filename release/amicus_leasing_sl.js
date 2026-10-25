@@ -3155,7 +3155,9 @@ function routeVelocity(ctx) {
 }
 
 // src/shared/rules/views.js
-var PIPELINE_SORTS = ["property", "unit", "beds", "stage", "daysInStage", "tours", "target", "lastOffer", "followup", "available", "monthlyRent", "needsAction", "signed", "market"];
+var PIPELINE_SORTS = ["property", "unit", "beds", "propertyBeds", "stage", "daysInStage", "tours", "target", "lastOffer", "followup", "available", "monthlyRent", "needsAction", "signed", "market"];
+var UNIT_BEDS = [["1", (b) => b === 1], ["2", (b) => b === 2], ["3", (b) => b === 3], ["4", (b) => b === 4], ["5", (b) => b === 5], ["6+", (b) => b >= 6]];
+var HOUSE_BEDS = [["1-4", (b) => b >= 1 && b <= 4], ["5-8", (b) => b >= 5 && b <= 8], ["9-12", (b) => b >= 9 && b <= 12], ["13+", (b) => b >= 13]];
 function applyPipelineView(rows, q = {}) {
   let out = rows;
   if (q.fund) out = out.filter((r) => r.fund === q.fund);
@@ -3166,6 +3168,14 @@ function applyPipelineView(rows, q = {}) {
   }
   if (q.availability === "free") out = out.filter((r) => r.free > 0);
   else if (q.availability === "full") out = out.filter((r) => r.free === 0);
+  if (q.unitBeds) {
+    const f = (UNIT_BEDS.find((x) => x[0] === String(q.unitBeds)) || [])[1];
+    if (f) out = out.filter((r) => f(r.beds));
+  }
+  if (q.houseBeds) {
+    const f = (HOUSE_BEDS.find((x) => x[0] === String(q.houseBeds)) || [])[1];
+    if (f) out = out.filter((r) => f(r.propertyBeds || 0));
+  }
   if (q.tours === "none") out = out.filter((r) => r.tours === 0);
   else if (q.tours === "some") out = out.filter((r) => r.tours > 0);
   if (q.needsAction === "1" || q.needsAction === true) out = out.filter((r) => r.needsAction);
@@ -3180,7 +3190,7 @@ function applyPipelineView(rows, q = {}) {
   }
   const sort = PIPELINE_SORTS.includes(q.sort) ? q.sort : "property";
   const dir = q.dir === "desc" ? -1 : 1;
-  const val = (r) => ({ property: r.property, unit: r.unit, beds: r.beds, stage: r.stage, daysInStage: r.daysInStage ?? -1, tours: r.tours, target: r.targetMonthly ?? -1, lastOffer: r.lastOffer ?? -1, followup: r.followup || "", available: r.free, monthlyRent: r.monthlyRent ?? -1, needsAction: r.needsAction ? 1 : 0, signed: r.signed || "", market: r.market })[sort];
+  const val = (r) => ({ property: r.property, unit: r.unit, beds: r.beds, propertyBeds: r.propertyBeds || 0, stage: r.stage, daysInStage: r.daysInStage ?? -1, tours: r.tours, target: r.targetMonthly ?? -1, lastOffer: r.lastOffer ?? -1, followup: r.followup || "", available: r.free, monthlyRent: r.monthlyRent ?? -1, needsAction: r.needsAction ? 1 : 0, signed: r.signed || "", market: r.market })[sort];
   out = out.slice().sort((a, b) => {
     const x = val(a), y = val(b);
     const c = typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), void 0, { numeric: true });
@@ -3278,6 +3288,8 @@ function buildPipelineRows(ctx, ay, basis) {
       fund: p.fund,
       segment: p.segment,
       beds: u.beds,
+      propertyBeds: p.beds,
+      propertyUnits: p.units.length,
       free: u.beds - taken,
       taken,
       bedroomCount: u.bedrooms.length,

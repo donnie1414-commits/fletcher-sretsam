@@ -3,7 +3,7 @@
  *  - keyed row state: edits live in a {rowKey: {field: value}} map owned by the screen; typing in one
  *    row re-renders that row only (Row is memoised on its own inputs)
  *  - columns declare type, editability, options, validation, csv
- *  - virtualized (windowed rows, fixed row height per density), sticky header + first column only
+ *  - virtualized with variable heights (a row can expand an inline panel), sticky header + first column
  *  - multi-select with "apply to selected", keyboard-first navigation, paste-a-column
  *  - per-row save result rendered inline
  */
@@ -27,7 +27,7 @@ function defaultFormat(col, v) {
 const isEditable = (col, row) => (typeof col.editable === 'function' ? col.editable(row) : !!col.editable);
 const cellValue = (col, row, edits) => (edits && col.key in edits ? edits[col.key] : typeof col.value === 'function' ? col.value(row) : row[col.key]);
 
-const Cell = memo(function Cell({ col, row, edits, focused, editing, onFocus, onStartEdit, onCommit, onCancel, onEdit }) {
+const Cell = memo(function Cell({ col, row, edits, focused, editing, onFocus, onStartEdit, onCommit, onCancel }) {
   const raw = cellValue(col, row, edits);
   const editable = isEditable(col, row);
   const dirty = !!(edits && col.key in edits);
@@ -43,26 +43,29 @@ const Cell = memo(function Cell({ col, row, edits, focused, editing, onFocus, on
     else body = <input {...common} type="text" defaultValue={raw ?? ''} />;
   } else body = col.render ? col.render(raw, row) : defaultFormat(col, raw);
   return (
-    <div role="gridcell" tabIndex={focused ? 0 : -1} aria-selected={focused} className={cx('cell', col.align === 'right' && 'num', editable && 'editable', dirty && 'dirty', focused && 'focused', col.sticky && 'sticky-col')} style={{ width: col.width }} title={col.title ? col.title(raw, row) : undefined}
+    <div role="gridcell" tabIndex={focused ? 0 : -1} aria-selected={focused} className={cx('cell', col.align === 'right' && 'num', editable && 'editable', dirty && 'dirty', col.sticky && 'sticky-col', col.className)} style={{ width: col.width }} title={col.title ? col.title(raw, row) : undefined}
       onClick={() => { onFocus(); if (editable && col.type !== 'select') onStartEdit(); }}>
       {body}
     </div>
   );
 });
 
-const Row = memo(function Row({ row, rowKey, cols, edits, result, selected, onSelect, focusCol, editingCol, onFocusCell, onStartEdit, onCommit, onCancel, onEdit, style, selectable, index }) {
+const Row = memo(function Row({ row, rowKey, cols, edits, result, selected, onSelect, focusCol, editingCol, onFocusCell, onStartEdit, onCommit, onCancel, style, selectable, index, rowH, expanded, renderExpanded, expandedHeight }) {
   return (
-    <div role="row" aria-rowindex={index + 2} className={cx('row', edits && Object.keys(edits).length && 'is-dirty', result && (result.ok ? 'saved' : 'failed'), selected && 'is-selected', row.depth != null && `depth-${Math.min(row.depth, 5)}`)} style={style}>
-      {selectable && <div className="cell sel sticky-col" role="gridcell"><input type="checkbox" aria-label="Select row" checked={!!selected} onChange={(e) => onSelect(rowKey, e.target.checked, e.nativeEvent.shiftKey)} /></div>}
-      {cols.map((col, ci) => <Cell key={col.key} col={col} row={row} edits={edits} focused={focusCol === ci} editing={editingCol === ci} onFocus={() => onFocusCell(ci)} onStartEdit={() => onStartEdit(ci)} onCommit={onCommit} onCancel={onCancel} onEdit={onEdit} />)}
-      {result && !result.ok && <div className="row-result" role="status">{result.message}</div>}
+    <div className={cx('rowwrap', expanded && 'is-expanded')} style={style}>
+      <div role="row" aria-rowindex={index + 2} className={cx('row', edits && Object.keys(edits).length && 'is-dirty', result && (result.ok ? 'saved' : 'failed'), selected && 'is-selected', row.depth != null && `depth-${Math.min(row.depth, 5)}`)} style={{ height: rowH }}>
+        {selectable && <div className="cell sel sticky-col" role="gridcell"><input type="checkbox" aria-label="Select row" checked={!!selected} onChange={(e) => onSelect(rowKey, e.target.checked, e.nativeEvent.shiftKey)} /></div>}
+        {cols.map((col, ci) => <Cell key={col.key} col={col} row={row} edits={edits} focused={focusCol === ci} editing={editingCol === ci} onFocus={() => onFocusCell(ci)} onStartEdit={() => onStartEdit(ci)} onCommit={onCommit} onCancel={onCancel} />)}
+        {result && !result.ok && <div className="row-result" role="status">{result.message}</div>}
+      </div>
+      {expanded && <div className="row-expand" style={{ height: expandedHeight }}>{renderExpanded(row)}</div>}
     </div>
   );
 });
 
-export function DataGrid({ columns, rows, rowKey = 'key', edits = {}, onEdit, results = {}, selection, onSelectionChange, sort, onSort, loading, empty, density = 'comfortable', height = 'calc(100vh - 220px)', cardRenderer, isMobile, footer }) {
+export function DataGrid({ columns, rows, rowKey = 'key', edits = {}, onEdit, results = {}, selection, onSelectionChange, sort, onSort, loading, empty, density = 'comfortable', rowHeight, height = 'calc(100vh - 220px)', cardRenderer, isMobile, footer, expanded, renderExpanded, expandedHeight = 320, className }) {
   const cols = useMemo(() => columns.map((c, i) => ({ sticky: i === 0, align: ['number', 'money', 'pct'].includes(c.type) ? 'right' : 'left', ...c })), [columns]);
-  const rowH = ROW_H[density] || ROW_H.comfortable;
+  const rowH = (rowHeight && rowHeight[density]) || ROW_H[density] || ROW_H.comfortable;
   const scroller = useRef(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [viewH, setViewH] = useState(600);
@@ -72,8 +75,12 @@ export function DataGrid({ columns, rows, rowKey = 'key', edits = {}, onEdit, re
   useEffect(() => { const el = scroller.current; if (!el) return undefined; const ro = new ResizeObserver(() => setViewH(el.clientHeight)); ro.observe(el); setViewH(el.clientHeight); return () => ro.disconnect(); }, []);
   const onScroll = useCallback((e) => setScrollTop(e.currentTarget.scrollTop), []);
   const total = rows.length;
-  const start = Math.max(0, Math.floor(scrollTop / rowH) - 6), end = Math.min(total, Math.ceil((scrollTop + viewH) / rowH) + 6);
   const keyOf = (row) => String(typeof rowKey === 'function' ? rowKey(row) : row[rowKey]);
+  // variable heights: an expanded row carries its panel below it
+  const { offsets, heights, totalH } = useMemo(() => { const offsets = new Array(total), heights = new Array(total); let acc = 0; for (let i = 0; i < total; i++) { const h = rowH + (expanded && expanded.has(keyOf(rows[i])) ? expandedHeight : 0); offsets[i] = acc; heights[i] = h; acc += h; } return { offsets, heights, totalH: acc }; }, [rows, rowH, expanded, expandedHeight]); // eslint-disable-line
+  const findIndex = (y) => { let lo = 0, hi = total - 1; while (lo < hi) { const mid = (lo + hi) >> 1; if (offsets[mid] + heights[mid] <= y) lo = mid + 1; else hi = mid; } return lo; };
+  const start = total ? Math.max(0, findIndex(Math.max(0, scrollTop - 6 * rowH))) : 0;
+  const end = total ? Math.min(total, findIndex(scrollTop + viewH + 6 * rowH) + 1) : 0;
 
   const commit = useCallback((col, row, v) => {
     setEditing(null);
@@ -97,8 +104,9 @@ export function DataGrid({ columns, rows, rowKey = 'key', edits = {}, onEdit, re
   const onKeyDown = (e) => {
     if (editing) return;
     if (!rows.length) return;
+    if (/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test((e.target || {}).tagName || '')) return;
     const r = Math.max(0, focus.r), c = focus.c;
-    const move = (dr, dc) => { const nr = Math.min(total - 1, Math.max(0, r + dr)), nc = Math.min(cols.length - 1, Math.max(0, c + dc)); setFocus({ r: nr, c: nc }); const el = scroller.current; if (el) { const top = nr * rowH; if (top < el.scrollTop) el.scrollTop = top; else if (top + rowH > el.scrollTop + el.clientHeight) el.scrollTop = top + rowH - el.clientHeight; } e.preventDefault(); };
+    const move = (dr, dc) => { const nr = Math.min(total - 1, Math.max(0, r + dr)), nc = Math.min(cols.length - 1, Math.max(0, c + dc)); setFocus({ r: nr, c: nc }); const el = scroller.current; if (el) { const top = offsets[nr]; if (top < el.scrollTop) el.scrollTop = top; else if (top + rowH > el.scrollTop + el.clientHeight) el.scrollTop = top + rowH - el.clientHeight; } e.preventDefault(); };
     if (e.key === 'ArrowDown') move(1, 0); else if (e.key === 'ArrowUp') move(-1, 0); else if (e.key === 'ArrowRight') move(0, 1); else if (e.key === 'ArrowLeft') move(0, -1);
     else if (e.key === 'PageDown') move(Math.floor(viewH / rowH), 0); else if (e.key === 'PageUp') move(-Math.floor(viewH / rowH), 0);
     else if (e.key === 'Home') move(-total, 0); else if (e.key === 'End') move(total, 0);
@@ -123,7 +131,7 @@ export function DataGrid({ columns, rows, rowKey = 'key', edits = {}, onEdit, re
   }
   const widthTotal = cols.reduce((s, c) => s + (parseInt(c.width, 10) || 140), 0) + (onSelectionChange ? 36 : 0);
   return (
-    <div className={cx('grid', `density-${density}`)} role="grid" aria-rowcount={total + 1} aria-colcount={cols.length} onKeyDown={onKeyDown} onPaste={onPaste} tabIndex={0} style={{ height }}>
+    <div className={cx('grid', `density-${density}`, className)} role="grid" aria-rowcount={total + 1} aria-colcount={cols.length} onKeyDown={onKeyDown} onPaste={onPaste} tabIndex={0} style={{ height }}>
       <div className="grid-scroll" ref={scroller} onScroll={onScroll}>
         <div className="grid-inner" style={{ minWidth: widthTotal }}>
           <div className="head" role="row">
@@ -132,8 +140,8 @@ export function DataGrid({ columns, rows, rowKey = 'key', edits = {}, onEdit, re
           </div>
           {loading ? <div className="grid-loading">{Array.from({ length: 12 }).map((_, i) => <div key={i} className="row sk" style={{ height: rowH }}>{cols.map((c) => <span key={c.key} className="sk-cell" style={{ width: c.width }} />)}</div>)}</div>
             : !rows.length ? <div className="empty"><div className="empty-title">{empty?.title || 'Nothing here'}</div>{empty?.body && <p className="muted">{empty.body}</p>}{empty?.action}</div>
-            : <div className="body" style={{ height: total * rowH, position: 'relative' }}>
-              {rows.slice(start, end).map((row, i) => { const k = keyOf(row); const ri = start + i; return <Row key={k} index={ri} row={row} rowKey={k} cols={cols} edits={edits[k]} result={results[k]} selected={selection && selection.has(k)} onSelect={select} selectable={!!onSelectionChange} focusCol={focus.r === ri ? focus.c : -1} editingCol={editing && editing.r === ri ? editing.c : -1} onFocusCell={(c) => setFocus({ r: ri, c })} onStartEdit={(c) => setEditing({ r: ri, c })} onCommit={commit} onCancel={() => setEditing(null)} onEdit={onEdit} style={{ position: 'absolute', top: ri * rowH, height: rowH, left: 0, right: 0 }} />; })}
+            : <div className="body" style={{ height: totalH, position: 'relative' }}>
+              {rows.slice(start, end).map((row, i) => { const k = keyOf(row); const ri = start + i; const isX = !!(expanded && expanded.has(k) && renderExpanded); return <Row key={k} index={ri} row={row} rowKey={k} cols={cols} edits={edits[k]} result={results[k]} selected={selection && selection.has(k)} onSelect={select} selectable={!!onSelectionChange} focusCol={focus.r === ri ? focus.c : -1} editingCol={editing && editing.r === ri ? editing.c : -1} onFocusCell={(c) => setFocus({ r: ri, c })} onStartEdit={(c) => setEditing({ r: ri, c })} onCommit={commit} onCancel={() => setEditing(null)} rowH={rowH} expanded={isX} renderExpanded={renderExpanded} expandedHeight={expandedHeight} style={{ position: 'absolute', top: offsets[ri], height: heights[ri], left: 0, right: 0 }} />; })}
             </div>}
         </div>
       </div>

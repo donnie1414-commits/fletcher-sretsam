@@ -55,7 +55,7 @@ export function buildPipelineRows(ctx, ay, basis) {
     const twoYear = governing && governing.lease.isTwoYear ? { year: governing.year.carried ? 2 : 1, of: governing.lease.years.length } : null;
     out.push({
       key: u.id, unitId: u.propertyOnly ? null : u.id, propertyId: p.id, property: p.name, unit: u.propertyOnly ? '(whole property)' : u.name, market: p.marketId, marketLabel: p.marketLabel, fund: p.fund, segment: p.segment,
-      beds: u.beds, free: u.beds - taken, taken, bedroomCount: u.bedrooms.length, bedrooms: u.bedrooms.map((b) => ({ id: b.id, name: b.name, beds: b.beds, free: !(r.placement.leafResults.get(b.key) || { occupied: 0 }).occupied })),
+      beds: u.beds, propertyBeds: p.beds, propertyUnits: p.units.length, free: u.beds - taken, taken, bedroomCount: u.bedrooms.length, bedrooms: u.bedrooms.map((b) => ({ id: b.id, name: b.name, beds: b.beds, free: !(r.placement.leafResults.get(b.key) || { occupied: 0 }).occupied })),
       occupiedBy: leaves.some((l) => l.occupied) ? (new Set(leaves.flatMap((l) => l.types || [])).size > 1 ? 'Mixed' : leafTypeLabel(leaves.find((l) => l.occupied))) : 'Vacant',
       occWH: leaves.reduce((s2, l) => s2 + (l.typeKey === 'WH' ? l.occupied : 0), 0), occUnit: leaves.reduce((s2, l) => s2 + (l.typeKey === 'UNIT' ? l.occupied : 0), 0), occBed: leaves.reduce((s2, l) => s2 + (l.typeKey === 'BED' ? l.occupied : 0), 0),
       stage: stageKey, stageSource, stageDate, daysInStage: daysInStage(stageDate, ctx.today), editable,

@@ -6,10 +6,19 @@ import { StagePill } from '../Pipeline.jsx';
 
 /** The per-unit leasing-history drawer (v2 row expander): rent by academic year, settle floor, beds available, stage log, notes, prior tenants. */
 export function HistoryDrawer({ row, sel, onClose, onOpenNotes, onOpenLease }) {
-  const { data, error, loading } = useRoute('unithistory', { ay: sel.ay, basis: sel.basis, unit: row ? row.key : null }, !!row);
   if (!row) return null;
   return (
     <Drawer open onClose={onClose} title={row.unit === '(whole property)' ? row.property : row.unit} subtitle={`${row.property} · ${row.marketLabel || row.market}`} width={720}>
+      <UnitHistory row={row} sel={sel} onOpenNotes={onOpenNotes} onOpenLease={onOpenLease} />
+    </Drawer>
+  );
+}
+/** The leasing-history panel itself: inline under the pipeline row (the ▸ expander) or inside the drawer on phones. */
+export function UnitHistory({ row, sel, onOpenNotes, onOpenLease }) {
+  const { data, error, loading } = useRoute('unithistory', { ay: sel.ay, basis: sel.basis, unit: row ? row.key : null }, !!row);
+  if (!row) return null;
+  return (
+    <div className="unit-history">
       {error ? <ErrorBox error={error} /> : loading || !data ? <Skeleton rows={6} cols={3} /> : (
         <div className="two-col">
           <div>
@@ -43,6 +52,6 @@ export function HistoryDrawer({ row, sel, onClose, onOpenNotes, onOpenLease }) {
           </div>
         </div>
       )}
-    </Drawer>
+    </div>
   );
 }
