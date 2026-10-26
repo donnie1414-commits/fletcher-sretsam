@@ -221,3 +221,4 @@ table.dense th { background:var(--surface); } table.dense tfoot td { background:
 :root[data-theme="dark"] { --st-LEASE_REVISIONS-bg:#1B3330; --st-LEASE_REVISIONS-fg:#8FD6CC; --st-LEASE_REVISIONS:#4FA39A; }
 .pill-stage.st-LEASE_REVISIONS { background:var(--st-LEASE_REVISIONS-bg); color:var(--st-LEASE_REVISIONS-fg); } .pill-stage.st-LEASE_REVISIONS .st-dot { background:var(--st-LEASE_REVISIONS); } .pl-bar i.st-LEASE_REVISIONS, .legend .sw.st-LEASE_REVISIONS { background:var(--st-LEASE_REVISIONS); }
 .revise-btn { margin-top:2px; font-size:11px; padding:2px 8px; }
+.screen.fill > :not(.grid):not(.fill-col), .fill-col > :not(.grid) { flex:0 0 auto; } .stage-line { display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; }
