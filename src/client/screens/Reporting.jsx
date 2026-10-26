@@ -9,7 +9,7 @@ import { Deck } from './reporting/Deck.jsx';
 export function Reporting({ sel, sub, setSub, rt, setRt, density, presentation, boot }) {
   const [deck, setDeck] = useState(false);
   return (
-    <div className="screen">
+    <div className={sub === 'portfolio' ? 'screen fill' : 'screen'}>
       {!presentation && <div className="subnav"><Segmented ariaLabel="Reporting view" value={sub} onChange={setSub} options={[{ value: 'summary', label: 'Summary' }, { value: 'portfolio', label: 'Leasing Details' }, { value: 'weekly', label: 'Weekly' }]} /></div>}
       {sub === 'summary' && <Summary sel={sel} presentation={presentation} />}
       {sub === 'portfolio' && <Portfolio sel={sel} density={density} rt={rt} setRt={setRt} />}

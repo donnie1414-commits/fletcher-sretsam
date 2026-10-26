@@ -211,3 +211,13 @@ table.dense th { background:var(--surface); } table.dense tfoot td { background:
 .legend .sw.sw-0 { background:var(--accent); } .legend .sw.sw-1 { background:var(--caution); } .legend .sw.vel-0 { background:var(--accent); } .legend .sw.vel-1 { background:var(--caution); } .legend .sw.vel-2 { background:var(--fg-muted); } .legend .sw.vel-3 { background:#8B7BB8; } .vel-1 { stroke:var(--caution); }
 /* back to NetSuite */
 .ns-back { font-size:var(--t1); color:var(--fg-muted); text-decoration:none; margin-right:var(--s2); padding:3px 8px; border-radius:6px; border:1px solid var(--rule); white-space:nowrap; } .ns-back:hover { color:var(--accent); border-color:var(--accent); }
+/* ---- app fills the viewport: the header stays, the main column scrolls, and grid screens scroll inside the grid so column headers never leave ---- */
+.app { height:100vh; height:100dvh; min-height:0; } .main { flex:1 1 auto; min-height:0; overflow:auto; display:flex; flex-direction:column; } .main > .screen { flex:1 0 auto; } .main > .screen.fill { flex:1 1 auto; min-height:0; }
+.screen.fill { display:flex; flex-direction:column; } .fill-col { display:flex; flex-direction:column; gap:var(--s3); flex:1 1 auto; min-height:0; } .grid.fill { flex:1 1 auto; min-height:240px; }
+.screen.fill .savebar { position:static; } .is-present .main { overflow:auto; }
+/* Lease Revisions stage colour: muted teal */
+:root { --st-LEASE_REVISIONS-bg:#DFF0EE; --st-LEASE_REVISIONS-fg:#1E6B63; --st-LEASE_REVISIONS:#4FA39A; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --st-LEASE_REVISIONS-bg:#1B3330; --st-LEASE_REVISIONS-fg:#8FD6CC; --st-LEASE_REVISIONS:#4FA39A; } }
+:root[data-theme="dark"] { --st-LEASE_REVISIONS-bg:#1B3330; --st-LEASE_REVISIONS-fg:#8FD6CC; --st-LEASE_REVISIONS:#4FA39A; }
+.pill-stage.st-LEASE_REVISIONS { background:var(--st-LEASE_REVISIONS-bg); color:var(--st-LEASE_REVISIONS-fg); } .pill-stage.st-LEASE_REVISIONS .st-dot { background:var(--st-LEASE_REVISIONS); } .pl-bar i.st-LEASE_REVISIONS, .legend .sw.st-LEASE_REVISIONS { background:var(--st-LEASE_REVISIONS); }
+.revise-btn { margin-top:2px; font-size:11px; padding:2px 8px; }

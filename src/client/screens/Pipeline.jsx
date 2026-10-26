@@ -74,6 +74,13 @@ export function Pipeline({ sel, setSel, density, isMobile, bootstrap }) {
     if (!problem) queue();
   };
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  /** "Revisions": the sent lease needs changes. Stage → Lease Revisions (autosaved) and the lease record opens in edit mode in a new tab. */
+  const revise = (r) => {
+    const lease = r.leases[0] || r.draftLease; if (!lease) return;
+    onEdit(r.key, 'stage', 'LEASE_REVISIONS');
+    if (isPreview()) { setMsg('Preview: the lease record would open in a new tab for editing.'); return; }
+    window.open(recordUrl('lease', lease.id, { edit: true }), '_blank', 'noopener');
+  };
   const revert = () => { setEdits({}); setResults({}); setMsg(''); };
   const applyToSelected = (field, value) => { setEdits((e) => { const n = { ...e }; for (const k of selection) { const row = rows.find((r) => r.key === k); if (row && row.editable) n[k] = { ...(n[k] || {}), [field]: value }; } return n; }); queue(); };
 
@@ -85,7 +92,9 @@ export function Pipeline({ sel, setSel, density, isMobile, bootstrap }) {
     { key: 'stage', label: 'Leasing stage', width: 250, type: 'select', options: PICKER, editable: false, value: stageOf, render: (v, r) => <span className="stage-cell">{r.editable
       ? <Select small ariaLabel="Leasing stage" value={v} onChange={(x) => onEdit(r.key, 'stage', x)} options={PICKER} renderValue={(o) => <StagePill stageKey={o.value} />} renderOption={(o) => <StagePill stageKey={o.value} />} />
       : <><StagePill stageKey={v} days={r.daysInStage} /><span className="muted small">{r.unitId ? 'set by the lease' : 'no unit record'}</span></>}
-      {r.editable && (v === 'READY_FOR_LEASE' || r.leaseTerms) && <button type="button" className="linkish small" onClick={(e) => { e.stopPropagation(); setDrawer({ kind: 'lease', row: r }); }}>{r.leaseTerms ? 'Lease terms · captured' : 'Add lease terms'}</button>}</span> },
+      {r.editable && (v === 'READY_FOR_LEASE' || r.leaseTerms) && <button type="button" className="linkish small" onClick={(e) => { e.stopPropagation(); setDrawer({ kind: 'lease', row: r }); }}>{r.leaseTerms ? 'Lease terms · captured' : 'Add lease terms'}</button>}
+      {(r.leases[0] || r.draftLease) && v !== 'LEASE_REVISIONS' && (r.unitId || r.rowId) && <button type="button" className="btn btn-sm revise-btn" title="Mark the lease as needing revisions and open the lease record" onClick={(e) => { e.stopPropagation(); revise(r); }}>Revisions…</button>}
+      {v === 'LEASE_REVISIONS' && (r.leases[0] || r.draftLease) && <a className="linkish small" href={recordUrl('lease', (r.leases[0] || r.draftLease).id, { edit: true })} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>Open lease to edit</a>}</span> },
     { key: 'daysInStage', label: 'Days in stage', type: 'number', width: 90, title: (v, r) => (r.stageDate ? `since ${fmtDate(r.stageDate)}` : 'nothing to measure'), render: (v) => (v == null ? <span className="muted">–</span> : <span className={cx('age', v >= 21 && 'stale', v >= 10 && v < 21 && 'old')}>{v}</span>) },
     { key: 'targetMonthly', label: 'Target rent', unit: '$/mo', type: 'money', width: 130, render: (v, r) => (v == null ? <span className="muted">no target</span> : <span className="tgt"><b>{fmtMoney(v)}</b><span className="muted small"> {fmtMoney(r.targetPerBed)}/bed</span>{r.vsTargetPerBed != null && Math.abs(r.vsTargetPerBed) >= 1 && <span className={cx('small', r.vsTargetPerBed > 0 ? 'delta up' : 'delta down')}> {r.vsTargetPerBed > 0 ? '+' : '−'}{fmtMoney(Math.abs(r.vsTargetPerBed))}/bed vs target</span>}</span>) },
     { key: 'lastOffer', label: 'Offered', unit: '$/bed', type: 'money', width: 104, editable: (r) => r.editable, validate: (v) => (v != null && v < 0 ? 'Offer cannot be negative' : null) },
@@ -106,12 +115,12 @@ export function Pipeline({ sel, setSel, density, isMobile, bootstrap }) {
         <label className="field"><span className="field-label">Stage</span><select value={e.stage || r.stage} disabled={!r.editable} onChange={(ev) => onEdit(r.key, 'stage', ev.target.value)}>{PICKER.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
         <label className="field"><span className="field-label">Follow-up</span><input type="date" value={e.followup ?? r.followup ?? ''} disabled={!r.editable} onChange={(ev) => onEdit(r.key, 'followup', ev.target.value)} /></label>
       </div>
-      <div className="card-row"><Button small onClick={() => setDrawer({ kind: 'history', row: r })}>History</Button><Button small onClick={() => setDrawer({ kind: 'notes', row: r })}>Notes {r.noteCount || ''}</Button></div>
+      <div className="card-row"><Button small onClick={() => setDrawer({ kind: 'history', row: r })}>History</Button><Button small onClick={() => setDrawer({ kind: 'notes', row: r })}>Notes {r.noteCount || ''}</Button>{(r.leases[0] || r.draftLease) && <Button small onClick={() => revise(r)}>Revisions…</Button>}</div>
     </div>
   );
   const toggleFilter = (k) => setView((v) => ({ ...v, [k]: v[k] ? '' : '1', page: 0 }));
   return (
-    <div className="screen">
+    <div className="screen fill">
       {data && <div className="pl-band">
         <Stat value={fmtInt(data.total)} label="Units" /><Stat value={fmtInt(data.totalBeds)} label="Beds" /><Stat value={fmtPct(execPct)} label="Executed" tone="ok" /><Stat value={fmtInt(stageCounts.LEASE_OUT || 0)} label="Out unsigned" tone="warn" /><Stat value={fmtInt(stageCounts.NONE || 0)} label="No stage" /><Stat value={fmtInt(stageCounts.OFFLINE || 0)} label="Offline" /><Stat value={fmtInt(data.breachCount)} label="Below settle" tone={data.breachCount ? 'bad' : ''} /><Stat value={fmtInt(data.needsActionCount)} label="Need action" tone={data.needsActionCount ? 'warn' : ''} />
         <div className="pl-bar-wrap"><div className="pl-bar">{data.totalBeds > 0 && funnel().map((s) => { const b = stageBeds[s.key] || 0; return b ? <i key={s.key} className={`st-${s.key}`} style={{ width: `${(b / data.totalBeds) * 100}%` }} title={`${s.label}: ${fmtInt(stageCounts[s.key] || 0)} units, ${fmtInt(b)} beds`} /> : null; })}</div><div className="legend small">{funnel().map((s) => <span key={s.key}><i className={`sw st-${s.key}`} />{s.label} <span className="muted">{fmtInt(stageCounts[s.key] || 0)}</span></span>)}</div></div>
@@ -131,7 +140,7 @@ export function Pipeline({ sel, setSel, density, isMobile, bootstrap }) {
       </div>
       {selection.size > 0 && <div className="bulkbar"><span>{selection.size} selected</span><Select label="Set stage on selected" value="" onChange={(v) => v && applyToSelected('stage', v)} options={[{ value: '', label: '…' }, ...PICKER]} /><Button small onClick={() => setSelection(new Set())}>Clear</Button></div>}
       {error ? <ErrorBox error={error} /> : (
-        <DataGrid className="pl" columns={columns} rows={rows} rowKey="key" edits={edits} onEdit={onEdit} results={results} selection={selection} onSelectionChange={setSelection} sort={sortState} onSort={onSort} loading={loading} density={density} rowHeight={{ comfortable: 64, compact: 44 }} isMobile={isMobile} cardRenderer={card}
+        <DataGrid className="pl fill" height={null} columns={columns} rows={rows} rowKey="key" edits={edits} onEdit={onEdit} results={results} selection={selection} onSelectionChange={setSelection} sort={sortState} onSort={onSort} loading={loading} density={density} rowHeight={{ comfortable: 64, compact: 44 }} isMobile={isMobile} cardRenderer={card}
           expanded={expanded} expandedHeight={360} renderExpanded={(r) => <UnitHistory row={r} sel={sel} onOpenNotes={(x) => setDrawer({ kind: 'notes', row: x })} onOpenLease={(x) => setDrawer({ kind: 'lease', row: x })} />}
           empty={{ title: 'No units match these filters', body: 'Widen the stage or availability filter, or clear the search.' }}
           footer={data && data.total > view.pageSize && <div className="pager"><Button small disabled={view.page === 0} onClick={() => setView({ ...view, page: view.page - 1 })}>‹ Prev</Button><span>{view.page * view.pageSize + 1}–{Math.min(data.total, (view.page + 1) * view.pageSize)} of {fmtInt(data.total)}</span><Button small disabled={(view.page + 1) * view.pageSize >= data.total} onClick={() => setView({ ...view, page: view.page + 1 })}>Next ›</Button></div>} />

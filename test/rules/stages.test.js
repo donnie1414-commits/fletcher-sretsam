@@ -34,7 +34,8 @@ test('effective stage: lease source wins, else manual, else none; days in stage'
   assert.equal(effectiveStage({ stage: null, stageSource: 'manual', manualStage: 'Renewal Offered' }), 'RENEWAL_OFFERED');
   assert.equal(effectiveStage({ stage: null, manualStage: null }), 'NONE');
   assert.equal(daysInStage('2026-10-01', '2026-10-23'), 22);
-  assert.equal(STAGES.length, 8);
+  assert.equal(STAGES.length, 9);
+  assert.ok(pickerStages().some((s) => s.key === 'LEASE_REVISIONS'), 'Lease Revisions is a human-owned stage the board may set');
 });
 test('effectiveStage accepts stage keys from the probed id lookup as well as labels and ids', async () => {
   const { effectiveStage } = await import('../../src/shared/rules/stages.js');

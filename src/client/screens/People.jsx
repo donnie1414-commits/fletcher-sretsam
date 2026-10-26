@@ -9,7 +9,7 @@ import { SavedViews } from './SavedViews.jsx';
 
 export function People({ sel, seg, setSeg, density, isMobile, bootstrap }) {
   return (
-    <div className="screen">
+    <div className="screen fill">
       <div className="subnav"><Segmented ariaLabel="People segment" value={seg} onChange={setSeg} options={[{ value: 'tenants', label: 'Tenants' }, { value: 'leads', label: 'Leads' }]} /></div>
       {seg === 'tenants' ? <Tenants sel={sel} density={density} isMobile={isMobile} bootstrap={bootstrap} /> : <Empty title="Leads is waiting on the discovery review" body="Leads are the same customer records as tenants, entering as Tenant-New. The §5.5.0 write-up (docs/LEAD-DISCOVERY.md) asks two model questions; the segment is designed once they are answered. The Tenants grid already shows the new inquiries that lack a Property." />}
     </div>
@@ -35,7 +35,7 @@ export function Tenants({ sel, density, isMobile, bootstrap }) {
   ], []);
   const statuses = data?.statuses || [];
   return (
-    <div>
+    <div className="fill-col">
       <div className="toolbar wrap">
         <Segmented ariaLabel="Tenant view" value={view.view} onChange={(v) => setView({ ...view, view: v, page: 0 })} options={[{ value: 'needs-attention', label: 'Needs attention' }, { value: 'all', label: 'All' }]} />
         <Select label="Status" value={view.status} onChange={(v) => setView({ ...view, status: v, page: 0 })} options={[{ value: '', label: 'Any' }, ...statuses.map((s) => ({ value: String(s.id), label: s.name }))]} />
@@ -46,7 +46,7 @@ export function Tenants({ sel, density, isMobile, bootstrap }) {
       </div>
       {selection.size > 0 && <div className="bulkbar"><span>{selection.size} selected</span><span className="muted small">Property and academic year append to the existing values; status replaces it.</span><Button small onClick={() => setAssign('property')}>Assign property…</Button><Button small onClick={() => setAssign('ay')}>Assign academic year…</Button><Button small onClick={() => setAssign('status')}>Set status…</Button><Button small onClick={() => setSelection(new Set())}>Clear</Button></div>}
       {error ? <ErrorBox error={error} /> : (
-        <DataGrid columns={columns} rows={rows} rowKey="id" selection={selection} onSelectionChange={setSelection} loading={loading} density={density} isMobile={isMobile}
+        <DataGrid className="fill" height={null} columns={columns} rows={rows} rowKey="id" selection={selection} onSelectionChange={setSelection} loading={loading} density={density} isMobile={isMobile}
           cardRenderer={(r) => <div className="card-body"><div className="card-top"><strong>{r.name}</strong>{r.ready.ready ? <Pill tone="done">ready</Pill> : <Pill tone="warn">blocked</Pill>}</div><div className="card-row muted">{r.status} · {r.properties.map((p) => p.name).join(', ') || 'no property'} · {r.academicYears.map((a) => a.label.replace('AY ', '')).join(', ') || 'no AY'}</div>{!r.ready.ready && <div className="card-row warn-text">{r.ready.reasons.join('; ')}</div>}{r.desiredLocation && <div className="card-row muted">asked for {r.desiredLocation}</div>}</div>}
           empty={{ title: view.view === 'needs-attention' ? 'Nobody is blocked' : 'No tenants match', body: view.view === 'needs-attention' ? 'Every tenant in your markets has a Property and an Academic Year.' : 'Try another status or clear the search.' }}
           footer={data && data.total > view.pageSize && <div className="pager"><Button small disabled={view.page === 0} onClick={() => setView({ ...view, page: view.page - 1 })}>‹ Prev</Button><span>{view.page * view.pageSize + 1}–{Math.min(data.total, (view.page + 1) * view.pageSize)} of {fmtInt(data.total)}</span><Button small disabled={(view.page + 1) * view.pageSize >= data.total} onClick={() => setView({ ...view, page: view.page + 1 })}>Next ›</Button></div>} />

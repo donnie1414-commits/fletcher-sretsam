@@ -131,7 +131,7 @@ export function DataGrid({ columns, rows, rowKey = 'key', edits = {}, onEdit, re
   }
   const widthTotal = cols.reduce((s, c) => s + (parseInt(c.width, 10) || 140), 0) + (onSelectionChange ? 36 : 0);
   return (
-    <div className={cx('grid', `density-${density}`, className)} role="grid" aria-rowcount={total + 1} aria-colcount={cols.length} onKeyDown={onKeyDown} onPaste={onPaste} tabIndex={0} style={{ height }}>
+    <div className={cx('grid', `density-${density}`, className)} role="grid" aria-rowcount={total + 1} aria-colcount={cols.length} onKeyDown={onKeyDown} onPaste={onPaste} tabIndex={0} style={height ? { height } : undefined}>
       <div className="grid-scroll" ref={scroller} onScroll={onScroll}>
         <div className="grid-inner" style={{ minWidth: widthTotal }}>
           <div className="head" role="row">

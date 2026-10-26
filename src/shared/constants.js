@@ -125,7 +125,9 @@ export const STAGES = Object.freeze([
   { key: 'READY_FOR_LEASE',  order: 4, owner: 'human',   label: 'Ready For Lease - Waiting on Forms', labels: ['ready for lease - waiting on forms', 'ready for lease', 'waiting on forms'] },
   { key: 'OFFLINE',          order: 5, owner: 'human',   label: 'Offline',                            labels: ['offline', 'off line', 'not leasing'] },
   { key: 'LEASE_OUT',        order: 6, owner: 'lease',   label: 'Lease Out - Unsigned',               labels: ['lease out - unsigned', 'lease out', 'unsigned', 'lease sent'] },
-  { key: 'FULLY_EXECUTED',   order: 7, owner: 'lease',   label: 'Fully Executed',                     labels: ['fully executed', 'executed', 'leased'] },
+  // Set from the board's "Revisions" action when a sent lease needs changes; the lease User Event takes the stage back once it is re-sent or signed.
+  { key: 'LEASE_REVISIONS',  order: 7, owner: 'human',   label: 'Lease Revisions',                    labels: ['lease revisions', 'revisions', 'lease revision'] },
+  { key: 'FULLY_EXECUTED',   order: 8, owner: 'lease',   label: 'Fully Executed',                     labels: ['fully executed', 'executed', 'leased'] },
 ]);
 
 /**

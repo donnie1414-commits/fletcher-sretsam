@@ -86,10 +86,10 @@ export async function post(route, body) {
   const res = await fetch(u.toString(), { method: 'POST', headers: { 'X-Requested-With': 'AmicusLeasing', 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify(body) });
   return res.json();
 }
-export function recordUrl(type, id) {
+export function recordUrl(type, id, { edit = false } = {}) {
   if (!id) return null;
   const rectype = { unit: 1058, property: 1057, lease: 1056, status: 1465 }[type];
-  if (rectype) return `/app/common/custom/custrecordentry.nl?rectype=${rectype}&id=${id}`;
+  if (rectype) return `/app/common/custom/custrecordentry.nl?rectype=${rectype}&id=${id}${edit ? '&e=T' : ''}`;
   if (type === 'customer') return `/app/common/entity/custjob.nl?id=${id}`;
   return null;
 }

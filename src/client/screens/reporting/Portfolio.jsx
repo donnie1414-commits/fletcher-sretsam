@@ -45,7 +45,7 @@ export function Portfolio({ sel, density, rt, setRt }) {
   if (error) return <ErrorBox error={error} />;
   const t = data ? data.total : null, v = data ? data.vacancy : null;
   return (
-    <div>
+    <div className="fill-col">
       <div className="toolbar wrap">
         <Select label="Report" value={report.key} onChange={(k) => setRt(k)} options={REPORT_TYPES.map((r) => ({ value: r.key, label: r.label }))} />
         <span className="muted small rt-note">{report.note}</span>
@@ -65,7 +65,7 @@ export function Portfolio({ sel, density, rt, setRt }) {
         <Tile label="Vacant Target Rent" value={fmtMoney(t.tgtVacant)} note="Monthly target on vacant beds" />
       </div>}
       {report.key === 'rent' && data && data.sameStore && <p className="muted small">Same-store: {fmtInt(data.sameStore.grains)} grains · {fmtInt(data.sameStore.beds)} beds. Dropped: {fmtInt(data.sameStore.dropped.excluded)} with an excluded lease, {fmtInt(data.sameStore.dropped.vacantCur)} not 100% leased this year, {fmtInt(data.sameStore.dropped.vacantPrior)} not 100% leased last year.</p>}
-      <DataGrid columns={cols} rows={rows} rowKey="key" loading={loading} density={density} empty={{ title: 'No rows match', body: vacancyOnly ? 'Nothing in scope has a vacant bed.' : 'Clear the filter.' }} />
+      <DataGrid className="fill" height={null} columns={cols} rows={rows} rowKey="key" loading={loading} density={density} empty={{ title: 'No rows match', body: vacancyOnly ? 'Nothing in scope has a vacant bed.' : 'Clear the filter.' }} />
     </div>
   );
 }

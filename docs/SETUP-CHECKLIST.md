@@ -30,6 +30,7 @@ Never put `amicus_leasing_app.js` on the Suitelet script record (§3.3). `npm ru
 | List | Add value | Why |
 |---|---|---|
 | `customlist_ad_leasing_stage` | **In Negotiations** (exact text) | §5.4; the server matches stages by label, so any id works. Retire nothing. |
+| `customlist_ad_leasing_stage` | **Lease Revisions** (exact text) | the board's "Revisions…" action sets it and opens the lease record; the lease User Event takes the stage back on the next sent/signed event. Until the value exists the action reports "has no value in the leasing-stage list yet". |
 
 ## D. Fields
 
