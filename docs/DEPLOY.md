@@ -6,7 +6,7 @@ The files are in the hand-back:
 
 | File | What it is | Size (bytes) | SHA-256 (first 12) |
 |---|---|---|---|
-| `amicus_leasing_sl.js` | the Suitelet (server). Starts `/** @NApiVersion 2.1 @NScriptType Suitelet` | 233,602 | `e014c410b50f` |
+| `amicus_leasing_sl.js` | the Suitelet (server). Starts `/** @NApiVersion 2.1 @NScriptType Suitelet` | 233,601 | `877821dd4d2f` |
 | `amicus_leasing_app.js` | the client bundle. One minified line starting `(()=>{` | 217,008 | `68eb54607cd7` |
 | `amicus_leasing_app.css` | the stylesheet. Starts `:root{--accent` | 42,332 | `5e5cc41e519f` |
 

@@ -91,7 +91,7 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
     if (!name && !fields.email) throw new WriteError('BAD_CHANGE', 'a lead needs a name or an email');
     if (fields.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(fields.email))) throw new WriteError('BAD_CHANGE', 'the email address does not look valid', { field: 'email' });
     if (fields.email && findByEmail) { const hits = findByEmail(fields.email); if (hits.length) throw new WriteError('DUPLICATE', `${[hits[0].firstname, hits[0].lastname].filter(Boolean).join(' ') || 'A customer'} already has this email (customer #${hits[0].id})`, { field: 'email', existingId: String(hits[0].id) }); }
-    fields.isperson = true;
+    fields.isperson = 'T'; // a radio field on the entity record: NetSuite rejects a boolean here ("Invalid Field Value true")
     if (fields.entitystatus == null || fields.entitystatus === '') fields.entitystatus = LEAD.STATUS_NEW;
     if (Object.prototype.hasOwnProperty.call(fields, LEAD.UNITS)) { let have = true; try { have = schema.probe(CUSTOMER.TYPE, [LEAD.UNITS]).get(LEAD.UNITS) !== false; } catch (e) { have = true; } if (!have) { delete fields[LEAD.UNITS]; change.dropped = [...(change.dropped || []), LEAD.UNITS]; } }
     if (fields.subsidiary == null || fields.subsidiary === '') { const sub = defaultSubsidiaryId ? defaultSubsidiaryId() : null; if (!sub) throw new WriteError('BAD_CHANGE', `the lead subsidiary "${LEAD.SUBSIDIARY_NAME}" was not found`); fields.subsidiary = sub; }

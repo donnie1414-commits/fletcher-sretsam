@@ -136,7 +136,7 @@ test('lead create: a Lead record at Lead-New in the Lead Form subsidiary, owned 
     { changeId: 'l4', recordType: CUSTOMER.TYPE, recordId: 777, fields: { firstname: 'Rename' } },
   ], scope);
   assert.equal(r.results[0].ok, true); const row = rs.store.lead[r.results[0].recordId]; assert.ok(row, 'created through the Lead record type');
-  assert.equal(row.entitystatus, LEAD.STATUS_NEW); assert.equal(row.isperson, true); assert.equal(row.subsidiary, 1); assert.equal(row.salesrep, 42); assert.deepEqual(row[CUSTOMER.PROPERTY], [10]);
+  assert.equal(row.entitystatus, LEAD.STATUS_NEW); assert.equal(row.isperson, 'T', 'isperson is a radio field: T, never a boolean'); assert.equal(row.subsidiary, 1); assert.equal(row.salesrep, 42); assert.deepEqual(row[CUSTOMER.PROPERTY], [10]);
   assert.equal(r.results[1].code, 'DUPLICATE'); assert.equal(r.results[1].existingId, '777');
   assert.equal(r.results[2].code, 'BAD_CHANGE');
   assert.equal(r.results[3].code, 'DENIED_FIELD');

@@ -1298,7 +1298,7 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
       const hits = findByEmail(fields.email);
       if (hits.length) throw new WriteError("DUPLICATE", `${[hits[0].firstname, hits[0].lastname].filter(Boolean).join(" ") || "A customer"} already has this email (customer #${hits[0].id})`, { field: "email", existingId: String(hits[0].id) });
     }
-    fields.isperson = true;
+    fields.isperson = "T";
     if (fields.entitystatus == null || fields.entitystatus === "") fields.entitystatus = LEAD.STATUS_NEW;
     if (Object.prototype.hasOwnProperty.call(fields, LEAD.UNITS)) {
       let have = true;
