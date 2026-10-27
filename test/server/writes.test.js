@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { createWrites, sameVersion } from '../../src/server/writes.js';
 import { createAuth } from '../../src/server/auth.js';
 import { fakeRuntime, fakeSuiteQL, fakeRecordStore, fakeLog, fakeSchema } from './fakes.js';
-import { UAS, LEASE, CUSTOMER, AUDIT } from '../../src/shared/constants.js';
+import { UAS, LEASE, CUSTOMER, AUDIT, TOUR, LEAD } from '../../src/shared/constants.js';
 
-function build({ employeeMarkets = 'Bethlehem', usage = 1000, auditMissing = false, store = {}, tenantLinks = { props: [], ays: [] }, marketOf = () => 'lehigh' } = {}) {
+function build({ employeeMarkets = 'Bethlehem', usage = 1000, auditMissing = false, store = {}, tenantLinks = { props: [], ays: [] }, marketOf = () => 'lehigh', tourFields = null, existingEmails = {}, outcomeIdFor = (k) => ({ SCHEDULED: 1, COMPLETED: 2, NO_SHOW: 3, CANCELLED: 4, LEASED: 5 })[k] || null } = {}) {
   const auditRows = [];
   const rs = fakeRecordStore(store);
   const sq = fakeSuiteQL([
@@ -21,7 +21,7 @@ function build({ employeeMarkets = 'Bethlehem', usage = 1000, auditMissing = fal
   // audit records written through record.create land in the fake store; expose them to the replay query
   const origCreate = rs.record.create;
   rs.record.create = (o) => { const r = origCreate(o); if (o.type === AUDIT.TYPE) { const vals = {}; const set = r.setValue; r.setValue = ({ fieldId, value }) => { vals[fieldId] = value; set({ fieldId, value }); }; const save = r.save; r.save = () => { const id = save(); auditRows.push({ changeId: vals[AUDIT.CHANGE_ID], rt: vals[AUDIT.RECORD_TYPE], rid: vals[AUDIT.RECORD_ID], after: vals[AUDIT.AFTER] }); return id; }; } return r; };
-  const writes = createWrites({ record: rs.record, sq, runtime, log: fakeLog, schema, auth, marketOf, clock: () => '2026-10-24T12:00:00.000Z' });
+  const writes = createWrites({ record: rs.record, sq, runtime, log: fakeLog, schema, auth, marketOf, clock: () => '2026-10-24T12:00:00.000Z', tourFields, outcomeIdFor, defaultSubsidiaryId: () => 1, findByEmail: (e) => existingEmails[String(e).toLowerCase()] || [] });
   return { writes, scope: auth.resolve(), rs, auditRows, runtime };
 }
 const uasStore = () => ({ [UAS.TYPE]: { 11: { [UAS.STAGE]: null, [UAS.FOLLOWUP]: null, lastmodified: 'v0' } } });
@@ -125,4 +125,43 @@ test('version check: the SuiteQL stamp the row was read with matches the same st
   assert.equal(sameVersion('10/20/2026', '10/21/2026'), false);
   assert.equal(sameVersion(new Date(2026, 9, 20, 13, 34), '2026-10-20T13:34'), true);
   assert.equal(sameVersion(null, 'v0'), true, 'no stamp on record ⇒ nothing to compare');
+});
+
+test('lead create: a person at Tenant-New in the Lead Form subsidiary, owned by the creator; identity fields are creation-only; duplicates by email are refused with the existing id', () => {
+  const { writes, scope, rs } = build({ existingEmails: { 'dup@example.com': [{ id: 777, firstname: 'Dee', lastname: 'Dup' }] } });
+  const r = writes.apply([
+    { changeId: 'l1', recordType: CUSTOMER.TYPE, fields: { firstname: 'Ann', lastname: 'Lee', email: 'ann@example.com', custentity_serp_schools: 2, [CUSTOMER.PROPERTY]: [10], custentity_desired_location: '411 Webster' } },
+    { changeId: 'l2', recordType: CUSTOMER.TYPE, fields: { firstname: 'Dee', email: 'dup@example.com' } },
+    { changeId: 'l3', recordType: CUSTOMER.TYPE, fields: { custentity_desired_location: 'no name no email' } },
+    { changeId: 'l4', recordType: CUSTOMER.TYPE, recordId: 777, fields: { firstname: 'Rename' } },
+  ], scope);
+  assert.equal(r.results[0].ok, true); const row = rs.store[CUSTOMER.TYPE][r.results[0].recordId];
+  assert.equal(row.entitystatus, LEAD.STATUS_NEW); assert.equal(row.isperson, true); assert.equal(row.subsidiary, 1); assert.equal(row.salesrep, 42); assert.deepEqual(row[CUSTOMER.PROPERTY], [10]);
+  assert.equal(r.results[1].code, 'DUPLICATE'); assert.equal(r.results[1].existingId, '777');
+  assert.equal(r.results[2].code, 'BAD_CHANGE');
+  assert.equal(r.results[3].code, 'DENIED_FIELD');
+});
+test('tour create: an Event on the organiser calendar with defaults; times become Dates on the tour date; a lead created in the same batch is linked through $prev', () => {
+  const { writes, scope, rs } = build();
+  const r = writes.apply([
+    { changeId: 't0', recordType: CUSTOMER.TYPE, fields: { firstname: 'Walk', lastname: 'In', email: 'walk@example.com' } },
+    { changeId: 't1', recordType: TOUR.TYPE, fields: { title: 'Tour · Walk In', startdate: '2026-11-03', starttime: '10:30', company: '$prev', [TOUR.UNIT]: 55, [TOUR.AY]: 2 } },
+    { changeId: 't2', recordType: TOUR.TYPE, fields: { starttime: '10:30' } },
+  ], scope);
+  assert.equal(r.results[1].ok, true); const ev = rs.store[TOUR.TYPE][r.results[1].recordId];
+  assert.equal(ev.company, Number(r.results[0].recordId)); assert.equal(ev.organizer, 42); assert.equal(ev.status, 'CONFIRMED'); assert.equal(ev.accesslevel, 'PUBLIC'); assert.equal(ev.timedevent, true);
+  assert.ok(ev.startdate instanceof Date && ev.startdate.getDate() === 3); assert.ok(ev.starttime instanceof Date && ev.starttime.getHours() === 10 && ev.starttime.getMinutes() === 30 && ev.starttime.getDate() === 3, 'start time carries the tour date');
+  assert.ok(ev.endtime instanceof Date && ev.endtime.getHours() === 11 && ev.endtime.getMinutes() === 0, 'end = start + 30 min by default');
+  assert.equal(r.results[2].code, 'BAD_CHANGE');
+});
+test('tour: missing custom fields are dropped and reported, the outcome key maps to the list id, Cancelled also cancels the event', () => {
+  const { writes, scope, rs } = build({ tourFields: () => ({ unit: false, outcome: true, ay: false }), store: { [TOUR.TYPE]: { 500: { title: 'Tour', startdate: new Date(2026, 10, 3), status: 'CONFIRMED', lastmodified: 'v0' } } } });
+  const r = writes.apply([
+    { changeId: 'u1', recordType: TOUR.TYPE, fields: { startdate: '2026-11-03', [TOUR.UNIT]: 55, [TOUR.AY]: 2, [TOUR.OUTCOME]: 'SCHEDULED' } },
+    { changeId: 'u2', recordType: TOUR.TYPE, recordId: 500, fields: { [TOUR.OUTCOME]: 'CANCELLED' } },
+    { changeId: 'u3', recordType: TOUR.TYPE, recordId: 500, fields: { [TOUR.OUTCOME]: 'BOGUS' } },
+  ], scope);
+  assert.equal(r.results[0].ok, true); assert.deepEqual(r.results[0].dropped, [TOUR.UNIT, TOUR.AY]); const ev = rs.store[TOUR.TYPE][r.results[0].recordId]; assert.equal(ev[TOUR.UNIT], undefined); assert.equal(ev[TOUR.OUTCOME], 1);
+  assert.equal(r.results[1].ok, true); assert.equal(rs.store[TOUR.TYPE][500][TOUR.OUTCOME], 4); assert.equal(rs.store[TOUR.TYPE][500].status, 'CANCELLED');
+  assert.equal(r.results[2].code, 'BAD_CHANGE');
 });

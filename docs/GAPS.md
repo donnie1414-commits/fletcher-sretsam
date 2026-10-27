@@ -99,6 +99,16 @@ Legend: **✓ built** · **≈ built differently** (same information, new placem
 | Zero-bed scope | excluded (`ZERO_BEDS`) for every segment | excluded for bed segments; **rent-only segments place** | A-21 |
 | Weekly dating | by basis (sent / signed) | now the same | A-14 |
 
+## Added after v2 parity (2026-10-27)
+
+| Feature | Where | Notes |
+|---|---|---|
+| Schedule a tour | Today › Schedule tour; Pipeline › Tours column › Tour…; People › Leads › Tour… | NetSuite Event on the agent's calendar (A-23); update outcome from the same dialog |
+| My calendar | header › Calendar; Today; Leads toolbar | opens NetSuite's calendar page (the tours are its events) |
+| Add a lead | Today › + Add lead; People › Leads › + Add lead | creates the Lead Form's record (A-22); optional first tour in the same save; duplicate email guard |
+| Leads segment | People › Leads | New (14 days) · No tour · No property · All; next/last tour, source, agent, school, asked-for; bulk property/AY; CSV |
+| Leads with no next action | Today | new inquiries in scope with no property and no tour |
+
 ## Not carried over on purpose
 
 - Server-rendered HTML tabs and the 1,400-row client table: replaced by JSON routes + one virtualized grid (§3.6, §4.1).

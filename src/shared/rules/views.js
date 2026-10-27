@@ -47,3 +47,19 @@ export function applyTenantView(rows, q = {}) {
   const pageSize = Math.min(500, Math.max(25, Number(q.pageSize) || 100)), page = Math.max(0, Number(q.page) || 0);
   return { total: out.length, page, pageSize, rows: out.slice(page * pageSize, (page + 1) * pageSize) };
 }
+
+/** Leads segment views (§6.5): filter, sort and page the lead rows the same way on the server and in the preview. */
+export function applyLeadView(all, params = {}) {
+  const view = params.view || 'new';
+  let rows = all;
+  if (params.q) { const needle = String(params.q).toLowerCase(); rows = rows.filter((r) => [r.name, r.email, r.phone, r.desiredLocation, r.school].some((v) => v && String(v).toLowerCase().includes(needle))); }
+  const counts = { new: rows.filter((r) => r.isNew).length, 'no-tour': rows.filter((r) => !r.nextTour && !r.lastTour).length, 'no-property': rows.filter((r) => !r.properties.length).length, all: rows.length };
+  if (view === 'new') rows = rows.filter((r) => r.isNew);
+  else if (view === 'no-tour') rows = rows.filter((r) => !r.nextTour && !r.lastTour);
+  else if (view === 'no-property') rows = rows.filter((r) => !r.properties.length);
+  const sort = params.sort || 'created';
+  const cmp = { created: (a, b) => (b.created || '').localeCompare(a.created || ''), name: (a, b) => a.name.localeCompare(b.name), tour: (a, b) => (a.nextTour ? a.nextTour.date : '9999').localeCompare(b.nextTour ? b.nextTour.date : '9999'), school: (a, b) => (a.school || '').localeCompare(b.school || '') }[sort] || null;
+  if (cmp) rows = rows.slice().sort(cmp);
+  const pageSize = Math.min(500, Math.max(25, Number(params.pageSize) || 100)), page = Math.max(0, Number(params.page) || 0);
+  return { total: rows.length, page, pageSize, rows: rows.slice(page * pageSize, (page + 1) * pageSize), counts, view };
+}

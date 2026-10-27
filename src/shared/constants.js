@@ -347,6 +347,23 @@ export const TOUR = Object.freeze({
   OUTCOME: 'custevent_ad_tour_outcome',
   AY: 'custevent_ad_tour_ay',
   OUTCOME_LIST: 'customlist_ad_tour_outcome',
+  // native Event fields the app writes (§5.6): a tour is a NetSuite Event organised by the agent, so it is on their calendar
+  STATUS: Object.freeze({ CONFIRMED: 'CONFIRMED', TENTATIVE: 'TENTATIVE', CANCELLED: 'CANCELLED' }),
+  DEFAULT_MINUTES: 30,
+  TITLE_PREFIX: 'Tour',
+});
+/** NetSuite's own calendar page: the "my calendar" link in the header and on Today. */
+export const CALENDAR_URL = '/app/crm/calendar/calendar.nl';
+/**
+ * Leads (§6.5, LEAD-DISCOVERY): a lead is a customer record at Tenant-New, exactly what the public Lead Form creates (A-22).
+ * The hub creates them the same way so every downstream count keeps working; it adds the owning agent on the native Sales Rep field.
+ */
+export const LEAD = Object.freeze({
+  STATUS_NEW: 17,                              // entitystatus "Tenant - New"
+  SUBSIDIARY_NAME: 'Amicus Parent Company',    // the subsidiary the Lead Form uses for new inquiries
+  AGENT: 'salesrep',
+  NEW_DAYS: 14,                                // "new" view = created in the last N days
+  CREATE_FIELDS: Object.freeze(['firstname', 'lastname', 'email', 'phone', 'mobilephone', 'isperson', 'subsidiary', 'salesrep', 'custentity_serp_group_size', 'custentity_serp_house_mates']),
 });
 export const TOUR_OUTCOMES = Object.freeze([
   { key: 'SCHEDULED', label: 'Scheduled' },

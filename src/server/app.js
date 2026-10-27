@@ -7,6 +7,7 @@ import { createSuiteQL } from './dao/suiteql.js';
 import { createPortfolioDao } from './dao/portfolio.js';
 import { createPipelineDao } from './dao/pipeline.js';
 import { createPeopleDao } from './dao/people.js';
+import { createToursDao } from './dao/tours.js';
 import { createAuth } from './auth.js';
 import { createWrites } from './writes.js';
 import { prepare, runEngine, lookupsFromLists } from '../shared/rules/index.js';
@@ -18,6 +19,7 @@ import { routeUnitHistory } from './routes/unitHistory.js';
 import { routeTeam } from './routes/team.js';
 import { routePipeline } from './routes/pipeline.js';
 import { routeTenants, routeLeads } from './routes/people.js';
+import { routeTours, outcomeIdFor } from './routes/tours.js';
 import { routeExceptions } from './routes/exceptions.js';
 import { routeToday } from './routes/today.js';
 import { routeSavedViews } from './routes/savedViews.js';
@@ -25,13 +27,13 @@ import { routeWrite } from './routes/write.js';
 import { routeLeaseDialog } from './routes/leaseDialog.js';
 import { routeNotes } from './routes/notes.js';
 import { renderShell, serveAsset } from './shell.js';
-import { MARKETS, UAS, LEASE, CUSTOMER, TOUR, SAVED_VIEW, FEATURE_FLAGS } from '../shared/constants.js';
+import { MARKETS, UAS, LEASE, CUSTOMER, TOUR, SAVED_VIEW, FEATURE_FLAGS, LEAD } from '../shared/constants.js';
 
 export function createApp(N) {
   const log = N.log;
   const schema = createSchema({ query: N.query, log, cache: N.cache ? safeCache(N.cache) : null });
   const sq = createSuiteQL({ query: N.query, log });
-  const dao = { portfolio: createPortfolioDao({ sq, schema }), pipeline: createPipelineDao({ sq, schema }), people: createPeopleDao({ sq, schema }) };
+  const dao = { portfolio: createPortfolioDao({ sq, schema }), pipeline: createPipelineDao({ sq, schema }), people: createPeopleDao({ sq, schema }), tours: createToursDao({ sq, schema, log }) };
   const auth = createAuth({ runtime: N.runtime, sq, schema, log });
 
   /** Per-request context: scope, params, lazily loaded portfolio + engine runs. */
@@ -69,13 +71,16 @@ export function createApp(N) {
       scopedSummary: (r, sel) => scopedSummary(r, scope, sel), scopedTree: (r, sel) => scopedTree(r, scope, sel), inScope: (m) => inScope(scope, m),
       propertyIdsInScope: () => propertyIdsInScope(ctx.load().prepared.inventory, scope),
       selection() { return { fund: params.fund || null, marketId: params.market && inScope(scope, params.market) ? params.market : null }; },
-      probeAll() { for (const fn of [dao.portfolio.probe, dao.pipeline.probe, dao.people.probe]) { try { fn(); } catch (e) { log.error({ title: 'probeAll', details: e && e.message }); } } },
+      probeAll() { for (const fn of [dao.portfolio.probe, dao.pipeline.probe, dao.people.probe, dao.tours.probe]) { try { fn(); } catch (e) { log.error({ title: 'probeAll', details: e && e.message }); } } },
     };
-    ctx.writes = createWrites({ record: N.record, sq, runtime: N.runtime, log, schema, auth, marketOf: (type, id, fields) => marketOf(ctx, type, id, fields), stageIdFor: (key) => { for (const [id, k] of Object.entries(ctx.load().lookups.stageIds)) if (k === key) return Number(id); return null; } });
+    ctx.writes = createWrites({ record: N.record, sq, runtime: N.runtime, log, schema, auth, marketOf: (type, id, fields) => marketOf(ctx, type, id, fields), stageIdFor: (key) => { for (const [id, k] of Object.entries(ctx.load().lookups.stageIds)) if (k === key) return Number(id); return null; },
+      outcomeIdFor: (key) => outcomeIdFor(dao.portfolio.lists(), key), tourFields: () => dao.tours.fields(),
+      defaultSubsidiaryId: () => { const subs = dao.portfolio.subsidiaries(); const hit = subs.find((x) => String(x.name).trim().toLowerCase() === LEAD.SUBSIDIARY_NAME.toLowerCase()) || subs.find((x) => x.parent == null); return hit ? Number(hit.id) : null; },
+      findByEmail: (email) => dao.people.byEmail(email) });
     return ctx;
   }
 
-  const routes = { bootstrap: routeBootstrap, lists: routeLists, summary: routeSummary, portfolio: routePortfolio, weekly: routeWeekly, velocity: routeVelocity, pipeline: routePipeline, unithistory: routeUnitHistory, team: routeTeam, tenants: routeTenants, leads: routeLeads, exceptions: routeExceptions, today: routeToday, savedviews: routeSavedViews, write: routeWrite, leasedialog: routeLeaseDialog, notes: routeNotes };
+  const routes = { bootstrap: routeBootstrap, lists: routeLists, summary: routeSummary, portfolio: routePortfolio, weekly: routeWeekly, velocity: routeVelocity, pipeline: routePipeline, unithistory: routeUnitHistory, team: routeTeam, tenants: routeTenants, leads: routeLeads, tours: routeTours, exceptions: routeExceptions, today: routeToday, savedviews: routeSavedViews, write: routeWrite, leasedialog: routeLeaseDialog, notes: routeNotes };
 
   function handle(context) {
     const route = String((context.request.parameters || {}).route || '').toLowerCase();
@@ -118,12 +123,20 @@ export function marketOf(ctx, type, id, fields) {
     // Assigned properties must themselves be in scope.
     const assigned = Array.isArray(fields[CUSTOMER.PROPERTY]) ? fields[CUSTOMER.PROPERTY] : [];
     for (const p of assigned) { const m = ctx.marketOfProperty(p); if (!ctx.inScope(m)) return m || 'unknown'; }
+    if (id == null) return assigned.length ? ctx.marketOfProperty(assigned[0]) : (ctx.scope.all ? 'unknown' : ctx.scope.marketIds[0] || null); // a new lead: its property's market, else the creator's own
     const links = sq.few(`SELECT maptwo AS property FROM ${CUSTOMER.PROPERTY_MAP} WHERE mapone = ?`, [Number(id)]);
     if (!links.length) return ctx.scope.all ? 'unknown' : ctx.scope.marketIds[0] || null;
     for (const l of links) { const m = ctx.marketOfProperty(l.property); if (ctx.inScope(m)) return m; }
     return ctx.marketOfProperty(links[0].property);
   }
-  if (type === TOUR.TYPE) { const unit = fields[TOUR.UNIT]; if (!unit) return null; const inv = ctx.load().prepared.inventory; const u = inv.unitsById.get(String(unit)) || (inv.bedroomsById.get(String(unit)) && inv.unitsById.get(inv.bedroomsById.get(String(unit)).unitId)); return u ? ctx.marketOfProperty(u.propertyId) : null; }
+  if (type === TOUR.TYPE) {
+    // A tour's market is its unit's; without a unit (a lead with no property yet) it is the lead's property market, else the organiser's own.
+    const unit = fields[TOUR.UNIT] ?? (id ? (sq.one(`SELECT ${TOUR.UNIT} AS unit FROM ${TOUR.TYPE} WHERE id = ?`, [Number(id)]) || {}).unit : null);
+    if (unit) { const inv = ctx.load().prepared.inventory; const u = inv.unitsById.get(String(unit)) || (inv.bedroomsById.get(String(unit)) && inv.unitsById.get(inv.bedroomsById.get(String(unit)).unitId)); return u ? ctx.marketOfProperty(u.propertyId) : 'unknown'; }
+    const company = fields.company ?? (id ? (sq.one(`SELECT company FROM ${TOUR.TYPE} WHERE id = ?`, [Number(id)]) || {}).company : null);
+    if (company && company !== '$prev') { const links = sq.few(`SELECT maptwo AS property FROM ${CUSTOMER.PROPERTY_MAP} WHERE mapone = ?`, [Number(company)]); for (const l of links) { const m = ctx.marketOfProperty(l.property); if (ctx.inScope(m)) return m; } if (links.length) return ctx.marketOfProperty(links[0].property); }
+    return ctx.scope.all ? 'unknown' : ctx.scope.marketIds[0] || null;
+  }
   if (type === SAVED_VIEW.TYPE) return ctx.scope.all ? 'unknown' : ctx.scope.marketIds[0] || null; // owner-scoped, checked in the route
   return null;
 }

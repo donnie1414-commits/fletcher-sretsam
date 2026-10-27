@@ -10,6 +10,18 @@ import { fakeQuery } from '../../tools/fake-netsuite.mjs';
 
 const snaps = fs.readdirSync('test/fixtures').filter((d) => d.startsWith('snapshot-')).sort();
 const fx = snaps.length ? loadFixture(path.join('test/fixtures', snaps[snaps.length - 1])) : null;
+// Synthetic tours (calendar events) on top of the snapshot: two for one Tenant-New lead on a real unit, one cancelled, one for another agent.
+if (fx) {
+  const lead = fx.customers.find((c) => c.entitystatus === 17 && c.isinactive !== 'T' && !c.property);
+  const unit = fx.units.find((u) => u.isinactive !== 'T' && u.property);
+  const today = new Date().toISOString().slice(0, 10);
+  fx.tours = [
+    { id: 9001, title: 'Tour · lead', startdate: today, starttime: '10:00', endtime: '10:30', organizer: 42, status: 'CONFIRMED', location: 'x', message: '', company: lead.id, company_name: `${lead.firstname} ${lead.lastname}`, lastmodifieddate: '2026-10-27', unit: unit.id, outcome: 1, ay: 2 },
+    { id: 9002, title: 'Tour · cancelled', startdate: today, starttime: '14:00', endtime: '14:30', organizer: 42, status: 'CANCELLED', location: 'x', message: '', company: lead.id, lastmodifieddate: '2026-10-27', unit: unit.id, outcome: 4, ay: 2 },
+    { id: 9003, title: 'Tour · other agent', startdate: today, starttime: '09:00', endtime: '09:30', organizer: 43, status: 'CONFIRMED', location: 'x', message: '', company: null, lastmodifieddate: '2026-10-27', unit: unit.id, outcome: null, ay: 2 },
+  ];
+  fx.testLead = lead; fx.testUnit = unit;
+}
 
 function request(app, params = {}, method = 'GET', body = null) {
   let out = ''; const headers = {};
@@ -54,7 +66,18 @@ test('server path against the snapshot', { skip: fx ? false : 'no snapshot' }, a
     const ex = request(app, { route: 'exceptions', ay: '2027' }).json(); assert.ok(ex.groups.length >= 1); assert.ok(ex.groups.every((g, i, a) => i === 0 || a[i - 1].severity <= g.severity));
     const today = request(app, { route: 'today', ay: '2027' }).json(); assert.ok(today.exceptions.count >= 0 && today.blockedTenants);
     const ten = request(app, { route: 'tenants', pageSize: '25' }).json(); assert.equal(ten.rows.length, 25); assert.ok(ten.rows.every((r) => r.ready && Array.isArray(r.ready.reasons)));
-    const leads = request(app, { route: 'leads' }).json(); assert.equal(leads.meta.status, 501);
+    const tours = request(app, { route: 'tours', view: 'all' }).json(); assert.equal(tours.available, true); assert.equal(tours.rows.length, 3, 'all three events read back'); assert.equal(tours.rows[0].start, '09:00'); assert.equal(tours.rows.find((r) => r.id === '9002').outcome, 'CANCELLED'); assert.ok(tours.rows[0].unit && tours.rows[0].property && tours.rows[0].market, 'unit → property → market resolved from the inventory'); assert.ok(tours.outcomes.find((o) => o.key === 'NO_SHOW').id === 3);
+    const mine = request(app, { route: 'tours', view: 'mine' }).json(); assert.equal(mine.rows.length, 2, 'mine = organised by me (42)');
+    const leads = request(app, { route: 'leads', view: 'all', pageSize: '500' }).json(); assert.ok(leads.total > 100, `leads total ${leads.total}`); assert.ok(leads.rows.every((r) => r.statusId === 17 && r.properties !== undefined)); const L = leads.rows.find((r) => r.id === String(fx.testLead.id)); assert.ok(L, 'the lead with tours is in the set'); assert.equal(L.tourCount, 1, 'the cancelled tour is not counted'); assert.equal(L.nextTour.id, '9001');
+    const noTour = request(app, { route: 'leads', view: 'no-tour', pageSize: '500' }).json(); assert.ok(!noTour.rows.some((r) => r.id === String(fx.testLead.id)));
+    assert.equal(today.tours.count, 2, 'today: the two live tours'); assert.ok(today.tours.calendarUrl); assert.ok(today.leads.count > 0 && today.leads.rows.length <= 25);
+    const pl = request(app, { route: 'pipeline', ay: '2027', pageSize: '500', q: fx.testUnit.name }).json(); const row = pl.rows.find((r) => r.unitId === String(fx.testUnit.id)); assert.ok(row, 'unit row found'); assert.equal(row.tours, 2, 'two live tours on the unit this year'); assert.equal(row.nextTour, new Date().toISOString().slice(0, 10));
+  });
+  await t.test('calendar events unreadable: tours degrade to off with a reason, nothing else breaks', () => {
+    const off = createApp({ ...N, query: fakeQuery({ ...fx, toursUnavailable: true }) });
+    const tours = request(off, { route: 'tours' }).json(); assert.equal(tours.available, false); assert.deepEqual(tours.rows, []); assert.ok(tours.degraded.some((d) => d.feature === 'tours'));
+    const today = request(off, { route: 'today', ay: '2027' }).json(); assert.equal(today.tours.available, false); assert.ok(today.leads.count >= 0);
+    const leads = request(off, { route: 'leads', view: 'all' }).json(); assert.equal(leads.toursAvailable, false); assert.ok(leads.total > 0);
   });
   await t.test('a scoped user only sees their markets and cannot widen the selection', () => {
     const scoped = createApp({ ...N, runtime: fakeRuntime({ roleId: 1000 }) });

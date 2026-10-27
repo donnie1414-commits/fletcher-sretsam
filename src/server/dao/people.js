@@ -22,6 +22,7 @@ export function createPeopleDao({ sq, schema }) {
       { field: 'custentity_serp_notes', as: 'notes', optional: true },
       { field: 'custentity_serp_howdid_you_hear_about_us', as: 'hear_us', optional: true, feature: 'lead source' },
       { field: 'custentity12', as: 'agent_assigned', optional: true, feature: 'agent assigned' },
+      { field: 'salesrep', as: 'agent' }, { field: 'salesrep', as: 'agent_name', expr: 'BUILTIN.DF(c.salesrep)' },
       { field: 'custentity9', as: 'tour_date', optional: true }, { field: 'custentity3', as: 'tour_scheduled', optional: true },
       { field: 'custentity4', as: 'lease_sent', optional: true }, { field: 'custentity5', as: 'lease_signed', optional: true },
       { field: CUSTOMER.RR_UPLOAD_STATUS, as: 'rr_upload_status', optional: true },
@@ -57,6 +58,8 @@ export function createPeopleDao({ sq, schema }) {
   function duplicates() {
     return sq.few(`SELECT LOWER(email) AS email, COUNT(*) AS n FROM ${C} WHERE isinactive = 'F' AND email IS NOT NULL GROUP BY LOWER(email) HAVING COUNT(*) > 1`);
   }
+  /** Active customers sharing an email (the lead dialog's duplicate check). */
+  function byEmail(email) { if (!email) return []; return sq.few(`SELECT id, firstname, lastname, entitystatus, datecreated FROM ${C} WHERE isinactive = 'F' AND LOWER(email) = '${esc(String(email).trim().toLowerCase())}' ORDER BY id`); }
   function statusList() { return sq.few(`SELECT key AS id, name, entitytype, inactive FROM entitystatus ORDER BY entitytype, key`); }
   /** The @mention picker: employees with the Lease KPI Markets field set (the leasing team). Degrades to [] when the role cannot read employees. */
   function team() {
@@ -64,5 +67,5 @@ export function createPeopleDao({ sq, schema }) {
     catch (e) { try { return sq.few(`SELECT e.id, e.entityid FROM employee e WHERE e.isinactive = 'F' AND e.custentity_lkr_markets IS NOT NULL ORDER BY e.entityid`).map((e) => ({ id: String(e.id), name: e.entityid })); } catch (e2) { return []; } }
   }
   function probe() { select(); }
-  return { tenants, byIds, propertyLinks, ayLinks, leaseLinks, duplicates, statusList, team, probe };
+  return { tenants, byIds, byEmail, propertyLinks, ayLinks, leaseLinks, duplicates, statusList, team, probe };
 }

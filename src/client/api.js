@@ -2,7 +2,7 @@
  * JSON transport. In NetSuite: fetch(scriptUrl + '&route=…'). In the preview harness window.__AL_PREVIEW
  * answers from precomputed files with the same pure view helpers the server uses.
  */
-import { applyPipelineView, applyTenantView } from '../shared/rules/views.js';
+import { applyPipelineView, applyTenantView, applyLeadView } from '../shared/rules/views.js';
 
 const cache = new Map();
 let bootstrap = null;
@@ -58,9 +58,10 @@ async function previewGet(route, params) {
       return { ay: Number(ay), ayId: ayRow.id, ayNextId: next.id, basis, property: { id: row.propertyId, name: row.property, marketId: row.market, calendar: market ? market.calendar : null, units: siblings.map((r) => ({ id: r.unitId, name: r.unit, beds: r.beds, targetMonthly: r.targetMonthly, settleMonthly: r.settleMonthly })) }, unit: { id: row.unitId, name: row.unit, beds: row.beds, targetMonthly: row.targetMonthly, settleMonthly: row.settleMonthly, bedrooms: row.bedrooms }, priorTenantNames: [], ids: { leaseType: Object.fromEntries(Object.entries(boot.ids.leaseType).map(([id, k]) => [k, id])), groupType: { NEW: '1', TRANSFER: '2', RENEWAL: '3' } } };
     }
     case 'notes': { const full = await pick(`pipeline-${combo}`); const row = full.rows.find((r) => r.rowId === String(params.row)); return { rowId: params.row, legacy: row ? row.notes : null, notes: row && row.lastNote ? [row.lastNote] : [] }; }
-    case 'team': return { me: '42', team: [], available: false };
+    case 'team': return { me: '42', team: [{ id: '42', name: 'Preview (administrator scope)' }, { id: '43', name: 'Second Agent' }], available: true };
+    case 'tours': { const full = await load('tours'); let rows = full.rows; if (params.view === 'mine') rows = rows.filter((r) => r.organizerId === '42'); if (params.customer) { const ids = String(params.customer).split(','); rows = rows.filter((r) => ids.includes(r.customerId)); } if (params.from) rows = rows.filter((r) => r.date >= params.from); if (params.to) rows = rows.filter((r) => r.date <= params.to); return { ...full, rows }; }
+    case 'leads': { const full = await load('leads'); return { ...full, ...applyLeadView(full.rows, params) }; }
     case 'tenants': { const full = await load('tenants'); return { ...full, ...applyTenantView(full.rows, params) }; }
-    case 'leads': return { error: 'Leads workspace is not designed yet: the §5.5.0 lead discovery write-up is awaiting review.', meta: { status: 501 } };
     case 'savedviews': { try { return { views: JSON.parse(localStorage.getItem('al.views') || '[]') }; } catch (e) { return { views: [] }; } }
     default: throw new Error(`preview: unknown route ${route}`);
   }
@@ -96,5 +97,6 @@ export function recordUrl(type, id, { edit = false } = {}) {
   const rectype = { unit: 1058, property: 1057, lease: 1056, status: 1465 }[type];
   if (rectype) return `/app/common/custom/custrecordentry.nl?rectype=${rectype}&id=${id}${edit ? '&e=T' : ''}`;
   if (type === 'customer') return `/app/common/entity/custjob.nl?id=${id}`;
+  if (type === 'event') return `/app/crm/calendar/event.nl?id=${id}`;
   return null;
 }

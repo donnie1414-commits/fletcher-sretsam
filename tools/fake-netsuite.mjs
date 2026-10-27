@@ -6,6 +6,18 @@ export function fakeQuery(fixture, { missingFields = ['custrecord_ad_uas_lease_t
     if (sql.includes('ROWNUM <= 1') && !sql.includes('ROWNUM rn')) return [{}];
     const map = { customrecord_serp_property_record: 'properties', customrecord_serp_units_bedrooms: 'units', customrecord_serp_lease_record: 'leases', customrecord_serp_academic_yr_details: 'targets', customrecord_serp_academic_yr_list: 'academic_years', customrecord_ad_unit_ay_status: 'stage_rows', customrecord_ad_uas_note: 'stage_notes', customrecord_ad_uas_stage_log: 'stage_log', customer: 'customers', subsidiary: 'subsidiaries' };
     if (t === 'systemnote') throw new Error('Search error occurred: Record "systemnote" was not found.');
+    if (t === 'calendarevent') {
+      if (fixture.toursUnavailable) throw new Error("Search error occurred: Record 'calendarevent' was not found.");
+      let rows = (fixture.tours || []).slice();
+      const from = /startdate >= TO_DATE\('([^']+)'/.exec(sql); if (from) rows = rows.filter((r) => r.startdate >= from[1]);
+      const to = /startdate <= TO_DATE\('([^']+)'/.exec(sql); if (to) rows = rows.filter((r) => r.startdate <= to[1]);
+      const org = /organizer = (\d+)/.exec(sql); if (org) rows = rows.filter((r) => String(r.organizer) === org[1]);
+      const comp = /company IN \(([^)]*)\)/.exec(sql); if (comp) { const ids = new Set(comp[1].split(',').map((x) => x.trim())); rows = rows.filter((r) => ids.has(String(r.company))); }
+      const unit = /custevent_ad_tour_unit IN \(([^)]*)\)/.exec(sql); if (unit) { const ids = new Set(unit[1].split(',').map((x) => x.trim())); rows = rows.filter((r) => ids.has(String(r.unit))); }
+      const ay = /custevent_ad_tour_ay = (\d+)/.exec(sql); if (ay) rows = rows.filter((r) => String(r.ay) === ay[1]);
+      return rows.sort((a, b) => (a.startdate + (a.starttime || '')).localeCompare(b.startdate + (b.starttime || ''))).map((r) => ({ ...r, organizer_name: r.organizer_name || `Agent ${r.organizer}`, company_name: r.company_name || null }));
+    }
+    if (t === 'customlist_ad_tour_outcome') return fixture.lists[t] || [{ id: 1, name: 'Scheduled', isinactive: 'F' }, { id: 2, name: 'Completed', isinactive: 'F' }, { id: 3, name: 'No-show', isinactive: 'F' }, { id: 4, name: 'Cancelled', isinactive: 'F' }, { id: 5, name: 'Leased', isinactive: 'F' }];
     if (t === 'employee') { if (/firstname|entityid/.test(sql)) return fixture.employees || []; return [{ markets: employeeMarkets }]; }
     if (t === 'entitystatus') return fixture.lists.entitystatus.map((s) => ({ id: s.key, name: s.name, entitytype: s.entitytype, inactive: s.inactive || 'F' }));
     if (t.startsWith('customlist')) return fixture.lists[t] || [];
@@ -29,6 +41,7 @@ export function fakeQuery(fixture, { missingFields = ['custrecord_ad_uas_lease_t
       return notes.map((n) => ({ ...n, author_name: n.author_name || `Employee ${n.author}` }));
     }
     if (t === 'customer') {
+      const byEmail = /LOWER\(email\) = '([^']*)'/.exec(sql); if (byEmail) return rows.filter((r) => r.isinactive !== 'T' && r.email && r.email.toLowerCase() === byEmail[1]);
       const idIn = /c\.id IN \(([^)]*)\)/.exec(sql); if (idIn) { const ids = new Set(idIn[1].split(',').map((x) => x.trim())); rows = rows.filter((r) => ids.has(String(r.id))); }
       if (/stage = 'CUSTOMER'/.test(sql)) rows = rows.filter((r) => r.stage === 'CUSTOMER');
       if (/NOT EXISTS \(SELECT 1 FROM map_customer_custentity_serp_ent_property/.test(sql)) rows = rows.filter((r) => !r.property);

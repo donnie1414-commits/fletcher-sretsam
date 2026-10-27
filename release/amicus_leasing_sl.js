@@ -498,7 +498,22 @@ var TOUR = Object.freeze({
   UNIT: "custevent_ad_tour_unit",
   OUTCOME: "custevent_ad_tour_outcome",
   AY: "custevent_ad_tour_ay",
-  OUTCOME_LIST: "customlist_ad_tour_outcome"
+  OUTCOME_LIST: "customlist_ad_tour_outcome",
+  // native Event fields the app writes (§5.6): a tour is a NetSuite Event organised by the agent, so it is on their calendar
+  STATUS: Object.freeze({ CONFIRMED: "CONFIRMED", TENTATIVE: "TENTATIVE", CANCELLED: "CANCELLED" }),
+  DEFAULT_MINUTES: 30,
+  TITLE_PREFIX: "Tour"
+});
+var CALENDAR_URL = "/app/crm/calendar/calendar.nl";
+var LEAD = Object.freeze({
+  STATUS_NEW: 17,
+  // entitystatus "Tenant - New"
+  SUBSIDIARY_NAME: "Amicus Parent Company",
+  // the subsidiary the Lead Form uses for new inquiries
+  AGENT: "salesrep",
+  NEW_DAYS: 14,
+  // "new" view = created in the last N days
+  CREATE_FIELDS: Object.freeze(["firstname", "lastname", "email", "phone", "mobilephone", "isperson", "subsidiary", "salesrep", "custentity_serp_group_size", "custentity_serp_house_mates"])
 });
 var TOUR_OUTCOMES = Object.freeze([
   { key: "SCHEDULED", label: "Scheduled" },
@@ -588,7 +603,7 @@ function createPortfolioDao({ sq, schema }) {
   }
   function lists() {
     const out = {};
-    for (const list of [STAGE_LIST, "customlist_ad_stage_source", "customlist_serp_lease_type_list", "customlist_serp_lease_status", "customlist_lease_group_type", "customlist_serp_hear_us_list", "customlist830", "customlist_serp_schools", "customlist_serp_cities"]) {
+    for (const list of [STAGE_LIST, "customlist_ad_stage_source", "customlist_serp_lease_type_list", "customlist_serp_lease_status", "customlist_lease_group_type", "customlist_serp_hear_us_list", "customlist830", "customlist_serp_schools", "customlist_serp_cities", "customlist_ad_tour_outcome"]) {
       try {
         out[list] = sq.few(`SELECT id, name, isinactive FROM ${list} ORDER BY id`);
       } catch (e) {
@@ -803,6 +818,8 @@ function createPeopleDao({ sq, schema }) {
       { field: "custentity_serp_notes", as: "notes", optional: true },
       { field: "custentity_serp_howdid_you_hear_about_us", as: "hear_us", optional: true, feature: "lead source" },
       { field: "custentity12", as: "agent_assigned", optional: true, feature: "agent assigned" },
+      { field: "salesrep", as: "agent" },
+      { field: "salesrep", as: "agent_name", expr: "BUILTIN.DF(c.salesrep)" },
       { field: "custentity9", as: "tour_date", optional: true },
       { field: "custentity3", as: "tour_scheduled", optional: true },
       { field: "custentity4", as: "lease_sent", optional: true },
@@ -846,6 +863,10 @@ function createPeopleDao({ sq, schema }) {
   function duplicates() {
     return sq.few(`SELECT LOWER(email) AS email, COUNT(*) AS n FROM ${C} WHERE isinactive = 'F' AND email IS NOT NULL GROUP BY LOWER(email) HAVING COUNT(*) > 1`);
   }
+  function byEmail(email) {
+    if (!email) return [];
+    return sq.few(`SELECT id, firstname, lastname, entitystatus, datecreated FROM ${C} WHERE isinactive = 'F' AND LOWER(email) = '${esc(String(email).trim().toLowerCase())}' ORDER BY id`);
+  }
   function statusList() {
     return sq.few(`SELECT key AS id, name, entitytype, inactive FROM entitystatus ORDER BY entitytype, key`);
   }
@@ -863,7 +884,79 @@ function createPeopleDao({ sq, schema }) {
   function probe() {
     select();
   }
-  return { tenants, byIds, propertyLinks, ayLinks, leaseLinks, duplicates, statusList, team, probe };
+  return { tenants, byIds, byEmail, propertyLinks, ayLinks, leaseLinks, duplicates, statusList, team, probe };
+}
+
+// src/server/dao/tours.js
+function createToursDao({ sq, schema, log: log2 }) {
+  const T = TOUR.TYPE;
+  let unavailable = null;
+  function fields() {
+    const m = schema.probe(T, [TOUR.UNIT, TOUR.OUTCOME, TOUR.AY]);
+    return { unit: m.get(TOUR.UNIT) !== false, outcome: m.get(TOUR.OUTCOME) !== false, ay: m.get(TOUR.AY) !== false };
+  }
+  function select() {
+    return schema.projection(T, [
+      { field: "id" },
+      { field: "title" },
+      { field: "startdate" },
+      { field: "starttime" },
+      { field: "endtime" },
+      { field: "organizer" },
+      { field: "organizer", as: "organizer_name", expr: "BUILTIN.DF(organizer)" },
+      { field: "status" },
+      { field: "location" },
+      { field: "message" },
+      { field: "company" },
+      { field: "company", as: "company_name", expr: "BUILTIN.DF(company)" },
+      { field: "lastmodifieddate" },
+      { field: TOUR.UNIT, as: "unit", optional: true, feature: "tours: unit link" },
+      { field: TOUR.OUTCOME, as: "outcome", optional: true, feature: "tours: outcome" },
+      { field: TOUR.AY, as: "ay", optional: true, feature: "tours: academic year" }
+    ]).select;
+  }
+  function list(f = {}) {
+    if (unavailable) return [];
+    const where = [];
+    if (f.from) where.push(`startdate >= TO_DATE('${esc(f.from)}', 'YYYY-MM-DD')`);
+    if (f.to) where.push(`startdate <= TO_DATE('${esc(f.to)}', 'YYYY-MM-DD')`);
+    if (f.organizerId) where.push(`organizer = ${Number(f.organizerId)}`);
+    const have = fields();
+    if (f.ayId && have.ay) where.push(`${TOUR.AY} = ${Number(f.ayId)}`);
+    if (f.unitIds && have.unit) where.push(`${TOUR.UNIT} IN (${sqlIn(f.unitIds)})`);
+    const run = (extra) => sq.few(`SELECT ${select()} FROM ${T} ${[...where, ...extra].length ? `WHERE ${[...where, ...extra].join(" AND ")}` : ""} ORDER BY startdate, starttime, id`);
+    try {
+      if (f.customerIds) {
+        if (!f.customerIds.length) return [];
+        return sq.inChunks(f.customerIds, (c) => run([`company IN (${sqlIn(c)})`]));
+      }
+      return run([]);
+    } catch (e) {
+      unavailable = e && e.message || String(e);
+      schema.degradeFeature({ table: T, feature: "tours", reason: "calendar events are not readable by this role" });
+      log2 && log2.error && log2.error({ title: "tours unavailable", details: unavailable });
+      return [];
+    }
+  }
+  function probe() {
+    fields();
+  }
+  return { list, fields, probe, get unavailable() {
+    return unavailable;
+  } };
+}
+function hhmm(v) {
+  if (v == null || v === "") return null;
+  if (v instanceof Date) return `${String(v.getHours()).padStart(2, "0")}:${String(v.getMinutes()).padStart(2, "0")}`;
+  const m = /^\s*(\d{1,2})(?::(\d{2}))?(?::\d{2})?\s*([ap]\.?m\.?)?\s*$/i.exec(String(v));
+  if (!m) return null;
+  let h = Number(m[1]);
+  const mi = Number(m[2] || 0);
+  const ap = m[3] ? m[3][0].toLowerCase() : null;
+  if (ap === "p" && h < 12) h += 12;
+  if (ap === "a" && h === 12) h = 0;
+  if (h > 23 || mi > 59) return null;
+  return `${String(h).padStart(2, "0")}:${String(mi).padStart(2, "0")}`;
 }
 
 // src/server/auth.js
@@ -1087,12 +1180,14 @@ var ALLOWLIST = Object.freeze({
     "custrecord_serp_academic_start_date",
     "custrecord_academic_end_date"
   ]) },
-  [CUSTOMER.TYPE]: { create: false, fields: /* @__PURE__ */ new Set(["entitystatus", CUSTOMER.PROPERTY, CUSTOMER.AY, "custentity12", "custentity9", "custentity3", "custentity_desired_location", "custentity_serp_notes", "custentity_serp_howdid_you_hear_about_us", "custentity_serp_schools"]) },
-  [TOUR.TYPE]: { create: true, fields: /* @__PURE__ */ new Set(["title", "startdate", "starttime", "endtime", "company", "organizer", "location", "message", "status", TOUR.UNIT, TOUR.OUTCOME, TOUR.AY]) },
+  // create = a new lead from the hub (A-22): the identity fields are creation-only; updates stay limited to the triage fields
+  [CUSTOMER.TYPE]: { create: true, fields: /* @__PURE__ */ new Set(["entitystatus", CUSTOMER.PROPERTY, CUSTOMER.AY, "custentity12", "custentity9", "custentity3", "custentity_desired_location", "custentity_serp_notes", "custentity_serp_howdid_you_hear_about_us", "custentity_serp_schools", ...LEAD.CREATE_FIELDS]) },
+  [TOUR.TYPE]: { create: true, fields: /* @__PURE__ */ new Set(["title", "startdate", "starttime", "endtime", "timedevent", "accesslevel", "company", "organizer", "location", "message", "status", TOUR.UNIT, TOUR.OUTCOME, TOUR.AY]) },
   // App-owned record (§4.2 saved views): not in the §5.9 table, declared here explicitly rather than smuggled in.
   [SAVED_VIEW.TYPE]: { create: true, fields: /* @__PURE__ */ new Set([SAVED_VIEW.OWNER, SAVED_VIEW.WORKSPACE, SAVED_VIEW.NAME, SAVED_VIEW.JSON, SAVED_VIEW.IS_DEFAULT, SAVED_VIEW.SHARED_MARKETS, "isinactive", "name"]) }
 });
 var UAS_CREATE_ONLY = /* @__PURE__ */ new Set([UAS.UNIT, UAS.AY, UAS.PROPERTY, "name"]);
+var CUSTOMER_CREATE_ONLY = new Set(LEAD.CREATE_FIELDS);
 var LEASE_UPDATE_FIELDS = /* @__PURE__ */ new Set([LEASE.UNIT, LEASE.PROPERTY, "custrecord_serp_lease_type_test", LEASE.START, LEASE.END, LEASE.AY, LEASE.STATUS, "isinactive", LEASE.TENANTS]);
 var TENANT_WIPING_FIELDS = /* @__PURE__ */ new Set([LEASE.AY, LEASE.PROPERTY]);
 var WriteError = class extends Error {
@@ -1103,18 +1198,27 @@ var WriteError = class extends Error {
   }
 };
 var DATE_FIELDS = /* @__PURE__ */ new Set([UAS.FOLLOWUP, UAS.STAGE_DATE, LEASE.START, LEASE.END, "custrecord_ad_note_date", "custrecord_serp_academic_start_date", "custrecord_academic_end_date", "custrecord_serp_lease_sent_date", "custrecord_effective_date", "startdate", "custentity9"]);
+var TIME_FIELDS = /* @__PURE__ */ new Set(["starttime", "endtime"]);
+function localTime(hm, isoDate) {
+  if (hm instanceof Date) return hm;
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(hm || ""));
+  if (!m) return hm;
+  const d = localDate(isoDate || "1970-01-01");
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), Number(m[1]), Number(m[2]));
+}
 function localDate(v) {
   if (v instanceof Date) return v;
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || ""));
   return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : v;
 }
-function nsValue(field, v) {
+function nsValue(field, v, ctxDate = null) {
   if (v == null || v === "") return "";
   if (Array.isArray(v)) return v.map(Number);
   if (DATE_FIELDS.has(field)) return localDate(v);
+  if (TIME_FIELDS.has(field)) return localTime(v, ctxDate);
   return v;
 }
-function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schema, auth, marketOf: marketOf2, clock = () => (/* @__PURE__ */ new Date()).toISOString(), stageIdFor = null }) {
+function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schema, auth, marketOf: marketOf2, clock = () => (/* @__PURE__ */ new Date()).toISOString(), stageIdFor = null, outcomeIdFor: outcomeIdFor2 = null, tourFields = null, defaultSubsidiaryId = null, findByEmail = null }) {
   const auditAvailable = () => {
     try {
       return schema.probe(AUDIT.TYPE, [AUDIT.CHANGE_ID]).get(AUDIT.CHANGE_ID) !== false;
@@ -1153,6 +1257,62 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
     return "record";
   }
   const ser = (v) => v == null ? null : Array.isArray(v) ? v.join(",") : String(v);
+  function prepareLead(change, fields) {
+    const name = `${fields.firstname || ""} ${fields.lastname || ""}`.trim();
+    if (!name && !fields.email) throw new WriteError("BAD_CHANGE", "a lead needs a name or an email");
+    if (fields.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(fields.email))) throw new WriteError("BAD_CHANGE", "the email address does not look valid", { field: "email" });
+    if (fields.email && findByEmail) {
+      const hits = findByEmail(fields.email);
+      if (hits.length) throw new WriteError("DUPLICATE", `${[hits[0].firstname, hits[0].lastname].filter(Boolean).join(" ") || "A customer"} already has this email (customer #${hits[0].id})`, { field: "email", existingId: String(hits[0].id) });
+    }
+    fields.isperson = true;
+    if (fields.entitystatus == null || fields.entitystatus === "") fields.entitystatus = LEAD.STATUS_NEW;
+    if (fields.subsidiary == null || fields.subsidiary === "") {
+      const sub = defaultSubsidiaryId ? defaultSubsidiaryId() : null;
+      if (!sub) throw new WriteError("BAD_CHANGE", `the lead subsidiary "${LEAD.SUBSIDIARY_NAME}" was not found`);
+      fields.subsidiary = sub;
+    }
+    if (fields.salesrep == null || fields.salesrep === "") {
+      const u = runtime2.getCurrentUser();
+      if (u && u.id) fields.salesrep = Number(u.id);
+    }
+    if (fields.custentity_serp_group_size != null && fields.custentity_serp_group_size !== "" && !(Number(fields.custentity_serp_group_size) >= 0)) throw new WriteError("BAD_CHANGE", "group size must be a number", { field: "custentity_serp_group_size" });
+  }
+  function prepareTour(change, fields, isCreate) {
+    if (isCreate && !fields.startdate) throw new WriteError("BAD_CHANGE", "a tour needs a date", { field: "startdate" });
+    if (isCreate && !fields.title) fields.title = TOUR.TITLE_PREFIX;
+    if (isCreate && (fields.organizer == null || fields.organizer === "")) {
+      const u = runtime2.getCurrentUser();
+      if (u && u.id) fields.organizer = Number(u.id);
+    }
+    if (isCreate && !fields.status) fields.status = TOUR.STATUS.CONFIRMED;
+    if (isCreate && !fields.accesslevel) fields.accesslevel = "PUBLIC";
+    if (fields.starttime) {
+      fields.timedevent = true;
+      if (!fields.endtime) {
+        const [h, m] = String(fields.starttime).split(":").map(Number);
+        const t = h * 60 + m + TOUR.DEFAULT_MINUTES;
+        fields.endtime = `${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
+      }
+    }
+    if (Object.prototype.hasOwnProperty.call(fields, TOUR.OUTCOME) && fields[TOUR.OUTCOME] !== "" && fields[TOUR.OUTCOME] != null && !/^\d+$/.test(String(fields[TOUR.OUTCOME]))) {
+      const key = String(fields[TOUR.OUTCOME]).toUpperCase();
+      if (!TOUR_OUTCOMES.some((o) => o.key === key)) throw new WriteError("BAD_CHANGE", `unknown tour outcome ${fields[TOUR.OUTCOME]}`, { field: TOUR.OUTCOME });
+      const id = outcomeIdFor2 ? outcomeIdFor2(key) : null;
+      if (!id) throw new WriteError("OUTCOME_NO_LIST_VALUE", `the outcome "${key}" has no value in the tour outcome list yet (see SETUP-CHECKLIST)`, { field: TOUR.OUTCOME });
+      fields[TOUR.OUTCOME] = id;
+      change.outcomeKey = key;
+      if (key === "CANCELLED") fields.status = TOUR.STATUS.CANCELLED;
+    }
+    const have = tourFields ? tourFields() : { unit: true, outcome: true, ay: true };
+    const dropped = [];
+    for (const [f, ok] of [[TOUR.UNIT, have.unit], [TOUR.OUTCOME, have.outcome], [TOUR.AY, have.ay]]) if (!ok && Object.prototype.hasOwnProperty.call(fields, f)) {
+      dropped.push(f);
+      delete fields[f];
+    }
+    if (dropped.length) change.dropped = dropped;
+    change.tourDate = fields.startdate || null;
+  }
   function validateChange(change) {
     if (!change || typeof change !== "object") throw new WriteError("BAD_CHANGE", "change is not an object");
     if (!change.changeId || String(change.changeId).length > 80) throw new WriteError("BAD_CHANGE", "changeId is required");
@@ -1165,7 +1325,10 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
       if (!rule.fields.has(f)) throw new WriteError("DENIED_FIELD", `field ${f} on ${change.recordType} is not allowed`, { field: f });
       if (!isCreate && change.recordType === LEASE.TYPE && !LEASE_UPDATE_FIELDS.has(f)) throw new WriteError("DENIED_FIELD", `field ${f} may only be set when creating a lease`, { field: f });
       if (!isCreate && change.recordType === UAS.TYPE && UAS_CREATE_ONLY.has(f)) throw new WriteError("DENIED_FIELD", `field ${f} may only be set when provisioning a status row`, { field: f });
+      if (!isCreate && change.recordType === CUSTOMER.TYPE && CUSTOMER_CREATE_ONLY.has(f)) throw new WriteError("DENIED_FIELD", `field ${f} may only be set when creating a lead; edit the customer record for changes`, { field: f });
     }
+    if (change.recordType === CUSTOMER.TYPE && isCreate) prepareLead(change, fields);
+    if (change.recordType === TOUR.TYPE) prepareTour(change, fields, isCreate);
     if (change.recordType === UAS.TYPE && isCreate && (!fields[UAS.UNIT] || !fields[UAS.AY])) throw new WriteError("BAD_CHANGE", "a status row needs a unit and an academic year");
     if (change.recordType === UAS.TYPE && Object.prototype.hasOwnProperty.call(fields, UAS.STAGE)) {
       const v = validateHumanStageChange(fields[UAS.STAGE]);
@@ -1199,7 +1362,7 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
     return sq.few(`SELECT maptwo AS customer FROM MAP_customrecord_serp_lease_record_custrecord_serp_tenants_ WHERE mapone = ?`, [Number(leaseId)]).map((r) => String(r.customer)).sort();
   }
   function versionOf(type, id) {
-    const col = type === CUSTOMER.TYPE ? "lastmodifieddate" : "lastmodified";
+    const col = type === CUSTOMER.TYPE || type === TOUR.TYPE ? "lastmodifieddate" : "lastmodified";
     try {
       const r = sq.one(`SELECT ${col} AS v FROM ${type} WHERE id = ?`, [Number(id)]);
       return r ? r.v : null;
@@ -1227,7 +1390,7 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
         if (!screen.ok) throw new WriteError("TENANT_FILTER", "one or more tenants do not match the lease Property/Academic Year; nothing was written", { bad: screen.bad });
       }
     }
-    for (const [f, v] of Object.entries(fields)) rec.setValue({ fieldId: f, value: nsValue(f, v) });
+    for (const [f, v] of Object.entries(fields)) rec.setValue({ fieldId: f, value: nsValue(f, v, change.tourDate || before.startdate || null) });
     if (change.recordType === UAS.TYPE && Object.prototype.hasOwnProperty.call(fields, UAS.STAGE)) {
       rec.setValue({ fieldId: UAS.MANUAL_STAGE, value: nsValue(UAS.MANUAL_STAGE, fields[UAS.STAGE]) });
       rec.setValue({ fieldId: UAS.STAGE_SOURCE, value: 1 });
@@ -1248,7 +1411,7 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
     }
     const auditMode = [];
     for (const f of Object.keys(fields)) auditMode.push(audit(scope, change, change.recordId, f, before[f], fields[f]));
-    return { ok: true, recordType: change.recordType, recordId: String(change.recordId), before, after: fields, tenants: restored, audit: auditMode[0] };
+    return { ok: true, recordType: change.recordType, recordId: String(change.recordId), before, after: fields, tenants: restored, audit: auditMode[0], ...change.dropped ? { dropped: change.dropped } : {} };
   }
   function applyCreate(scope, change, fields) {
     if (change.recordType === LEASE.TYPE && fields[LEASE.TENANTS]) {
@@ -1256,7 +1419,7 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
       if (!screen.ok) throw new WriteError("TENANT_FILTER", "tenants do not match the lease Property/Academic Year", { bad: screen.bad });
     }
     const rec = record2.create({ type: change.recordType, isDynamic: false });
-    for (const [f, v] of Object.entries(fields)) rec.setValue({ fieldId: f, value: nsValue(f, v) });
+    for (const [f, v] of Object.entries(fields)) rec.setValue({ fieldId: f, value: nsValue(f, v, change.tourDate || null) });
     if (change.recordType === UAS.TYPE && Object.prototype.hasOwnProperty.call(fields, UAS.STAGE)) {
       rec.setValue({ fieldId: UAS.MANUAL_STAGE, value: nsValue(UAS.MANUAL_STAGE, fields[UAS.STAGE]) });
       rec.setValue({ fieldId: UAS.STAGE_SOURCE, value: 1 });
@@ -1264,7 +1427,7 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
     }
     const id = rec.save();
     audit(scope, change, id, "*create*", null, JSON.stringify(fields));
-    return { ok: true, created: true, recordType: change.recordType, recordId: String(id), after: fields };
+    return { ok: true, created: true, recordType: change.recordType, recordId: String(id), after: fields, ...change.dropped ? { dropped: change.dropped } : {} };
   }
   function apply(changes, scope) {
     const results = [], deferred = [];
@@ -1293,7 +1456,7 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
       } catch (e) {
         const code = e instanceof WriteError ? e.code : "ERROR";
         log2 && log2.error && log2.error({ title: `write failed ${code}`, details: `${change && change.changeId}: ${e && e.message}` });
-        results.push({ changeId: change && change.changeId, ok: false, code, message: e && e.message, ...pick(e, ["field", "current", "version", "bad", "dropped", "final"]) });
+        results.push({ changeId: change && change.changeId, ok: false, code, message: e && e.message, ...pick(e, ["field", "current", "version", "bad", "dropped", "final", "existingId"]) });
       }
     }
     return { results, deferred };
@@ -3156,6 +3319,94 @@ function routeVelocity(ctx) {
   return { ay, selection: sel, ...velocity(runs, { ays, keep: ctx.keep(sel) }) };
 }
 
+// src/server/routes/tours.js
+function outcomeKeyFor(lists) {
+  const byId = {};
+  for (const v of lists[TOUR.OUTCOME_LIST] || []) {
+    const k = TOUR_OUTCOMES.find((o) => o.label.toLowerCase() === String(v.name).trim().toLowerCase());
+    if (k) byId[String(v.id)] = k.key;
+  }
+  return byId;
+}
+function outcomeIdFor(lists, key) {
+  for (const [id, k] of Object.entries(outcomeKeyFor(lists))) if (k === key) return Number(id);
+  return null;
+}
+function tourRows(ctx, raw) {
+  const inv = ctx.load().prepared.inventory;
+  const outcomes = outcomeKeyFor(ctx.dao.portfolio.lists());
+  const ays = ctx.ays();
+  return raw.map((t) => {
+    let unit = null, bedroom = null;
+    if (t.unit != null) {
+      unit = inv.unitsById.get(String(t.unit)) || null;
+      if (!unit) {
+        bedroom = inv.bedroomsById.get(String(t.unit)) || null;
+        if (bedroom) unit = inv.unitsById.get(bedroom.unitId) || null;
+      }
+    }
+    const prop = unit ? inv.propertiesById.get(unit.propertyId) : null;
+    const start = hhmm(t.starttime), end = hhmm(t.endtime);
+    const ay = t.ay != null ? ays.find((a) => a.id === String(t.ay)) : null;
+    return {
+      id: String(t.id),
+      title: t.title || "",
+      date: toISO(t.startdate),
+      start,
+      end,
+      allDay: !start,
+      organizerId: t.organizer != null ? String(t.organizer) : null,
+      organizer: t.organizer_name || null,
+      status: t.status || null,
+      location: t.location || null,
+      notes: t.message || null,
+      customerId: t.company != null ? String(t.company) : null,
+      customer: t.company_name || null,
+      unitId: unit ? unit.id : null,
+      unit: unit ? unit.name : null,
+      bedroom: bedroom ? bedroom.name : null,
+      propertyId: prop ? prop.id : null,
+      property: prop ? prop.name : null,
+      market: prop ? prop.marketId : null,
+      outcome: t.outcome != null ? outcomes[String(t.outcome)] || null : t.status === TOUR.STATUS.CANCELLED ? "CANCELLED" : null,
+      ayId: ay ? ay.id : null,
+      ay: ay ? ay.year : null,
+      version: String(t.lastmodifieddate || "")
+    };
+  });
+}
+function visibleTour(ctx, row) {
+  if (ctx.scope.all) return true;
+  if (row.market) return ctx.inScope(row.market);
+  return String(row.organizerId) === String(ctx.scope.userId) || !row.customerId;
+}
+function routeTours(ctx) {
+  const q = ctx.params;
+  const view = q.view || "market";
+  const from = q.from ? toISO(q.from) : ctx.today;
+  const to = q.to ? toISO(q.to) : addDays(from, 30);
+  const filters = { from, to };
+  if (view === "mine") filters.organizerId = ctx.scope.userId;
+  if (q.customer) filters.customerIds = String(q.customer).split(",").filter(Boolean);
+  if (q.unit) filters.unitIds = String(q.unit).split(",").filter(Boolean);
+  if (q.ayId) filters.ayId = q.ayId;
+  const rows = tourRows(ctx, ctx.dao.tours.list(filters)).filter((r) => visibleTour(ctx, r));
+  const have = ctx.dao.tours.fields();
+  return {
+    rows,
+    from,
+    to,
+    view,
+    me: String(ctx.scope.userId),
+    calendarUrl: CALENDAR_URL,
+    available: !ctx.dao.tours.unavailable,
+    reason: ctx.dao.tours.unavailable || null,
+    fields: have,
+    outcomes: TOUR_OUTCOMES.map((o) => ({ key: o.key, label: o.label, id: outcomeIdFor(ctx.dao.portfolio.lists(), o.key) })),
+    degraded: ctx.schema.degraded
+  };
+}
+
 // src/shared/rules/views.js
 var PIPELINE_SORTS = ["property", "unit", "beds", "propertyBeds", "stage", "daysInStage", "tours", "target", "lastOffer", "followup", "available", "monthlyRent", "needsAction", "signed", "market"];
 var UNIT_BEDS = [["1", (b) => b === 1], ["2", (b) => b === 2], ["3", (b) => b === 3], ["4", (b) => b === 4], ["5", (b) => b === 5], ["6+", (b) => b >= 6]];
@@ -3211,6 +3462,23 @@ function applyPipelineView(rows, q = {}) {
   }
   return { total, totalBeds, page, pageSize, rows: out.slice(page * pageSize, (page + 1) * pageSize), stageCounts, stageBeds, breachCount, needsActionCount, noStatus };
 }
+function applyLeadView(all, params = {}) {
+  const view = params.view || "new";
+  let rows = all;
+  if (params.q) {
+    const needle = String(params.q).toLowerCase();
+    rows = rows.filter((r) => [r.name, r.email, r.phone, r.desiredLocation, r.school].some((v) => v && String(v).toLowerCase().includes(needle)));
+  }
+  const counts = { new: rows.filter((r) => r.isNew).length, "no-tour": rows.filter((r) => !r.nextTour && !r.lastTour).length, "no-property": rows.filter((r) => !r.properties.length).length, all: rows.length };
+  if (view === "new") rows = rows.filter((r) => r.isNew);
+  else if (view === "no-tour") rows = rows.filter((r) => !r.nextTour && !r.lastTour);
+  else if (view === "no-property") rows = rows.filter((r) => !r.properties.length);
+  const sort = params.sort || "created";
+  const cmp = { created: (a, b) => (b.created || "").localeCompare(a.created || ""), name: (a, b) => a.name.localeCompare(b.name), tour: (a, b) => (a.nextTour ? a.nextTour.date : "9999").localeCompare(b.nextTour ? b.nextTour.date : "9999"), school: (a, b) => (a.school || "").localeCompare(b.school || "") }[sort] || null;
+  if (cmp) rows = rows.slice().sort(cmp);
+  const pageSize = Math.min(500, Math.max(25, Number(params.pageSize) || 100)), page = Math.max(0, Number(params.page) || 0);
+  return { total: rows.length, page, pageSize, rows: rows.slice(page * pageSize, (page + 1) * pageSize), counts, view };
+}
 
 // src/server/routes/pipeline.js
 var typeLabel3 = (k) => (LEASE_TYPES[k] || {}).label || "Unknown";
@@ -3238,6 +3506,22 @@ function buildPipelineRows(ctx, ay, basis) {
   }
   const lookups = ctx.load().lookups;
   const out = [];
+  const tourByUnit = /* @__PURE__ */ new Map();
+  try {
+    const ayId2 = ctx.ayIdFor(ay);
+    const have = ctx.dao.tours.fields();
+    const raw = ctx.dao.tours.list(have.ay && ayId2 ? { ayId: ayId2 } : { from: addDays(`${ay}-01-01`, -200), to: ayEndDate(ay) });
+    for (const t of tourRows(ctx, raw)) {
+      if (!t.unitId || t.outcome === "CANCELLED") continue;
+      const cur = tourByUnit.get(t.unitId) || { n: 0, last: null, next: null };
+      cur.n += 1;
+      if (t.date < ctx.today && (!cur.last || t.date > cur.last)) cur.last = t.date;
+      if (t.date >= ctx.today && (!cur.next || t.date < cur.next)) cur.next = t.date;
+      tourByUnit.set(t.unitId, cur);
+    }
+  } catch (e) {
+    ctx.log && ctx.log.error && ctx.log.error({ title: "pipeline: tours", details: e && e.message });
+  }
   const segment = ctx.params.segment === "str" ? "STR" : "STUDENT";
   const prior = r.prior ? r.prior.placement : null;
   for (const u of inv.unitNodes) {
@@ -3308,9 +3592,9 @@ function buildPipelineRows(ctx, ay, basis) {
       rowId: s ? String(s.id) : null,
       version: s ? String(s.lastmodified) : null,
       missingStatusRow: !s && !u.propertyOnly,
-      tours: 0,
-      lastTour: null,
-      // §5.6: filled once the tour link field exists (schema.degraded says so)
+      tours: (tourByUnit.get(u.id) || {}).n || 0,
+      lastTour: (tourByUnit.get(u.id) || {}).last || null,
+      nextTour: (tourByUnit.get(u.id) || {}).next || null,
       targetMonthly,
       targetPerBed: targetMonthly != null && u.beds ? targetMonthly / u.beds : null,
       settleMonthly,
@@ -3491,8 +3775,65 @@ function routeTenants(ctx) {
   });
   return { total: result.total, page: result.page, pageSize: result.pageSize, rows, statuses: ctx.dao.people.statusList().filter((s) => s.entitytype === "CUSTOMER"), degraded: ctx.schema.degraded };
 }
+function loadLeads(ctx) {
+  const inv = ctx.load().prepared.inventory;
+  const lists = ctx.dao.portfolio.lists();
+  const sourceName = new Map((lists.customlist_serp_hear_us_list || []).map((v) => [String(v.id), v.name]));
+  const schoolName = new Map((lists.customlist_serp_schools || []).map((v) => [String(v.id), v.name]));
+  const filters = { stage: "CUSTOMER", statusIds: [LEAD.STATUS_NEW], scopePropertyIds: ctx.scope.all ? null : ctx.propertyIdsInScope() };
+  const page = ctx.dao.people.tenants({ filters, sort: "created", page: 0, pageSize: 2e3 });
+  const custIds = page.rows.map((r) => r.id);
+  const onLease = new Set(custIds.length ? ctx.dao.people.leaseLinks(custIds).map((l) => String(l.customer)) : []);
+  const candidates = page.rows.filter((t) => !onLease.has(String(t.id)));
+  const dupEmails = new Set(ctx.dao.people.duplicates().map((d) => d.email));
+  const tours = candidates.length ? tourRows(ctx, ctx.dao.tours.list({ customerIds: candidates.map((t) => t.id), from: addDays(ctx.today, -365) })).filter((r) => visibleTour(ctx, r)) : [];
+  const toursByCust = /* @__PURE__ */ new Map();
+  for (const t of tours) {
+    if (!t.customerId) continue;
+    if (!toursByCust.has(t.customerId)) toursByCust.set(t.customerId, []);
+    toursByCust.get(t.customerId).push(t);
+  }
+  const newSince = addDays(ctx.today, -LEAD.NEW_DAYS);
+  return candidates.map((t) => {
+    const propIds = ids(t.property), ayIds = ids(t.ay);
+    const mine = (toursByCust.get(String(t.id)) || []).filter((x) => x.outcome !== "CANCELLED");
+    const upcoming = mine.filter((x) => x.date >= ctx.today).sort((a, b) => (a.date + (a.start || "")).localeCompare(b.date + (b.start || "")));
+    const past = mine.filter((x) => x.date < ctx.today).sort((a, b) => (b.date + (b.start || "")).localeCompare(a.date + (a.start || "")));
+    const created = toISO(t.datecreated);
+    return {
+      id: String(t.id),
+      name: [t.firstname, t.lastname].filter(Boolean).join(" ") || t.entityid,
+      firstName: t.firstname || "",
+      lastName: t.lastname || "",
+      email: t.email,
+      phone: t.phone || t.mobilephone,
+      status: t.status_name,
+      statusId: t.entitystatus,
+      created,
+      isNew: !!created && created >= newSince,
+      school: t.school != null ? schoolName.get(String(t.school)) || String(t.school) : null,
+      schoolId: t.school != null ? String(t.school) : null,
+      desiredLocation: t.desired_location || null,
+      groupSize: t.group_size != null ? Number(t.group_size) : null,
+      houseMates: t.house_mates || null,
+      notes: t.notes || null,
+      source: t.hear_us != null ? sourceName.get(String(t.hear_us)) || null : null,
+      sourceId: t.hear_us != null ? String(t.hear_us) : null,
+      agentId: t.agent != null ? String(t.agent) : null,
+      agent: t.agent_name || null,
+      properties: propIds.map((p) => ({ id: p, name: (inv.propertiesById.get(p) || {}).name || p, market: (inv.propertiesById.get(p) || {}).marketId || null })),
+      academicYears: ayIds.map((a) => ({ id: a, label: (ctx.ays().find((x) => x.id === a) || {}).label || a })),
+      duplicate: t.duplicate === "T" || t.email && dupEmails.has(String(t.email).toLowerCase()),
+      nextTour: upcoming[0] || null,
+      lastTour: past[0] || null,
+      tourCount: mine.length,
+      version: String(t.lastmodifieddate || "")
+    };
+  });
+}
 function routeLeads(ctx) {
-  return { error: "Leads workspace is not designed yet: the §5.5.0 lead discovery write-up (docs/LEAD-DISCOVERY.md) is awaiting review.", status: 501, meta: { status: 501 } };
+  const q = ctx.params;
+  return { ...applyLeadView(loadLeads(ctx), q), toursAvailable: !ctx.dao.tours.unavailable, calendarUrl: CALENDAR_URL, me: String(ctx.scope.userId), degraded: ctx.schema.degraded };
 }
 
 // src/shared/rules/quality.js
@@ -3628,13 +3969,23 @@ function routeToday(ctx) {
   const ex = routeExceptions(ctx, null, { full: false });
   const blocked = ctx.dao.people.tenants({ filters: { stage: "CUSTOMER", missingProperty: true, scopePropertyIds: ctx.scope.all ? null : ctx.propertyIdsInScope() }, page: 0, pageSize: 25 });
   const blockedAy = ctx.dao.people.tenants({ filters: { stage: "CUSTOMER", missingAy: true, scopePropertyIds: ctx.scope.all ? null : ctx.propertyIdsInScope() }, page: 0, pageSize: 25 });
+  const weekEnd = addDays(ctx.today, 7);
+  const tours = tourRows(ctx, ctx.dao.tours.list({ from: ctx.today, to: weekEnd })).filter((r) => visibleTour(ctx, r) && r.outcome !== "CANCELLED");
+  const soon = tours.filter((r) => r.date <= tomorrow);
+  const mine = tours.filter((r) => String(r.organizerId) === String(ctx.scope.userId));
+  let leadRows = [];
+  try {
+    leadRows = loadLeads(ctx).filter((l) => !l.nextTour && !l.properties.length);
+  } catch (e) {
+    ctx.log && ctx.log.error && ctx.log.error({ title: "today: leads", details: e && e.message });
+  }
   return {
     ay,
     today: ctx.today,
     followups: { count: followups.length, rows: followups.slice(0, 50) },
-    tours: { count: 0, rows: [], note: "tour link field not yet created (§5.6)" },
+    tours: { count: soon.length, rows: soon.slice(0, 50), week: mine.length, weekRows: mine.slice(0, 50), available: !ctx.dao.tours.unavailable, note: ctx.dao.tours.unavailable ? "calendar events are not readable by this role" : null, calendarUrl: CALENDAR_URL, me: String(ctx.scope.userId) },
     stale: { count: stale.length, rows: stale.slice(0, 50), thresholdDays: STALE_STAGE_DAYS },
-    leads: { count: 0, rows: [], note: "leads workspace pending §5.5.0 review" },
+    leads: { count: leadRows.length, rows: leadRows.slice(0, 25).map((l) => ({ id: l.id, name: l.name, school: l.school, desiredLocation: l.desiredLocation, created: l.created, email: l.email, phone: l.phone })) },
     blockedTenants: { missingProperty: blocked.total, missingAy: blockedAy.total, sample: blocked.rows.slice(0, 10).map((t) => ({ id: String(t.id), name: [t.firstname, t.lastname].filter(Boolean).join(" "), desiredLocation: t.desired_location })) },
     exceptions: { count: ex.count, byCode: ex.groups.map((g) => ({ code: g.code, label: g.label, severity: g.severity, n: g.rows.length })) }
   };
@@ -3745,7 +4096,7 @@ function renderShell(ctx) {
   return `<!doctype html><html lang="en" data-theme="auto"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="al-build" content="${build}"><title>Amicus Leasing</title><style>html,body{margin:0;background:#fff;color:#111;font:14px/1.4 system-ui,sans-serif}@media(prefers-color-scheme:dark){html,body{background:#121417;color:#e6e8eb}}#root{min-height:100vh}.al-boot{padding:24px;max-width:720px}</style>${styleTag}</head><body><div id="root"><div class="al-boot" id="al-boot">Loading Amicus Leasing…</div></div><script type="application/json" id="al-bootstrap">${json}</script><script>window.__AL_SERVER_BUILD=${JSON.stringify(build)};</script>${js ? `<script src="${js}" defer onerror="document.getElementById('al-boot').textContent='The client bundle could not be loaded from ${js.replace(/'/g, "")} — open the browser console (F12) for the reason.'"></script>` : `<script>document.getElementById('al-boot').textContent='Client bundle not configured: set the script parameters custscript_al_client_js / custscript_al_client_css to the File Cabinet ids of amicus_leasing_app.js / .css (see SETUP-CHECKLIST).';</script>`}<script>setTimeout(function(){var b=document.getElementById('al-boot');if(b&&b.textContent.indexOf('Loading')===0)b.textContent='The client bundle loaded but did not start. Open the browser console (F12) and send the first error line.';},8000);</script></body></html>`;
 }
 function buildId() {
-  return true ? String("4a4f19937275") : "dev";
+  return true ? String("c96a1ade3277") : "dev";
 }
 function inlineCss(ctx) {
   try {
@@ -3814,7 +4165,7 @@ function createApp(N) {
   const log2 = N.log;
   const schema = createSchema({ query: N.query, log: log2, cache: N.cache ? safeCache(N.cache) : null });
   const sq = createSuiteQL({ query: N.query, log: log2 });
-  const dao = { portfolio: createPortfolioDao({ sq, schema }), pipeline: createPipelineDao({ sq, schema }), people: createPeopleDao({ sq, schema }) };
+  const dao = { portfolio: createPortfolioDao({ sq, schema }), pipeline: createPipelineDao({ sq, schema }), people: createPeopleDao({ sq, schema }), tours: createToursDao({ sq, schema, log: log2 }) };
   const auth = createAuth({ runtime: N.runtime, sq, schema, log: log2 });
   function makeCtx(context) {
     const params = context.request.parameters || {};
@@ -3888,7 +4239,7 @@ function createApp(N) {
         return { fund: params.fund || null, marketId: params.market && inScope(scope, params.market) ? params.market : null };
       },
       probeAll() {
-        for (const fn of [dao.portfolio.probe, dao.pipeline.probe, dao.people.probe]) {
+        for (const fn of [dao.portfolio.probe, dao.pipeline.probe, dao.people.probe, dao.tours.probe]) {
           try {
             fn();
           } catch (e) {
@@ -3897,13 +4248,30 @@ function createApp(N) {
         }
       }
     };
-    ctx.writes = createWrites({ record: N.record, sq, runtime: N.runtime, log: log2, schema, auth, marketOf: (type, id, fields) => marketOf(ctx, type, id, fields), stageIdFor: (key) => {
-      for (const [id, k] of Object.entries(ctx.load().lookups.stageIds)) if (k === key) return Number(id);
-      return null;
-    } });
+    ctx.writes = createWrites({
+      record: N.record,
+      sq,
+      runtime: N.runtime,
+      log: log2,
+      schema,
+      auth,
+      marketOf: (type, id, fields) => marketOf(ctx, type, id, fields),
+      stageIdFor: (key) => {
+        for (const [id, k] of Object.entries(ctx.load().lookups.stageIds)) if (k === key) return Number(id);
+        return null;
+      },
+      outcomeIdFor: (key) => outcomeIdFor(dao.portfolio.lists(), key),
+      tourFields: () => dao.tours.fields(),
+      defaultSubsidiaryId: () => {
+        const subs = dao.portfolio.subsidiaries();
+        const hit = subs.find((x) => String(x.name).trim().toLowerCase() === LEAD.SUBSIDIARY_NAME.toLowerCase()) || subs.find((x) => x.parent == null);
+        return hit ? Number(hit.id) : null;
+      },
+      findByEmail: (email) => dao.people.byEmail(email)
+    });
     return ctx;
   }
-  const routes = { bootstrap: routeBootstrap, lists: routeLists, summary: routeSummary, portfolio: routePortfolio, weekly: routeWeekly, velocity: routeVelocity, pipeline: routePipeline, unithistory: routeUnitHistory, team: routeTeam, tenants: routeTenants, leads: routeLeads, exceptions: routeExceptions, today: routeToday, savedviews: routeSavedViews, write: routeWrite, leasedialog: routeLeaseDialog, notes: routeNotes };
+  const routes = { bootstrap: routeBootstrap, lists: routeLists, summary: routeSummary, portfolio: routePortfolio, weekly: routeWeekly, velocity: routeVelocity, pipeline: routePipeline, unithistory: routeUnitHistory, team: routeTeam, tenants: routeTenants, leads: routeLeads, tours: routeTours, exceptions: routeExceptions, today: routeToday, savedviews: routeSavedViews, write: routeWrite, leasedialog: routeLeaseDialog, notes: routeNotes };
   function handle(context) {
     const route = String((context.request.parameters || {}).route || "").toLowerCase();
     const method = context.request.method;
@@ -3975,6 +4343,7 @@ function marketOf(ctx, type, id, fields) {
       const m = ctx.marketOfProperty(p);
       if (!ctx.inScope(m)) return m || "unknown";
     }
+    if (id == null) return assigned.length ? ctx.marketOfProperty(assigned[0]) : ctx.scope.all ? "unknown" : ctx.scope.marketIds[0] || null;
     const links = sq.few(`SELECT maptwo AS property FROM ${CUSTOMER.PROPERTY_MAP} WHERE mapone = ?`, [Number(id)]);
     if (!links.length) return ctx.scope.all ? "unknown" : ctx.scope.marketIds[0] || null;
     for (const l of links) {
@@ -3984,11 +4353,22 @@ function marketOf(ctx, type, id, fields) {
     return ctx.marketOfProperty(links[0].property);
   }
   if (type === TOUR.TYPE) {
-    const unit = fields[TOUR.UNIT];
-    if (!unit) return null;
-    const inv = ctx.load().prepared.inventory;
-    const u = inv.unitsById.get(String(unit)) || inv.bedroomsById.get(String(unit)) && inv.unitsById.get(inv.bedroomsById.get(String(unit)).unitId);
-    return u ? ctx.marketOfProperty(u.propertyId) : null;
+    const unit = fields[TOUR.UNIT] ?? (id ? (sq.one(`SELECT ${TOUR.UNIT} AS unit FROM ${TOUR.TYPE} WHERE id = ?`, [Number(id)]) || {}).unit : null);
+    if (unit) {
+      const inv = ctx.load().prepared.inventory;
+      const u = inv.unitsById.get(String(unit)) || inv.bedroomsById.get(String(unit)) && inv.unitsById.get(inv.bedroomsById.get(String(unit)).unitId);
+      return u ? ctx.marketOfProperty(u.propertyId) : "unknown";
+    }
+    const company = fields.company ?? (id ? (sq.one(`SELECT company FROM ${TOUR.TYPE} WHERE id = ?`, [Number(id)]) || {}).company : null);
+    if (company && company !== "$prev") {
+      const links = sq.few(`SELECT maptwo AS property FROM ${CUSTOMER.PROPERTY_MAP} WHERE mapone = ?`, [Number(company)]);
+      for (const l of links) {
+        const m = ctx.marketOfProperty(l.property);
+        if (ctx.inScope(m)) return m;
+      }
+      if (links.length) return ctx.marketOfProperty(links[0].property);
+    }
+    return ctx.scope.all ? "unknown" : ctx.scope.marketIds[0] || null;
   }
   if (type === SAVED_VIEW.TYPE) return ctx.scope.all ? "unknown" : ctx.scope.marketIds[0] || null;
   return null;

@@ -9,7 +9,7 @@ import { Pipeline } from './screens/Pipeline.jsx';
 import { People } from './screens/People.jsx';
 import { Reporting } from './screens/Reporting.jsx';
 import { ExceptionsDrawer, useExceptionCount } from './screens/ExceptionsDrawer.jsx';
-import { MARKETS, FUNDS, FUND_ORDER, BASES } from '../shared/constants.js';
+import { MARKETS, FUNDS, FUND_ORDER, BASES, CALENDAR_URL } from '../shared/constants.js';
 import { ayShort } from './format.js';
 
 function App({ boot }) {
@@ -41,6 +41,7 @@ function App({ boot }) {
           <Select label="Market" value={url.market} onChange={(v) => setUrl({ market: v })} options={[{ value: '', label: boot.scope.all ? 'All markets' : 'My markets' }, ...markets.map((m) => ({ value: m.id, label: m.label }))]} />
           {!present && <input className="search" type="search" placeholder="Search units, properties, tenants" aria-label="Search" defaultValue={url.q} onKeyDown={(e) => { if (e.key === 'Enter') setUrl({ q: e.target.value, view: url.view === 'people' ? 'people' : 'pipeline' }); }} onBlur={(e) => e.target.value !== url.q && setUrl({ q: e.target.value })} />}
           <button type="button" className={cx('badge-btn', excCount > 0 && 'has')} onClick={() => setDrawer(true)} aria-label={`Exceptions: ${excCount ?? '…'}`} title="Exceptions">⚠ {excCount == null ? '…' : excCount}</button>
+          {isPreview() ? <Button small title="Preview: NetSuite's calendar opens here in NetSuite" disabled>Calendar</Button> : <a className="btn btn-sm" href={CALENDAR_URL} target="_blank" rel="noreferrer" title="My NetSuite calendar (tours are events on it)">Calendar</a>}
           <Button small onClick={() => setTheme(theme === 'dark' ? 'light' : theme === 'light' ? 'auto' : 'dark')} title={`Theme: ${theme}`} aria-label="Toggle theme">{theme === 'dark' ? '☾' : theme === 'light' ? '☀' : '◐'}</Button>
           <Button small onClick={() => setDensity(density === 'compact' ? 'comfortable' : 'compact')} title="Density" aria-label="Toggle density">{density === 'compact' ? '≡' : '☰'}</Button>
           <Button small onClick={() => setPresent(!present)} title="Presentation mode" aria-label="Presentation mode">{present ? 'Exit' : '▭'}</Button>
@@ -52,7 +53,7 @@ function App({ boot }) {
       {!boot.scope.all && boot.scope.marketIds.length === 0 && <div className="banner warn">You have no market access: {boot.scope.reason}. Ask an administrator to set your markets.</div>}
       {boot.degraded && boot.degraded.length > 0 && url.view !== 'reporting' && <div className="banner">Some fields are not created yet, so these features are off: {boot.degraded.map((d) => d.feature || d.field).filter((v, i, a) => a.indexOf(v) === i).join(' · ')}.</div>}
       <main className="main">
-        {url.view === 'today' && <Today sel={sel} go={go} openExceptions={() => setDrawer(true)} />}
+        {url.view === 'today' && <Today sel={sel} go={go} openExceptions={() => setDrawer(true)} bootstrap={boot} />}
         {url.view === 'pipeline' && <Pipeline sel={sel} setSel={setUrl} density={density} isMobile={isMobile} bootstrap={boot} />}
         {url.view === 'people' && <People sel={sel} seg={url.seg} setSeg={(v) => setUrl({ seg: v })} density={density} isMobile={isMobile} bootstrap={boot} />}
         {url.view === 'reporting' && <Reporting sel={sel} sub={url.sub} setSub={(v) => setUrl({ sub: v })} rt={url.rt} setRt={(v) => setUrl({ rt: v })} density={density} presentation={present} boot={boot} />}

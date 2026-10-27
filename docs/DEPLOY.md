@@ -6,11 +6,11 @@ The files are in the hand-back:
 
 | File | What it is | Size (bytes) | SHA-256 (first 12) |
 |---|---|---|---|
-| `amicus_leasing_sl.js` | the Suitelet (server). Starts `/** @NApiVersion 2.1 @NScriptType Suitelet` | 205,603 | `cee96bffbb29` |
-| `amicus_leasing_app.js` | the client bundle. One minified line starting `(()=>{` | 185,616 | `5cd51385ab5f` |
-| `amicus_leasing_app.css` | the stylesheet. Starts `:root{--accent` | 39,883 | `b1ce51b0b1e5` |
+| `amicus_leasing_sl.js` | the Suitelet (server). Starts `/** @NApiVersion 2.1 @NScriptType Suitelet` | 226,220 | `b45e9cef05f3` |
+| `amicus_leasing_app.js` | the client bundle. One minified line starting `(()=>{` | 211,453 | `f54f90c1400e` |
+| `amicus_leasing_app.css` | the stylesheet. Starts `:root{--accent` | 40,993 | `dc7edb06bd82` |
 
-`MANIFEST.json` carries the full hashes and the **build id `4a4f19937275`**. Sizes are the quick check after upload: File Cabinet shows the byte size on each file. The build id is the check inside the app: it is printed at the right end of the header (`build 4a4f19937275`), and the three files of one hand-back always share it.
+`MANIFEST.json` carries the full hashes and the **build id `c96a1ade3277`**. Sizes are the quick check after upload: File Cabinet shows the byte size on each file. The build id is the check inside the app: it is printed at the right end of the header (`build c96a1ade3277`), and the three files of one hand-back always share it.
 
 **Only `amicus_leasing_sl.js` ever goes on a Script record.** The other two are plain files the Suitelet links to by internal id.
 
@@ -55,7 +55,7 @@ If the account blocks `.js` uploads through Add File, use Documents › Files �
 
 Open the deployment URL.
 
-- A page that reads **Loading Amicus Leasing…** for under a second, then the Today screen with your scope in the header and `build 4a4f19937275` at the right end of the header. Done.
+- A page that reads **Loading Amicus Leasing…** for under a second, then the Today screen with your scope in the header and `build c96a1ade3277` at the right end of the header. Done.
 - An orange banner **"The app files NetSuite is serving are from build …, but the Suitelet is build …"**: the `.js`/`.css` in the File Cabinet and the Suitelet come from different hand-backs. Re-upload the two client files from this hand-back (section 6), then reload with Ctrl+Shift+R. This is the usual reason the app looks older or different from the preview.
 - An orange banner **"The stylesheet did not apply"**: the page is running without its styles. The Suitelet normally copies the stylesheet into the page itself, so this only happens when it cannot read the `.css` file; check the `custscript_al_client_css` id and that the file's type in the File Cabinet is *CSS File*.
 - **"Client bundle not configured"**: one or both file-id parameters are empty or point at the wrong file. Check step 3.5.
@@ -70,6 +70,7 @@ The Suitelet runs as the signed-in user. The leasing roles need:
 - **View** on Property, Units/Bedrooms, Lease Record, Academic Year, Academic Year Details, Unit Leasing Status, Unit Leasing Note, Customer, Subsidiary.
 - **Edit** on Unit Leasing Status, Unit Leasing Note, Lease Record and Customer for the pipeline edits, notes, lease creation and tenant assignment. Create on Unit Leasing Status and Unit Leasing Note.
 - The "Lease records made inactive this week" section needs *System Notes* visibility on the role; without it the section says so and the rest of the page is unaffected.
+- **Tours and leads** (added 2026-10-27): *Events* Full, *Customers* Create, *Employee Record* View. Without Events access the Tours sections say "calendar events are not readable by this role" and everything else works. The three optional Event fields are in SETUP-CHECKLIST section D.
 
 ## 6. Updating later
 

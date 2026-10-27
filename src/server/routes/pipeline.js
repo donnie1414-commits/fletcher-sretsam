@@ -2,7 +2,8 @@
 import { UAS, LEASE_TYPES } from '../../shared/constants.js';
 import { effectiveStage, daysInStage } from '../../shared/rules/stages.js';
 import { leafTypeLabel } from '../../shared/rules/metrics.js';
-import { toISO } from '../../shared/rules/dates.js';
+import { toISO, addDays, ayEndDate } from '../../shared/rules/dates.js';
+import { tourRows } from './tours.js';
 import { applyPipelineView } from '../../shared/rules/views.js';
 
 const typeLabel = (k) => (LEASE_TYPES[k] || {}).label || 'Unknown';
@@ -20,6 +21,13 @@ export function buildPipelineRows(ctx, ay, basis) {
   for (const n of ctx.dao.pipeline.notesForAy(ayId)) { const k = String(n.status_row); if (!notesByRow.has(k)) notesByRow.set(k, []); notesByRow.get(k).push({ id: String(n.id), date: toISO(n.note_date) || toISO(n.created), author: n.author_name || String(n.author || ''), text: n.text || '', mentions: parseMentions(n.mentions) }); }
   const lookups = ctx.load().lookups;
   const out = [];
+  // Tours per unit for this AY: by the AY field when it exists, else by date (a year before AY start through AY end).
+  const tourByUnit = new Map();
+  try {
+    const ayId = ctx.ayIdFor(ay); const have = ctx.dao.tours.fields();
+    const raw = ctx.dao.tours.list(have.ay && ayId ? { ayId } : { from: addDays(`${ay}-01-01`, -200), to: ayEndDate(ay) });
+    for (const t of tourRows(ctx, raw)) { if (!t.unitId || t.outcome === 'CANCELLED') continue; const cur = tourByUnit.get(t.unitId) || { n: 0, last: null, next: null }; cur.n += 1; if (t.date < ctx.today && (!cur.last || t.date > cur.last)) cur.last = t.date; if (t.date >= ctx.today && (!cur.next || t.date < cur.next)) cur.next = t.date; tourByUnit.set(t.unitId, cur); }
+  } catch (e) { ctx.log && ctx.log.error && ctx.log.error({ title: 'pipeline: tours', details: e && e.message }); }
   const segment = ctx.params.segment === 'str' ? 'STR' : 'STUDENT';
   const prior = r.prior ? r.prior.placement : null;
   for (const u of inv.unitNodes) {
@@ -60,7 +68,7 @@ export function buildPipelineRows(ctx, ay, basis) {
       occWH: leaves.reduce((s2, l) => s2 + (l.typeKey === 'WH' ? l.occupied : 0), 0), occUnit: leaves.reduce((s2, l) => s2 + (l.typeKey === 'UNIT' ? l.occupied : 0), 0), occBed: leaves.reduce((s2, l) => s2 + (l.typeKey === 'BED' ? l.occupied : 0), 0),
       stage: stageKey, stageSource, stageDate, daysInStage: daysInStage(stageDate, ctx.today), editable,
       rowId: s ? String(s.id) : null, version: s ? String(s.lastmodified) : null, missingStatusRow: !s && !u.propertyOnly,
-      tours: 0, lastTour: null, // §5.6: filled once the tour link field exists (schema.degraded says so)
+      tours: (tourByUnit.get(u.id) || {}).n || 0, lastTour: (tourByUnit.get(u.id) || {}).last || null, nextTour: (tourByUnit.get(u.id) || {}).next || null,
       targetMonthly, targetPerBed: targetMonthly != null && u.beds ? targetMonthly / u.beds : null, settleMonthly, settlePerBed: settleMonthly != null && u.beds ? settleMonthly / u.beds : null, nextTargetMonthly, nextTargetPerBed: nextTargetMonthly != null && u.beds ? nextTargetMonthly / u.beds : null,
       monthlyRent, signedPerBed: monthlyRent != null && u.beds ? monthlyRent / u.beds : null, breach: monthlyRent != null && settleMonthly > 0 && monthlyRent < settleMonthly, vsTarget: monthlyRent != null && targetMonthly ? monthlyRent - targetMonthly : null, vsTargetPerBed: monthlyRent != null && targetMonthly && u.beds ? (monthlyRent - targetMonthly) / u.beds : null,
       sent: governing ? governing.lease.sentDate : null, signed: governing ? governing.lease.signedDate : null, leaseStart: governing ? governing.lease.start : null, leaseEnd: governing ? governing.lease.end : null, twoYear,

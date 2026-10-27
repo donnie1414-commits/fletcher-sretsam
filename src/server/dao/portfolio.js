@@ -13,7 +13,7 @@ export function createPortfolioDao({ sq, schema }) {
   }
   function lists() {
     const out = {};
-    for (const list of [STAGE_LIST, 'customlist_ad_stage_source', 'customlist_serp_lease_type_list', 'customlist_serp_lease_status', 'customlist_lease_group_type', 'customlist_serp_hear_us_list', 'customlist830', 'customlist_serp_schools', 'customlist_serp_cities']) {
+    for (const list of [STAGE_LIST, 'customlist_ad_stage_source', 'customlist_serp_lease_type_list', 'customlist_serp_lease_status', 'customlist_lease_group_type', 'customlist_serp_hear_us_list', 'customlist830', 'customlist_serp_schools', 'customlist_serp_cities', 'customlist_ad_tour_outcome']) {
       try { out[list] = sq.few(`SELECT id, name, isinactive FROM ${list} ORDER BY id`); } catch (e) { out[list] = []; }
     }
     return out;

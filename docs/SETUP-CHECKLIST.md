@@ -42,6 +42,10 @@ Never put `amicus_leasing_app.js` on the Suitelet script record (§3.3). `npm ru
 | Event | `custevent_ad_tour_ay` | List/Record → Academic Year | which AY the tour counts toward |
 | Employee | `custentity_lkr_markets` | Multiple Select (city/market names) | existing per the brief; confirm (A-20) |
 
+The three Event fields switch on the full tour feature (unit link on the Pipeline, outcome, AY). Until they exist the app still schedules tours: the Event is created with the property and unit in its Location and the save reports which fields were left out. Create the list `customlist_ad_tour_outcome` first (values exactly as above), then the three fields; tick *Show in list* and give the leasing roles access on each.
+
+**Role permissions for tours and leads** (Setup › Users/Roles › Manage Roles › the leasing roles): *Lists › Events* — Full (the tour is an Event organised by the agent, so it must be creatable and editable); *Lists › Customers* — Create (the hub adds leads the way the Lead Form does); *Lists › Employee Record* — View (to pick another agent as the organiser; without it the picker offers only yourself). The CRM feature must be on (it is).
+
 ## E. Records
 
 **Saved views** `customrecord_ad_saved_view` (§4.2): fields `custrecord_ad_sv_owner` (List/Record → Employee), `custrecord_ad_sv_workspace` (Free-form text), `custrecord_ad_sv_name` (Free-form text), `custrecord_ad_sv_json` (Long Text), `custrecord_ad_sv_default` (Checkbox), `custrecord_ad_sv_shared_markets` (Free-form text). Access: leasing roles create/edit own.

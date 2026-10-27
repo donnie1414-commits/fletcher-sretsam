@@ -9,6 +9,7 @@ import { pickerStages, funnel } from '../../shared/rules/stages.js';
 import { UNIT_BEDS, HOUSE_BEDS } from '../../shared/rules/views.js';
 import { SavedViews } from './SavedViews.jsx';
 import { HistoryDrawer, UnitHistory } from './pipeline/HistoryDrawer.jsx';
+import { TourDialog } from './people/TourDialog.jsx';
 import { NotesDrawer } from './pipeline/NotesDrawer.jsx';
 import { LeaseDialog } from './pipeline/LeaseDialog.jsx';
 
@@ -99,6 +100,7 @@ export function Pipeline({ sel, setSel, density, isMobile, bootstrap }) {
         <span className="stage-line">{!r.editable && <span className="muted small">{r.unitId ? 'set by lease' : 'no unit record'}</span>}{terms}{openLease}{revise_}</span>
       </span>;
     } },
+    { key: 'tours', label: 'Tours', type: 'number', width: 118, title: (v, r) => (r.nextTour ? `next ${fmtDate(r.nextTour)}` : r.lastTour ? `last ${fmtDate(r.lastTour)}` : 'no tours this year'), render: (v, r) => <span className="tours-cell"><span>{v ? <strong>{v}</strong> : <span className="muted">–</span>} {r.nextTour ? <span className="small">next {fmtDate(r.nextTour)}</span> : r.lastTour ? <span className="muted small">last {fmtDate(r.lastTour)}</span> : null}</span>{r.unitId && <button type="button" className="linkish small" onClick={(e) => { e.stopPropagation(); setDrawer({ kind: 'tour', row: r }); }}>Tour…</button>}</span> },
     { key: 'daysInStage', label: 'Days in stage', type: 'number', width: 90, title: (v, r) => (r.stageDate ? `since ${fmtDate(r.stageDate)}` : 'nothing to measure'), render: (v) => (v == null ? <span className="muted">–</span> : <span className={cx('age', v >= 21 && 'stale', v >= 10 && v < 21 && 'old')}>{v}</span>) },
     { key: 'targetMonthly', label: 'Target rent', unit: '$/mo', type: 'money', width: 130, render: (v, r) => (v == null ? <span className="muted">no target</span> : <span className="tgt"><b>{fmtMoney(v)}</b><span className="muted small"> {fmtMoney(r.targetPerBed)}/bed</span>{r.vsTargetPerBed != null && Math.abs(r.vsTargetPerBed) >= 1 && <span className={cx('small', r.vsTargetPerBed > 0 ? 'delta up' : 'delta down')}> {r.vsTargetPerBed > 0 ? '+' : '−'}{fmtMoney(Math.abs(r.vsTargetPerBed))}/bed vs target</span>}</span>) },
     { key: 'lastOffer', label: 'Offered', unit: '$/bed', type: 'money', width: 104, editable: (r) => r.editable, validate: (v) => (v != null && v < 0 ? 'Offer cannot be negative' : null) },
@@ -119,7 +121,7 @@ export function Pipeline({ sel, setSel, density, isMobile, bootstrap }) {
         <label className="field"><span className="field-label">Stage</span><select value={e.stage || r.stage} disabled={!r.editable} onChange={(ev) => onEdit(r.key, 'stage', ev.target.value)}>{PICKER.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
         <label className="field"><span className="field-label">Follow-up</span><input type="date" value={e.followup ?? r.followup ?? ''} disabled={!r.editable} onChange={(ev) => onEdit(r.key, 'followup', ev.target.value)} /></label>
       </div>
-      <div className="card-row"><Button small onClick={() => setDrawer({ kind: 'history', row: r })}>History</Button><Button small onClick={() => setDrawer({ kind: 'notes', row: r })}>Notes {r.noteCount || ''}</Button>{(r.leases[0] || r.draftLease) && <Button small onClick={() => revise(r)}>Revisions…</Button>}</div>
+      <div className="card-row"><Button small onClick={() => setDrawer({ kind: 'history', row: r })}>History</Button><Button small onClick={() => setDrawer({ kind: 'notes', row: r })}>Notes {r.noteCount || ''}</Button>{r.unitId && <Button small onClick={() => setDrawer({ kind: 'tour', row: r })}>Tour…</Button>}{(r.leases[0] || r.draftLease) && <Button small onClick={() => revise(r)}>Revisions…</Button>}</div>
     </div>
   );
   const toggleFilter = (k) => setView((v) => ({ ...v, [k]: v[k] ? '' : '1', page: 0 }));
@@ -153,6 +155,7 @@ export function Pipeline({ sel, setSel, density, isMobile, bootstrap }) {
       {drawer && drawer.kind === 'history' && <HistoryDrawer row={drawer.row} sel={sel} onClose={() => setDrawer(null)} onOpenNotes={(r) => setDrawer({ kind: 'notes', row: r })} onOpenLease={(r) => setDrawer({ kind: 'lease', row: r })} />}
       {drawer && drawer.kind === 'notes' && <NotesDrawer row={{ ...drawer.row, ayId }} sel={sel} today={data ? data.today : bootstrap.session.today} onClose={() => setDrawer(null)} />}
       {drawer && drawer.kind === 'lease' && <LeaseDialog row={drawer.row} sel={sel} onClose={() => setDrawer(null)} />}
+      {drawer && drawer.kind === 'tour' && <TourDialog unit={{ unitId: drawer.row.unitId, unit: drawer.row.unit, propertyId: drawer.row.propertyId, property: drawer.row.property }} sel={sel} bootstrap={bootstrap} onClose={() => setDrawer(null)} onDone={() => invalidate('pipeline')} />}
     </div>
   );
 }

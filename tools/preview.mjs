@@ -20,6 +20,14 @@ const RealDate = Date;
 globalThis.Date = class extends RealDate { constructor(...a) { if (a.length) super(...a); else super(`${today}T12:00:00Z`); } static now() { return new RealDate(`${today}T12:00:00Z`).getTime(); } };
 
 const out = 'dist/preview'; fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(path.join(out, 'data'), { recursive: true });
+// Synthetic tours for the preview: calendar events over the next two weeks on real units for real (redacted) Tenant-New leads.
+{
+  const leads = fixture.customers.filter((c) => c.entitystatus === 17 && c.isinactive !== 'T').slice(0, 60);
+  const units = fixture.units.filter((u) => u.isinactive !== 'T' && u.property);
+  const day = (n) => { const d = new RealDate(`${today}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  const times = ['09:00', '10:00', '11:30', '13:00', '14:30', '16:00'];
+  fixture.tours = leads.map((c, i) => { const u = units[(i * 97) % units.length]; const dayN = (i % 11) - 2; const hh = times[i % times.length]; const past = dayN < 0; return { id: 9000 + i, title: `Tour · ${c.firstname || 'Lead'} ${c.lastname || ''}`.trim(), startdate: day(dayN), starttime: hh, endtime: `${String(Number(hh.slice(0, 2)) + (hh.endsWith('30') ? 1 : 0)).padStart(2, '0')}:${hh.endsWith('30') ? '00' : '30'}`, organizer: i % 3 === 0 ? 43 : 42, organizer_name: i % 3 === 0 ? 'Second Agent' : 'Preview (administrator scope)', status: i % 9 === 8 ? 'CANCELLED' : 'CONFIRMED', location: '', message: i % 4 === 0 ? 'Meet at the front door; bring the key box code.' : '', company: c.id, company_name: `${c.firstname || ''} ${c.lastname || ''}`.trim(), lastmodifieddate: today, unit: u.id, outcome: i % 9 === 8 ? 4 : past ? (i % 5 === 0 ? 3 : 2) : 1, ay: 2 }; });
+}
 const app = createApp({ query: fakeQuery(fixture), record: {}, runtime: fakeRuntime({ roleId: 3 }), log: fakeLog, file: { load: () => { throw new Error('preview'); } }, cache: null });
 const call = (params, method = 'GET', body = null) => { let text = ''; app.handle({ request: { parameters: params, method, body, headers: { 'X-Requested-With': 'AmicusLeasing' } }, response: { write: (s) => { text += s; }, setHeader() {} } }); return text; };
 const write = (name, obj) => fs.writeFileSync(path.join(out, 'data', `${name}.json`), JSON.stringify(obj));
@@ -29,6 +37,8 @@ const boot = JSON.parse(/<script type="application\/json" id="al-bootstrap">([\s
 boot.snapshotDate = today; boot.session.name = 'Preview (administrator scope)';
 write('bootstrap', boot); files.push('bootstrap');
 write('lists', JSON.parse(call({ route: 'lists' }))); files.push('lists');
+{ const t = JSON.parse(call({ route: 'tours', view: 'all', from: new RealDate(`${today}T12:00:00Z`).toISOString().slice(0, 10), to: '2030-01-01' })); const past = JSON.parse(call({ route: 'tours', view: 'all', from: '2020-01-01', to: today })); t.rows = [...past.rows.filter((r) => !t.rows.some((x) => x.id === r.id)), ...t.rows]; write('tours', t); files.push('tours'); console.log(`tours ${t.rows.length}`); }
+{ const l = JSON.parse(call({ route: 'leads', view: 'all', pageSize: '500' })); const rows = [...l.rows]; for (let pg = 1; pg * 500 < l.total; pg++) rows.push(...JSON.parse(call({ route: 'leads', view: 'all', pageSize: '500', page: String(pg) })).rows); write('leads', { ...l, rows, page: 0 }); files.push('leads'); console.log(`leads ${rows.length}`); }
 const combos = []; let previewWeeks = [];
 for (const ay of boot.academicYears.map((a) => a.year).filter((y) => y >= 2026 && y <= 2029)) for (const basis of ['proforma', 'executed']) {
   const combo = `${ay}-${basis}`; combos.push(combo);
