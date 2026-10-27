@@ -21,10 +21,11 @@ const N_MODULES = ['N/query', 'N/record', 'N/runtime', 'N/log', 'N/file', 'N/cac
 const args = new Set(process.argv.slice(2));
 fs.mkdirSync('dist', { recursive: true });
 
-async function buildServer() {
+/** The build id is the hash of the client files; the Suitelet puts it in the asset URLs so browsers never keep a stale bundle after a re-upload. */
+async function buildServer(buildId) {
   const r = await esbuild.build({
     entryPoints: ['src/server/suitelet.js'], bundle: true, write: false, format: 'cjs', platform: 'neutral', target: ['es2020'],
-    external: N_MODULES, legalComments: 'none', minify: false, treeShaking: true, charset: 'utf8', logLevel: 'silent',
+    external: N_MODULES, legalComments: 'none', minify: false, treeShaking: true, charset: 'utf8', logLevel: 'silent', define: { __AL_BUILD__: JSON.stringify(buildId) },
   });
   const code = r.outputFiles[0].text;
   const used = N_MODULES.filter((m) => code.includes(`require("${m}")`));
@@ -63,8 +64,9 @@ function lineEndings(p) { const s = fs.readFileSync(p, 'utf8'); return s.include
 (async () => {
   if (!args.has('--check-only')) {
     if (!args.has('--skip-tests')) { execSync('node --test "test/**/*.test.js"', { stdio: 'inherit' }); }
-    const serverBytes = await buildServer();
     const c = await buildClient();
+    const buildId = crypto.createHash('sha256').update(fs.readFileSync('dist/amicus_leasing_app.js')).update(fs.readFileSync('dist/amicus_leasing_app.css')).digest('hex').slice(0, 12);
+    const serverBytes = await buildServer(buildId);
     console.log(`server bundle ${serverBytes} B · client ${c.js} B min (${(c.js / 1024).toFixed(0)} KB) · css ${c.css} B · initial gzip ${c.gz} B`);
   }
   const exportsSeen = loadCheck();

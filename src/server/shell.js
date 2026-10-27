@@ -18,7 +18,9 @@ function assetUrl(ctx, kind) {
   if (!id) return null;
   const p = ctx.params || {};
   const keep = ['script', 'deploy', 'compid', 'whence'].filter((k) => p[k] != null && p[k] !== '').map((k) => `${k}=${encodeURIComponent(p[k])}`);
-  return `/app/site/hosting/scriptlet.nl?${keep.join('&')}&route=asset&kind=${kind}&v=${id}`;
+  // v = the build id (hash of the client files) so a re-uploaded file is fetched fresh; the file id alone never changes.
+  const v = typeof __AL_BUILD__ !== 'undefined' ? __AL_BUILD__ : id; // eslint-disable-line no-undef
+  return `/app/site/hosting/scriptlet.nl?${keep.join('&')}&route=asset&kind=${kind}&v=${v}`;
 }
 export function fileId(ctx, kind) {
   try { const id = ctx.N.runtime.getCurrentScript().getParameter({ name: ASSET_PARAMS[kind] }); return id ? Number(id) : null; } catch (e) { return null; }
@@ -36,7 +38,7 @@ export function serveAsset(ctx, context) {
     id = fileId(ctx, kind);
     if (!ASSET_PARAMS[kind] || !id) { plain(`asset "${kind}" is not configured: set ${ASSET_PARAMS[kind] || 'kind=js|css'} on the deployment`); return; }
     const f = ctx.N.file.load({ id });
-    try { context.response.setHeader({ name: 'Cache-Control', value: 'private, max-age=86400' }); } catch (e) { /* optional */ }
+    try { context.response.setHeader({ name: 'Cache-Control', value: 'private, max-age=3600' }); } catch (e) { /* optional */ }
     if (typeof context.response.writeFile === 'function') { context.response.writeFile({ file: f, isInline: true }); return; }
     context.response.setHeader({ name: 'Content-Type', value: kind === 'css' ? 'text/css; charset=utf-8' : 'application/javascript; charset=utf-8' });
     context.response.write(f.getContents());

@@ -3746,7 +3746,8 @@ function assetUrl(ctx, kind) {
   if (!id) return null;
   const p = ctx.params || {};
   const keep = ["script", "deploy", "compid", "whence"].filter((k) => p[k] != null && p[k] !== "").map((k) => `${k}=${encodeURIComponent(p[k])}`);
-  return `/app/site/hosting/scriptlet.nl?${keep.join("&")}&route=asset&kind=${kind}&v=${id}`;
+  const v = true ? "bf015d100a9f" : id;
+  return `/app/site/hosting/scriptlet.nl?${keep.join("&")}&route=asset&kind=${kind}&v=${v}`;
 }
 function fileId(ctx, kind) {
   try {
@@ -3774,7 +3775,7 @@ function serveAsset(ctx, context) {
     }
     const f = ctx.N.file.load({ id });
     try {
-      context.response.setHeader({ name: "Cache-Control", value: "private, max-age=86400" });
+      context.response.setHeader({ name: "Cache-Control", value: "private, max-age=3600" });
     } catch (e) {
     }
     if (typeof context.response.writeFile === "function") {
