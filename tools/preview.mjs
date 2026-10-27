@@ -22,7 +22,12 @@ globalThis.Date = class extends RealDate { constructor(...a) { if (a.length) sup
 const out = 'dist/preview'; fs.rmSync(out, { recursive: true, force: true }); fs.mkdirSync(path.join(out, 'data'), { recursive: true });
 // Synthetic tours for the preview: calendar events over the next two weeks on real units for real (redacted) Tenant-New leads.
 {
-  const leads = fixture.customers.filter((c) => c.entitystatus === 17 && c.isinactive !== 'T').slice(0, 60);
+  // The snapshot predates the lead model: present the newest property-less Tenant-New inquiries as LEAD-stage records.
+  const pool = fixture.customers.filter((c) => c.entitystatus === 17 && c.isinactive !== 'T' && !c.property).sort((a, b) => String(b.datecreated).localeCompare(String(a.datecreated))).slice(0, 220);
+  pool.forEach((c, i) => { c.stage = 'LEAD'; c.entitystatus = i % 9 === 8 ? 19 : i % 11 === 10 ? 22 : i < 60 ? 23 : 6; });
+  fixture.customers.filter((c) => c.entitystatus === 17 && c.isinactive !== 'T' && c.property).slice(0, 6).forEach((c) => { c.entitystatus = 18; });
+  fixture.recordTypes = [{ internalid: 1568, scriptid: 'CUSTOMRECORD_AD_WRITE_AUDIT' }, { internalid: 1569, scriptid: 'CUSTOMRECORD_AD_SAVED_VIEW' }];
+  const leads = pool.slice(0, 60);
   const units = fixture.units.filter((u) => u.isinactive !== 'T' && u.property);
   const day = (n) => { const d = new RealDate(`${today}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
   const times = ['09:00', '10:00', '11:30', '13:00', '14:30', '16:00'];

@@ -75,17 +75,18 @@ export function createApp(N) {
     };
     ctx.writes = createWrites({ record: N.record, sq, runtime: N.runtime, log, schema, auth, marketOf: (type, id, fields) => marketOf(ctx, type, id, fields), stageIdFor: (key) => { for (const [id, k] of Object.entries(ctx.load().lookups.stageIds)) if (k === key) return Number(id); return null; },
       outcomeIdFor: (key) => outcomeIdFor(dao.portfolio.lists(), key), tourFields: () => dao.tours.fields(),
+      stageOf: (id) => dao.people.stageOf(id), notify: (args) => notifyMentions(N, ctx, args),
       defaultSubsidiaryId: () => { const subs = dao.portfolio.subsidiaries(); const hit = subs.find((x) => String(x.name).trim().toLowerCase() === LEAD.SUBSIDIARY_NAME.toLowerCase()) || subs.find((x) => x.parent == null); return hit ? Number(hit.id) : null; },
       findByEmail: (email) => dao.people.byEmail(email) });
     return ctx;
   }
 
-  const routes = { bootstrap: routeBootstrap, lists: routeLists, summary: routeSummary, portfolio: routePortfolio, weekly: routeWeekly, velocity: routeVelocity, pipeline: routePipeline, unithistory: routeUnitHistory, team: routeTeam, tenants: routeTenants, leads: routeLeads, tours: routeTours, exceptions: routeExceptions, today: routeToday, savedviews: routeSavedViews, write: routeWrite, leasedialog: routeLeaseDialog, notes: routeNotes };
+  const routes = { bootstrap: routeBootstrap, lists: routeLists, summary: routeSummary, portfolio: routePortfolio, weekly: routeWeekly, velocity: routeVelocity, pipeline: routePipeline, unithistory: routeUnitHistory, team: routeTeam, tenants: routeTenants, leads: routeLeads, tours: routeTours, reprobe: routeReprobe, exceptions: routeExceptions, today: routeToday, savedviews: routeSavedViews, write: routeWrite, leasedialog: routeLeaseDialog, notes: routeNotes };
 
   function handle(context) {
     const route = String((context.request.parameters || {}).route || '').toLowerCase();
     const method = context.request.method;
-    if (!route) { const ctx = makeCtx(context); context.response.write(renderShell(ctx)); return; }
+    if (!route) { schema.reset(); const ctx = makeCtx(context); context.response.write(renderShell(ctx)); return; } // a full page load re-checks fields and records
     if (route === 'asset') { serveAsset({ N, params: context.request.parameters || {}, log }, context); return; }
     const started = Date.now();
     let status = 200, body;
@@ -139,6 +140,26 @@ export function marketOf(ctx, type, id, fields) {
   }
   if (type === SAVED_VIEW.TYPE) return ctx.scope.all ? 'unknown' : ctx.scope.marketIds[0] || null; // owner-scoped, checked in the route
   return null;
+}
+/** POST ?route=reprobe — forget the field/record probes and report what is still missing (the banner's "Re-check setup"). */
+function routeReprobe(ctx) { ctx.schema.reset(); ctx.probeAll(); return { degraded: ctx.schema.degraded }; }
+/**
+ * @mention emails: one NetSuite email per mentioned employee, from the author, with the note and a link into the hub.
+ * Needs N/email; silently off without it. Returns the number sent.
+ */
+function notifyMentions(N, ctx, { scope, mentions, note }) {
+  if (!N.email || typeof N.email.send !== 'function') return 0;
+  const unit = String(note.name || '').split(' — ')[0];
+  let link = '';
+  try { const sc = N.runtime.getCurrentScript(); const rel = N.url.resolveScript({ scriptId: sc.id, deploymentId: sc.deploymentId, returnExternalUrl: false }); const host = N.url.resolveDomain({ hostType: N.url.HostType.APPLICATION }); link = `https://${host}${rel}#view=pipeline&q=${encodeURIComponent(unit)}`; } catch (e) { link = ''; }
+  const who = scope.name || 'A colleague';
+  const text = String(note.custrecord_ad_note_text || '');
+  let sent = 0;
+  for (const id of [...new Set(mentions.map(Number).filter((n) => n > 0 && n !== Number(scope.userId)))]) {
+    try { N.email.send({ author: Number(scope.userId), recipients: [id], subject: `${who} mentioned you · ${unit}`, body: `${who} mentioned you in a leasing note on ${unit}:\n\n${text}\n\n${link ? `Open in the Leasing Hub: ${link}` : ''}`.trim() }); sent += 1; }
+    catch (e) { ctx.log && ctx.log.error && ctx.log.error({ title: 'mention email failed', details: `${id}: ${e && e.message}` }); }
+  }
+  return sent;
 }
 function parseBody(body) { if (!body) return {}; if (typeof body === 'object') return body; try { return JSON.parse(body); } catch (e) { return {}; } }
 function readFlag(runtime, name, dflt) { try { const v = runtime.getCurrentScript().getParameter({ name }); if (v == null || v === '') return dflt; return v === true || v === 'T' || v === 'true'; } catch (e) { return dflt; } }

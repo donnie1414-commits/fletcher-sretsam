@@ -1,5 +1,5 @@
 /** §6.5 — Tenants and Leads: two segments of the same customer rows (LEAD-DISCOVERY §5). */
-import { CUSTOMER, LEAD, CALENDAR_URL } from '../../shared/constants.js';
+import { CUSTOMER, LEAD, LEAD_STATUS_LABELS, CALENDAR_URL } from '../../shared/constants.js';
 import { toISO, addDays } from '../../shared/rules/dates.js';
 import { tourRows, visibleTour } from './tours.js';
 import { applyLeadView } from '../../shared/rules/views.js';
@@ -50,15 +50,16 @@ export function routeTenants(ctx) {
   return { total: result.total, page: result.page, pageSize: result.pageSize, rows, statuses: ctx.dao.people.statusList().filter((s) => s.entitytype === 'CUSTOMER'), degraded: ctx.schema.degraded };
 }
 /**
- * The lead set: active customers at Tenant-New, in scope, not yet on any lease — the inbound inquiry stream the Lead Form
- * writes (LEAD-DISCOVERY §1). Loaded whole (about a thousand rows) because views and tour joins need the full set; paged in JS.
+ * The lead set: LEAD-stage records (New, In Contact, Tour Scheduled, Tour Completed, Received Lease Form, Spam, Dead Lead)
+ * plus current tenants at Tenant-Inquiring, in scope, not yet on a lease for the selected year. Loaded whole because the
+ * views and the tour join need the full set; paged in JS.
  */
 export function loadLeads(ctx) {
   const inv = ctx.load().prepared.inventory;
   const lists = ctx.dao.portfolio.lists();
   const sourceName = new Map((lists.customlist_serp_hear_us_list || []).map((v) => [String(v.id), v.name]));
   const schoolName = new Map((lists.customlist_serp_schools || []).map((v) => [String(v.id), v.name]));
-  const filters = { stage: 'CUSTOMER', statusIds: [LEAD.STATUS_NEW], scopePropertyIds: ctx.scope.all ? null : ctx.propertyIdsInScope() };
+  const filters = { leadSet: true, scopePropertyIds: ctx.scope.all ? null : ctx.propertyIdsInScope() };
   const page = ctx.dao.people.tenants({ filters, sort: 'created', page: 0, pageSize: 2000 });
   const custIds = page.rows.map((r) => r.id);
   const onLease = new Set(custIds.length ? ctx.dao.people.leaseLinks(custIds).map((l) => String(l.customer)) : []);
@@ -68,14 +69,16 @@ export function loadLeads(ctx) {
   const toursByCust = new Map(); for (const t of tours) { if (!t.customerId) continue; if (!toursByCust.has(t.customerId)) toursByCust.set(t.customerId, []); toursByCust.get(t.customerId).push(t); }
   const newSince = addDays(ctx.today, -LEAD.NEW_DAYS);
   return candidates.map((t) => {
-    const propIds = ids(t.property), ayIds = ids(t.ay);
+    const propIds = ids(t.property), ayIds = ids(t.ay), unitIds = ids(t.units);
     const mine = (toursByCust.get(String(t.id)) || []).filter((x) => x.outcome !== 'CANCELLED');
+    const unitsOfInterest = unitIds.map((u) => { const unit = inv.unitsById.get(u); const bed = !unit ? inv.bedroomsById.get(u) : null; const parent = bed ? inv.unitsById.get(bed.unitId) : unit; return parent ? { id: u, name: bed ? `${parent.name} · ${bed.name}` : parent.name, unitId: parent.id, propertyId: parent.propertyId, property: (inv.propertiesById.get(parent.propertyId) || {}).name || null } : { id: u, name: `#${u}`, unitId: null, propertyId: null, property: null }; });
     const upcoming = mine.filter((x) => x.date >= ctx.today).sort((a, b) => (a.date + (a.start || '')).localeCompare(b.date + (b.start || '')));
     const past = mine.filter((x) => x.date < ctx.today).sort((a, b) => (b.date + (b.start || '')).localeCompare(a.date + (a.start || '')));
     const created = toISO(t.datecreated);
     return {
       id: String(t.id), name: [t.firstname, t.lastname].filter(Boolean).join(' ') || t.entityid, firstName: t.firstname || '', lastName: t.lastname || '', email: t.email, phone: t.phone || t.mobilephone,
-      status: t.status_name, statusId: t.entitystatus, created, isNew: !!created && created >= newSince,
+      status: LEAD_STATUS_LABELS[Number(t.entitystatus)] || t.status_name, statusId: Number(t.entitystatus), stage: t.stage, created, isNew: !!created && created >= newSince && Number(t.entitystatus) === LEAD.STATUS_NEW,
+      unitsOfInterest,
       school: t.school != null ? (schoolName.get(String(t.school)) || String(t.school)) : null, schoolId: t.school != null ? String(t.school) : null,
       desiredLocation: t.desired_location || null, groupSize: t.group_size != null ? Number(t.group_size) : null, houseMates: t.house_mates || null, notes: t.notes || null,
       source: t.hear_us != null ? (sourceName.get(String(t.hear_us)) || null) : null, sourceId: t.hear_us != null ? String(t.hear_us) : null,

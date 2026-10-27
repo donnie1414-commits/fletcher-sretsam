@@ -22,6 +22,7 @@ export function fakeQuery(fixture, { missingFields = ['custrecord_ad_uas_lease_t
     if (t === 'entitystatus') return fixture.lists.entitystatus.map((s) => ({ id: s.key, name: s.name, entitytype: s.entitytype, inactive: s.inactive || 'F' }));
     if (t.startsWith('customlist')) return fixture.lists[t] || [];
     if (t === 'customrecord_ad_write_audit' || t === 'customrecord_ad_saved_view') return [];
+    if (t === 'customrecordtype') return fixture.recordTypes || [];
     if (t === 'map_customrecord_serp_lease_record_custrecord_serp_tenants_') {
       // tenant → leases, from the lease rows' tenants string
       const m = /maptwo IN \(([^)]*)\)/.exec(sql); const ids = m ? new Set(m[1].split(',').map((x) => x.trim())) : null;
@@ -43,12 +44,14 @@ export function fakeQuery(fixture, { missingFields = ['custrecord_ad_uas_lease_t
     if (t === 'customer') {
       const byEmail = /LOWER\(email\) = '([^']*)'/.exec(sql); if (byEmail) return rows.filter((r) => r.isinactive !== 'T' && r.email && r.email.toLowerCase() === byEmail[1]);
       const idIn = /c\.id IN \(([^)]*)\)/.exec(sql); if (idIn) { const ids = new Set(idIn[1].split(',').map((x) => x.trim())); rows = rows.filter((r) => ids.has(String(r.id))); }
-      if (/stage = 'CUSTOMER'/.test(sql)) rows = rows.filter((r) => r.stage === 'CUSTOMER');
+      const one = /FROM customer WHERE id = (\d+)/.exec(sql); if (one) return rows.filter((r) => String(r.id) === one[1]).map((r) => ({ ...r }));
+      if (/\(c\.stage = 'LEAD' OR c\.entitystatus IN \(18\)\)/.test(sql)) rows = rows.filter((r) => r.stage === 'LEAD' || Number(r.entitystatus) === 18);
+      else if (/stage = 'CUSTOMER'/.test(sql)) rows = rows.filter((r) => r.stage === 'CUSTOMER');
       if (/NOT EXISTS \(SELECT 1 FROM map_customer_custentity_serp_ent_property/.test(sql)) rows = rows.filter((r) => !r.property);
       if (/NOT EXISTS \(SELECT 1 FROM map_customer_custentity_serp_academic_year/.test(sql)) rows = rows.filter((r) => !r.ay);
       if (/LOWER\(c\.firstname/.test(sql)) { const q = /LIKE '%([^']*)%'/.exec(sql)[1]; rows = rows.filter((r) => `${r.firstname || ''} ${r.lastname || ''} ${r.email || ''} ${r.desired_location || ''}`.toLowerCase().includes(q)); }
-      const statusIn = /c\.entitystatus IN \(([^)]*)\)/.exec(sql); if (statusIn) { const ids = new Set(statusIn[1].split(',').map(Number)); rows = rows.filter((r) => ids.has(Number(r.entitystatus))); }
-      const statusName = (r) => ({ 13: 'Tenant-Closed Won', 15: 'Tenant-Renewal', 16: 'Tenant-Lost Customer', 17: 'Tenant-New', 18: 'Tenant-Inquiring' })[r.entitystatus] || null;
+      const statusIn = /(?<!OR )c\.entitystatus IN \(([^)]*)\)/.exec(sql); if (statusIn) { const ids = new Set(statusIn[1].split(',').map(Number)); rows = rows.filter((r) => ids.has(Number(r.entitystatus))); }
+      const statusName = (r) => ({ 13: 'Tenant-Closed Won', 15: 'Tenant-Renewal', 16: 'Tenant-Lost Customer', 17: 'Tenant-New', 18: 'Tenant-Inquiring', 6: 'Lead-New', 19: 'Lead-In Contact', 23: 'Lead-Tour Scheduled', 22: 'Lead-Tour Completed', 20: 'Lead-Received Lease Form', 21: 'Lead-Spam', 24: 'Lead-Dead Lead' })[r.entitystatus] || null;
       if (/COUNT\(\*\) AS n FROM customer/.test(sql)) return [{ n: rows.length }];
       if (/GROUP BY LOWER\(email\)/.test(sql)) { const c = new Map(); for (const r of rows) if (r.email) { const k = r.email.toLowerCase(); c.set(k, (c.get(k) || 0) + 1); } return [...c].filter(([, n]) => n > 1).map(([email, n]) => ({ email, n })); }
       rows = rows.slice().sort((a, b) => `${a.lastname || ''}${a.firstname || ''}`.localeCompare(`${b.lastname || ''}${b.firstname || ''}`));
@@ -58,7 +61,7 @@ export function fakeQuery(fixture, { missingFields = ['custrecord_ad_uas_lease_t
     return rows.map((r) => ({ ...r, lease_type_name: r.lease_type === 1 ? 'Whole House' : r.lease_type === 2 ? 'Unit' : r.lease_type === 3 ? 'Bedroom' : null, status_name: r.status === 1 ? 'Fully Executed' : r.status === 2 ? 'In Process' : null, ay_name: (fixture.academic_years.find((a) => a.id === r.ay) || {}).name || null }));
   };
   return {
-    runSuiteQL: ({ query }) => { if (/ROWNUM <= 1/.test(query) && [...missing].some((f) => query.includes(f))) throw new Error('Unknown identifier'); return { asMappedResults: () => tableRows(query) }; },
+    runSuiteQL: ({ query, params }) => { if (/ROWNUM <= 1/.test(query) && [...missing].some((f) => query.includes(f))) throw new Error('Unknown identifier'); let q = query; for (const v of params || []) q = q.replace('?', typeof v === 'number' ? String(v) : `'${String(v).replace(/'/g, "''")}'`); return { asMappedResults: () => tableRows(q) }; },
     runSuiteQLPaged: ({ query, pageSize }) => { const rows = tableRows(query); const ranges = []; for (let i = 0; i * pageSize < Math.max(rows.length, 1); i++) ranges.push({ index: i }); return { pageRanges: ranges, fetch: ({ index }) => ({ data: { asMappedResults: () => rows.slice(index * pageSize, (index + 1) * pageSize) } }) }; },
   };
 }

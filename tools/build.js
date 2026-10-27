@@ -17,7 +17,7 @@ import { execSync } from 'node:child_process';
 import * as esbuild from 'esbuild';
 
 const BUDGET = { clientMinifiedBytes: 250 * 1024, initialGzipBytes: 150 * 1024, shellBytes: 4 * 1024 };
-const N_MODULES = ['N/query', 'N/record', 'N/runtime', 'N/log', 'N/file', 'N/cache', 'N/url', 'N/search', 'N/crypto', 'N/encode', 'N/https', 'N/redirect'];
+const N_MODULES = ['N/query', 'N/record', 'N/runtime', 'N/log', 'N/file', 'N/cache', 'N/url', 'N/search', 'N/crypto', 'N/encode', 'N/https', 'N/redirect', 'N/email'];
 const BUILD_PLACEHOLDER = '__AL_BUILD_PLACEHOLDER__';
 const args = new Set(process.argv.slice(2));
 fs.mkdirSync('dist', { recursive: true });

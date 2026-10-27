@@ -12,7 +12,10 @@ const snaps = fs.readdirSync('test/fixtures').filter((d) => d.startsWith('snapsh
 const fx = snaps.length ? loadFixture(path.join('test/fixtures', snaps[snaps.length - 1])) : null;
 // Synthetic tours (calendar events) on top of the snapshot: two for one Tenant-New lead on a real unit, one cancelled, one for another agent.
 if (fx) {
-  const lead = fx.customers.find((c) => c.entitystatus === 17 && c.isinactive !== 'T' && !c.property);
+  // The snapshot predates the lead model: turn thirty property-less Tenant-New rows into LEAD-stage records (New / In Contact / Tour Scheduled).
+  fx.customers.filter((c) => c.entitystatus === 17 && c.isinactive !== 'T' && !c.property).slice(0, 30).forEach((c, i) => { c.stage = 'LEAD'; c.entitystatus = i % 5 === 4 ? 19 : i % 7 === 6 ? 23 : 6; });
+  fx.recordTypes = [{ internalid: 1568, scriptid: 'CUSTOMRECORD_AD_WRITE_AUDIT' }, { internalid: 1569, scriptid: 'CUSTOMRECORD_AD_SAVED_VIEW' }];
+  const lead = fx.customers.find((c) => c.stage === 'LEAD' && c.entitystatus === 6 && c.isinactive !== 'T' && !c.property);
   const unit = fx.units.find((u) => u.isinactive !== 'T' && u.property);
   const today = new Date().toISOString().slice(0, 10);
   fx.tours = [
@@ -38,6 +41,7 @@ test('server path against the snapshot', { skip: fx ? false : 'no snapshot' }, a
     assert.ok(Buffer.byteLength(r.text) - Buffer.byteLength(bootText) < 2.5 * 1024, `shell without bootstrap is ${Buffer.byteLength(r.text) - Buffer.byteLength(bootText)} bytes`);
     assert.ok(Buffer.byteLength(bootText) < 3 * 1024, `bootstrap JSON is ${Buffer.byteLength(bootText)} bytes`);
     const boot = JSON.parse(bootText);
+    assert.equal(boot.links.auditLog, '/app/common/custom/custrecordentrylist.nl?rectype=1568');
     assert.equal(boot.scope.all, true); assert.ok(boot.academicYears.length >= 3);
     assert.ok(boot.degraded.some((d) => d.field === 'custrecord_ad_uas_lease_terms'), 'missing optional field is reported, not fatal');
   });
@@ -68,7 +72,7 @@ test('server path against the snapshot', { skip: fx ? false : 'no snapshot' }, a
     const ten = request(app, { route: 'tenants', pageSize: '25' }).json(); assert.equal(ten.rows.length, 25); assert.ok(ten.rows.every((r) => r.ready && Array.isArray(r.ready.reasons)));
     const tours = request(app, { route: 'tours', view: 'all' }).json(); assert.equal(tours.available, true); assert.equal(tours.rows.length, 3, 'all three events read back'); assert.equal(tours.rows[0].start, '09:00'); assert.equal(tours.rows.find((r) => r.id === '9002').outcome, 'CANCELLED'); assert.ok(tours.rows[0].unit && tours.rows[0].property && tours.rows[0].market, 'unit → property → market resolved from the inventory'); assert.ok(tours.outcomes.find((o) => o.key === 'NO_SHOW').id === 3);
     const mine = request(app, { route: 'tours', view: 'mine' }).json(); assert.equal(mine.rows.length, 2, 'mine = organised by me (42)');
-    const leads = request(app, { route: 'leads', view: 'all', pageSize: '500' }).json(); assert.ok(leads.total > 100, `leads total ${leads.total}`); assert.ok(leads.rows.every((r) => r.statusId === 17 && r.properties !== undefined)); const L = leads.rows.find((r) => r.id === String(fx.testLead.id)); assert.ok(L, 'the lead with tours is in the set'); assert.equal(L.tourCount, 1, 'the cancelled tour is not counted'); assert.equal(L.nextTour.id, '9001');
+    const leads = request(app, { route: 'leads', view: 'all', pageSize: '500' }).json(); assert.ok(leads.total >= 30, `leads total ${leads.total}`); assert.ok(leads.rows.every((r) => (r.stage === 'LEAD' || r.statusId === 18) && r.properties !== undefined), 'only LEAD-stage records and inquiring tenants'); assert.ok(leads.rows.some((r) => r.status === 'Tour Scheduled')); const L = leads.rows.find((r) => r.id === String(fx.testLead.id)); assert.ok(L, 'the lead with tours is in the set'); assert.equal(L.tourCount, 1, 'the cancelled tour is not counted'); assert.equal(L.nextTour.id, '9001');
     const noTour = request(app, { route: 'leads', view: 'no-tour', pageSize: '500' }).json(); assert.ok(!noTour.rows.some((r) => r.id === String(fx.testLead.id)));
     assert.equal(today.tours.count, 2, 'today: the two live tours'); assert.ok(today.tours.calendarUrl); assert.ok(today.leads.count > 0 && today.leads.rows.length <= 25);
     const pl = request(app, { route: 'pipeline', ay: '2027', pageSize: '500', q: fx.testUnit.name }).json(); const row = pl.rows.find((r) => r.unitId === String(fx.testUnit.id)); assert.ok(row, 'unit row found'); assert.equal(row.tours, 2, 'two live tours on the unit this year'); assert.equal(row.nextTour, new Date().toISOString().slice(0, 10));

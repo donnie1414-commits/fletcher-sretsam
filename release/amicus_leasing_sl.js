@@ -5,9 +5,9 @@
  *
  * Amicus Leasing Workspace — entry. Routing only (§4). Built by tools/build.js into dist/amicus_leasing_sl.js.
  */
-define(["N/query","N/record","N/runtime","N/log","N/file","N/cache"], function (__n0, __n1, __n2, __n3, __n4, __n5) {
+define(["N/query","N/record","N/runtime","N/log","N/file","N/cache","N/url","N/email"], function (__n0, __n1, __n2, __n3, __n4, __n5, __n6, __n7) {
   'use strict';
-  var __N = {"N/query": __n0, "N/record": __n1, "N/runtime": __n2, "N/log": __n3, "N/file": __n4, "N/cache": __n5};
+  var __N = {"N/query": __n0, "N/record": __n1, "N/runtime": __n2, "N/log": __n3, "N/file": __n4, "N/cache": __n5, "N/url": __n6, "N/email": __n7};
   var require = function (id) { if (Object.prototype.hasOwnProperty.call(__N, id)) return __N[id]; throw new Error('module not available in the server bundle: ' + id); };
   var module = { exports: {} }; var exports = module.exports;
 var __create = Object.create;
@@ -50,10 +50,13 @@ var import_runtime = __toESM(require("N/runtime"), 1);
 var import_log = __toESM(require("N/log"), 1);
 var import_file = __toESM(require("N/file"), 1);
 var import_cache = __toESM(require("N/cache"), 1);
+var import_email = __toESM(require("N/email"), 1);
+var import_url = __toESM(require("N/url"), 1);
 
 // src/server/schema.js
 var probeCache = /* @__PURE__ */ new Map();
-function createSchema({ query: query2, log: log2, cache: cache2 = null, cacheTtl = 3600 }) {
+var probedTables = /* @__PURE__ */ new Set();
+function createSchema({ query: query2, log: log2, cache: cache2 = null, cacheTtl = 600 }) {
   const degraded = [];
   function loadCached(table) {
     if (probeCache.has(table)) return probeCache.get(table);
@@ -73,6 +76,7 @@ function createSchema({ query: query2, log: log2, cache: cache2 = null, cacheTtl
     return m;
   }
   function persist(table, m) {
+    probedTables.add(table);
     if (!cache2) return;
     try {
       cache2.put({ key: `schema:${table}`, value: JSON.stringify(Object.fromEntries(m)), ttl: cacheTtl });
@@ -127,7 +131,17 @@ function createSchema({ query: query2, log: log2, cache: cache2 = null, cacheTtl
   function degradeFeature(entry) {
     if (!degraded.some((d) => d.table === entry.table && d.feature === entry.feature)) degraded.push({ table: entry.table, field: entry.field || "*", feature: entry.feature || null, reason: entry.reason || null });
   }
-  return { probe, projection, degraded, degradeFeature, reset: () => probeCache.clear() };
+  function reset() {
+    probeCache.clear();
+    degraded.length = 0;
+    if (cache2) for (const t of probedTables) {
+      try {
+        cache2.remove({ key: `schema:${t}` });
+      } catch (e) {
+      }
+    }
+  }
+  return { probe, projection, degraded, degradeFeature, reset };
 }
 
 // src/server/dao/suiteql.js
@@ -233,7 +247,7 @@ var STAGES = Object.freeze([
   { key: "OFFLINE", order: 5, owner: "human", label: "Offline", labels: ["offline", "off line", "not leasing"] },
   { key: "LEASE_OUT", order: 6, owner: "lease", label: "Lease Out - Unsigned", labels: ["lease out - unsigned", "lease out", "unsigned", "lease sent"] },
   // Set from the board's "Revisions" action when a sent lease needs changes; the lease User Event takes the stage back once it is re-sent or signed.
-  { key: "LEASE_REVISIONS", order: 7, owner: "human", label: "Lease Revisions", labels: ["lease revisions", "revisions", "lease revision"] },
+  { key: "LEASE_REVISIONS", order: 7, owner: "human", label: "Lease Revisions", labels: ["lease revisions", "revisions", "lease revision", "leave revisions"] },
   { key: "FULLY_EXECUTED", order: 8, owner: "lease", label: "Fully Executed", labels: ["fully executed", "executed", "leased"] }
 ]);
 var RETIRED_STAGE_FOLD = Object.freeze({
@@ -506,15 +520,29 @@ var TOUR = Object.freeze({
 });
 var CALENDAR_URL = "/app/crm/calendar/calendar.nl";
 var LEAD = Object.freeze({
-  STATUS_NEW: 17,
-  // entitystatus "Tenant - New"
+  // NetSuite's LEAD-stage statuses (entitystatus). The hub creates leads here and moves them with tours; a lead becomes a
+  // tenant the way it always has: attached to a lease. Tenant-Inquiring (18) is a current tenant asking to rent again and is
+  // listed with the leads (LEAD-DISCOVERY §3).
+  STATUS_NEW: 6,
+  STATUS_IN_CONTACT: 19,
+  STATUS_TOUR_SCHEDULED: 23,
+  STATUS_TOUR_COMPLETED: 22,
+  STATUS_RECEIVED_FORM: 20,
+  STATUS_SPAM: 21,
+  STATUS_DEAD: 24,
+  TENANT_INQUIRING: 18,
+  STAGE: "LEAD",
   SUBSIDIARY_NAME: "Amicus Parent Company",
   // the subsidiary the Lead Form uses for new inquiries
   AGENT: "salesrep",
+  UNITS: "custentity_ad_lead_units",
+  // optional: Multiple Select → Units/Bedrooms, "units of interest" (SETUP-CHECKLIST D)
   NEW_DAYS: 14,
   // "new" view = created in the last N days
   CREATE_FIELDS: Object.freeze(["firstname", "lastname", "email", "phone", "mobilephone", "isperson", "subsidiary", "salesrep", "custentity_serp_group_size", "custentity_serp_house_mates"])
 });
+var LEAD_STATUS_IDS = Object.freeze(/* @__PURE__ */ new Set([6, 19, 23, 22, 20, 21, 24]));
+var LEAD_STATUS_LABELS = Object.freeze({ 6: "New", 19: "In Contact", 23: "Tour Scheduled", 22: "Tour Completed", 20: "Received Lease Form", 21: "Spam", 24: "Dead Lead", 18: "Tenant · Inquiring" });
 var TOUR_OUTCOMES = Object.freeze([
   { key: "SCHEDULED", label: "Scheduled" },
   { key: "COMPLETED", label: "Completed" },
@@ -820,6 +848,7 @@ function createPeopleDao({ sq, schema }) {
       { field: "custentity12", as: "agent_assigned", optional: true, feature: "agent assigned" },
       { field: "salesrep", as: "agent" },
       { field: "salesrep", as: "agent_name", expr: "BUILTIN.DF(c.salesrep)" },
+      { field: LEAD.UNITS, as: "units", optional: true, feature: "lead units of interest" },
       { field: "custentity9", as: "tour_date", optional: true },
       { field: "custentity3", as: "tour_scheduled", optional: true },
       { field: "custentity4", as: "lease_sent", optional: true },
@@ -830,7 +859,8 @@ function createPeopleDao({ sq, schema }) {
   function tenants({ filters = {}, sort = "name", page = 0, pageSize = 100 } = {}) {
     const where = [];
     if (!filters.includeInactive) where.push("c.isinactive = 'F'");
-    if (filters.stage) where.push(`c.stage = '${esc(filters.stage)}'`);
+    if (filters.leadSet) where.push(`(c.stage = '${LEAD.STAGE}' OR c.entitystatus IN (${LEAD.TENANT_INQUIRING}))`);
+    else if (filters.stage) where.push(`c.stage = '${esc(filters.stage)}'`);
     if (filters.statusIds && filters.statusIds.length) where.push(`c.entitystatus IN (${sqlIn(filters.statusIds)})`);
     if (filters.q) {
       const q = esc(String(filters.q).toLowerCase());
@@ -863,9 +893,12 @@ function createPeopleDao({ sq, schema }) {
   function duplicates() {
     return sq.few(`SELECT LOWER(email) AS email, COUNT(*) AS n FROM ${C} WHERE isinactive = 'F' AND email IS NOT NULL GROUP BY LOWER(email) HAVING COUNT(*) > 1`);
   }
-  function byEmail(email) {
-    if (!email) return [];
-    return sq.few(`SELECT id, firstname, lastname, entitystatus, datecreated FROM ${C} WHERE isinactive = 'F' AND LOWER(email) = '${esc(String(email).trim().toLowerCase())}' ORDER BY id`);
+  function stageOf(id) {
+    return sq.one(`SELECT stage, entitystatus FROM ${C} WHERE id = ?`, [Number(id)]);
+  }
+  function byEmail(email2) {
+    if (!email2) return [];
+    return sq.few(`SELECT id, firstname, lastname, entitystatus, datecreated FROM ${C} WHERE isinactive = 'F' AND LOWER(email) = '${esc(String(email2).trim().toLowerCase())}' ORDER BY id`);
   }
   function statusList() {
     return sq.few(`SELECT key AS id, name, entitytype, inactive FROM entitystatus ORDER BY entitytype, key`);
@@ -884,7 +917,7 @@ function createPeopleDao({ sq, schema }) {
   function probe() {
     select();
   }
-  return { tenants, byIds, byEmail, propertyLinks, ayLinks, leaseLinks, duplicates, statusList, team, probe };
+  return { tenants, byIds, byEmail, stageOf, propertyLinks, ayLinks, leaseLinks, duplicates, statusList, team, probe };
 }
 
 // src/server/dao/tours.js
@@ -1181,7 +1214,7 @@ var ALLOWLIST = Object.freeze({
     "custrecord_academic_end_date"
   ]) },
   // create = a new lead from the hub (A-22): the identity fields are creation-only; updates stay limited to the triage fields
-  [CUSTOMER.TYPE]: { create: true, fields: /* @__PURE__ */ new Set(["entitystatus", CUSTOMER.PROPERTY, CUSTOMER.AY, "custentity12", "custentity9", "custentity3", "custentity_desired_location", "custentity_serp_notes", "custentity_serp_howdid_you_hear_about_us", "custentity_serp_schools", ...LEAD.CREATE_FIELDS]) },
+  [CUSTOMER.TYPE]: { create: true, fields: /* @__PURE__ */ new Set(["entitystatus", CUSTOMER.PROPERTY, CUSTOMER.AY, "custentity12", "custentity9", "custentity3", "custentity_desired_location", "custentity_serp_notes", "custentity_serp_howdid_you_hear_about_us", "custentity_serp_schools", LEAD.UNITS, ...LEAD.CREATE_FIELDS]) },
   [TOUR.TYPE]: { create: true, fields: /* @__PURE__ */ new Set(["title", "startdate", "starttime", "endtime", "timedevent", "accesslevel", "company", "organizer", "location", "message", "status", TOUR.UNIT, TOUR.OUTCOME, TOUR.AY]) },
   // App-owned record (§4.2 saved views): not in the §5.9 table, declared here explicitly rather than smuggled in.
   [SAVED_VIEW.TYPE]: { create: true, fields: /* @__PURE__ */ new Set([SAVED_VIEW.OWNER, SAVED_VIEW.WORKSPACE, SAVED_VIEW.NAME, SAVED_VIEW.JSON, SAVED_VIEW.IS_DEFAULT, SAVED_VIEW.SHARED_MARKETS, "isinactive", "name"]) }
@@ -1218,7 +1251,7 @@ function nsValue(field, v, ctxDate = null) {
   if (TIME_FIELDS.has(field)) return localTime(v, ctxDate);
   return v;
 }
-function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schema, auth, marketOf: marketOf2, clock = () => (/* @__PURE__ */ new Date()).toISOString(), stageIdFor = null, outcomeIdFor: outcomeIdFor2 = null, tourFields = null, defaultSubsidiaryId = null, findByEmail = null }) {
+function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schema, auth, marketOf: marketOf2, clock = () => (/* @__PURE__ */ new Date()).toISOString(), stageIdFor = null, outcomeIdFor: outcomeIdFor2 = null, tourFields = null, defaultSubsidiaryId = null, findByEmail = null, stageOf = null, notify = null }) {
   const auditAvailable = () => {
     try {
       return schema.probe(AUDIT.TYPE, [AUDIT.CHANGE_ID]).get(AUDIT.CHANGE_ID) !== false;
@@ -1267,6 +1300,18 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
     }
     fields.isperson = true;
     if (fields.entitystatus == null || fields.entitystatus === "") fields.entitystatus = LEAD.STATUS_NEW;
+    if (Object.prototype.hasOwnProperty.call(fields, LEAD.UNITS)) {
+      let have = true;
+      try {
+        have = schema.probe(CUSTOMER.TYPE, [LEAD.UNITS]).get(LEAD.UNITS) !== false;
+      } catch (e) {
+        have = true;
+      }
+      if (!have) {
+        delete fields[LEAD.UNITS];
+        change.dropped = [...change.dropped || [], LEAD.UNITS];
+      }
+    }
     if (fields.subsidiary == null || fields.subsidiary === "") {
       const sub = defaultSubsidiaryId ? defaultSubsidiaryId() : null;
       if (!sub) throw new WriteError("BAD_CHANGE", `the lead subsidiary "${LEAD.SUBSIDIARY_NAME}" was not found`);
@@ -1312,6 +1357,32 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
     }
     if (dropped.length) change.dropped = dropped;
     change.tourDate = fields.startdate || null;
+  }
+  function advanceLead(scope, change, fields, isCreate) {
+    const company = fields.company ?? change.company;
+    if (!company || !stageOf) return null;
+    const target = isCreate ? LEAD.STATUS_TOUR_SCHEDULED : change.outcomeKey === "COMPLETED" ? LEAD.STATUS_TOUR_COMPLETED : null;
+    if (!target) return null;
+    let cur = null;
+    try {
+      cur = stageOf(company);
+    } catch (e) {
+      return null;
+    }
+    if (!cur || String(cur.stage).toUpperCase() !== LEAD.STAGE) return null;
+    const from = Number(cur.entitystatus);
+    const allowed = target === LEAD.STATUS_TOUR_SCHEDULED ? [LEAD.STATUS_NEW, LEAD.STATUS_IN_CONTACT] : [LEAD.STATUS_TOUR_SCHEDULED, LEAD.STATUS_NEW, LEAD.STATUS_IN_CONTACT];
+    if (!allowed.includes(from)) return null;
+    try {
+      const rec = record2.load({ type: CUSTOMER.TYPE, id: Number(company) });
+      rec.setValue({ fieldId: "entitystatus", value: target });
+      rec.save();
+      audit(scope, { changeId: `${change.changeId}:lead`, recordType: CUSTOMER.TYPE }, company, "entitystatus", from, target);
+      return target;
+    } catch (e) {
+      log2 && log2.error && log2.error({ title: "lead status step failed", details: `${company}: ${e && e.message}` });
+      return null;
+    }
   }
   function validateChange(change) {
     if (!change || typeof change !== "object") throw new WriteError("BAD_CHANGE", "change is not an object");
@@ -1374,6 +1445,13 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
     const rec = record2.load({ type: change.recordType, id: change.recordId });
     const before = {};
     for (const f of Object.keys(fields)) before[f] = rec.getValue({ fieldId: f });
+    if (change.recordType === TOUR.TYPE) {
+      try {
+        change.company = rec.getValue({ fieldId: "company" });
+      } catch (e) {
+        change.company = null;
+      }
+    }
     if (change.version != null && change.version !== "") {
       const lm = versionOf(change.recordType, change.recordId) ?? (rec.getValue({ fieldId: "lastmodified" }) || rec.getValue({ fieldId: "lastmodifieddate" }) || null);
       if (lm != null && !sameVersion(lm, change.version)) throw new WriteError("STALE", "record changed since it was read — reload the tab", { current: before, version: String(lm) });
@@ -1418,14 +1496,27 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
       const screen = tenantFilterOk(fields[LEASE.PROPERTY], fields[LEASE.AY], fields[LEASE.TENANTS].map(String));
       if (!screen.ok) throw new WriteError("TENANT_FILTER", "tenants do not match the lease Property/Academic Year", { bad: screen.bad });
     }
-    const rec = record2.create({ type: change.recordType, isDynamic: false });
-    for (const [f, v] of Object.entries(fields)) rec.setValue({ fieldId: f, value: nsValue(f, v, change.tourDate || null) });
-    if (change.recordType === UAS.TYPE && Object.prototype.hasOwnProperty.call(fields, UAS.STAGE)) {
-      rec.setValue({ fieldId: UAS.MANUAL_STAGE, value: nsValue(UAS.MANUAL_STAGE, fields[UAS.STAGE]) });
-      rec.setValue({ fieldId: UAS.STAGE_SOURCE, value: 1 });
-      rec.setValue({ fieldId: UAS.STAGE_DATE, value: change.stageKey === "NONE" ? "" : localDate(clock().slice(0, 10)) });
+    const type = change.recordType === CUSTOMER.TYPE && LEAD_STATUS_IDS.has(Number(fields.entitystatus)) ? "lead" : change.recordType;
+    const build = (fs) => {
+      const rec = record2.create({ type, isDynamic: false });
+      for (const [f, v] of Object.entries(fs)) rec.setValue({ fieldId: f, value: nsValue(f, v, change.tourDate || null) });
+      if (change.recordType === UAS.TYPE && Object.prototype.hasOwnProperty.call(fs, UAS.STAGE)) {
+        rec.setValue({ fieldId: UAS.MANUAL_STAGE, value: nsValue(UAS.MANUAL_STAGE, fs[UAS.STAGE]) });
+        rec.setValue({ fieldId: UAS.STAGE_SOURCE, value: 1 });
+        rec.setValue({ fieldId: UAS.STAGE_DATE, value: change.stageKey === "NONE" ? "" : localDate(clock().slice(0, 10)) });
+      }
+      return rec;
+    };
+    let id;
+    try {
+      id = build(fields).save();
+    } catch (e) {
+      if (change.recordType === CUSTOMER.TYPE && fields.salesrep && /sales ?rep/i.test(String(e && e.message || e))) {
+        delete fields.salesrep;
+        change.dropped = [...change.dropped || [], "salesrep"];
+        id = build(fields).save();
+      } else throw e;
     }
-    const id = rec.save();
     audit(scope, change, id, "*create*", null, JSON.stringify(fields));
     return { ok: true, created: true, recordType: change.recordType, recordId: String(id), after: fields, ...change.dropped ? { dropped: change.dropped } : {} };
   }
@@ -1452,6 +1543,18 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
         const market = marketOf2(change.recordType, change.recordId, fields);
         if (!auth.can(scope, market)) throw new WriteError("DENIED_MARKET", `record is in market "${market || "unknown"}" which is outside your scope`);
         const r = isCreate ? applyCreate(scope, change, fields) : applyUpdate(scope, change, fields);
+        if (change.recordType === TOUR.TYPE) {
+          const step = advanceLead(scope, change, fields, isCreate);
+          if (step) r.leadStatus = step;
+        }
+        if (change.recordType === UAS_NOTE.TYPE && isCreate && notify && Array.isArray(fields.custrecord_ad_note_mentions) && fields.custrecord_ad_note_mentions.length) {
+          try {
+            r.notified = notify({ scope, mentions: fields.custrecord_ad_note_mentions, note: fields, recordId: r.recordId });
+          } catch (e) {
+            log2 && log2.error && log2.error({ title: "mention notify failed", details: e && e.message });
+            r.notified = false;
+          }
+        }
         results.push({ changeId: change.changeId, ...r });
       } catch (e) {
         const code = e instanceof WriteError ? e.code : "ERROR";
@@ -3257,7 +3360,8 @@ function routeBootstrap(ctx) {
     funds: FUND_ORDER,
     ids: { stage: lookups.stageIds, leaseType: lookups.leaseTypeIds, leaseStatus: lookups.leaseStatusIds, unmatched: lookups.unmatched },
     flags: ctx.flags,
-    degraded: ctx.schema.degraded
+    degraded: ctx.schema.degraded,
+    links: recordListLinks(ctx)
   };
 }
 function routeLists(ctx) {
@@ -3269,6 +3373,19 @@ function routeLists(ctx) {
     return { id: u.id, name: u.name, beds: u.beds, bedrooms: u.bedrooms.map((b) => ({ id: b.id, name: b.name })) };
   }) })).sort((a, b) => a.name.localeCompare(b.name, void 0, { numeric: true }));
   return { markets: MARKETS.filter((m) => ctx.inScope(m.id)).map((m) => ({ id: m.id, label: m.label, calendar: m.calendar })), properties, schools: live("customlist_serp_schools"), hearUs: live("customlist_serp_hear_us_list"), cities: live("customlist_serp_cities"), stageList: (lists.customlist_ad_leasing_stage || []).map((x) => ({ id: String(x.id), name: x.name, inactive: x.isinactive === "T" })), tenantStatuses: ctx.dao.people.statusList().filter((s) => s.entitytype === "CUSTOMER") };
+}
+function recordListLinks(ctx) {
+  const out = {};
+  try {
+    const rows = ctx.sq.few(`SELECT internalid, scriptid FROM customrecordtype WHERE scriptid IN ('CUSTOMRECORD_AD_WRITE_AUDIT', 'CUSTOMRECORD_AD_SAVED_VIEW')`);
+    for (const r of rows) {
+      const url2 = `/app/common/custom/custrecordentrylist.nl?rectype=${r.internalid}`;
+      if (/WRITE_AUDIT/i.test(r.scriptid)) out.auditLog = url2;
+      if (/SAVED_VIEW/i.test(r.scriptid)) out.savedViews = url2;
+    }
+  } catch (e) {
+  }
+  return out;
 }
 
 // src/server/routes/reporting.js
@@ -3780,7 +3897,7 @@ function loadLeads(ctx) {
   const lists = ctx.dao.portfolio.lists();
   const sourceName = new Map((lists.customlist_serp_hear_us_list || []).map((v) => [String(v.id), v.name]));
   const schoolName = new Map((lists.customlist_serp_schools || []).map((v) => [String(v.id), v.name]));
-  const filters = { stage: "CUSTOMER", statusIds: [LEAD.STATUS_NEW], scopePropertyIds: ctx.scope.all ? null : ctx.propertyIdsInScope() };
+  const filters = { leadSet: true, scopePropertyIds: ctx.scope.all ? null : ctx.propertyIdsInScope() };
   const page = ctx.dao.people.tenants({ filters, sort: "created", page: 0, pageSize: 2e3 });
   const custIds = page.rows.map((r) => r.id);
   const onLease = new Set(custIds.length ? ctx.dao.people.leaseLinks(custIds).map((l) => String(l.customer)) : []);
@@ -3795,8 +3912,14 @@ function loadLeads(ctx) {
   }
   const newSince = addDays(ctx.today, -LEAD.NEW_DAYS);
   return candidates.map((t) => {
-    const propIds = ids(t.property), ayIds = ids(t.ay);
+    const propIds = ids(t.property), ayIds = ids(t.ay), unitIds = ids(t.units);
     const mine = (toursByCust.get(String(t.id)) || []).filter((x) => x.outcome !== "CANCELLED");
+    const unitsOfInterest = unitIds.map((u) => {
+      const unit = inv.unitsById.get(u);
+      const bed = !unit ? inv.bedroomsById.get(u) : null;
+      const parent = bed ? inv.unitsById.get(bed.unitId) : unit;
+      return parent ? { id: u, name: bed ? `${parent.name} · ${bed.name}` : parent.name, unitId: parent.id, propertyId: parent.propertyId, property: (inv.propertiesById.get(parent.propertyId) || {}).name || null } : { id: u, name: `#${u}`, unitId: null, propertyId: null, property: null };
+    });
     const upcoming = mine.filter((x) => x.date >= ctx.today).sort((a, b) => (a.date + (a.start || "")).localeCompare(b.date + (b.start || "")));
     const past = mine.filter((x) => x.date < ctx.today).sort((a, b) => (b.date + (b.start || "")).localeCompare(a.date + (a.start || "")));
     const created = toISO(t.datecreated);
@@ -3807,10 +3930,12 @@ function loadLeads(ctx) {
       lastName: t.lastname || "",
       email: t.email,
       phone: t.phone || t.mobilephone,
-      status: t.status_name,
-      statusId: t.entitystatus,
+      status: LEAD_STATUS_LABELS[Number(t.entitystatus)] || t.status_name,
+      statusId: Number(t.entitystatus),
+      stage: t.stage,
       created,
-      isNew: !!created && created >= newSince,
+      isNew: !!created && created >= newSince && Number(t.entitystatus) === LEAD.STATUS_NEW,
+      unitsOfInterest,
       school: t.school != null ? schoolName.get(String(t.school)) || String(t.school) : null,
       schoolId: t.school != null ? String(t.school) : null,
       desiredLocation: t.desired_location || null,
@@ -4096,7 +4221,7 @@ function renderShell(ctx) {
   return `<!doctype html><html lang="en" data-theme="auto"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="al-build" content="${build}"><title>Amicus Leasing</title><style>html,body{margin:0;background:#fff;color:#111;font:14px/1.4 system-ui,sans-serif}@media(prefers-color-scheme:dark){html,body{background:#121417;color:#e6e8eb}}#root{min-height:100vh}.al-boot{padding:24px;max-width:720px}</style>${styleTag}</head><body><div id="root"><div class="al-boot" id="al-boot">Loading Amicus Leasing…</div></div><script type="application/json" id="al-bootstrap">${json}</script><script>window.__AL_SERVER_BUILD=${JSON.stringify(build)};</script>${js ? `<script src="${js}" defer onerror="document.getElementById('al-boot').textContent='The client bundle could not be loaded from ${js.replace(/'/g, "")} — open the browser console (F12) for the reason.'"></script>` : `<script>document.getElementById('al-boot').textContent='Client bundle not configured: set the script parameters custscript_al_client_js / custscript_al_client_css to the File Cabinet ids of amicus_leasing_app.js / .css (see SETUP-CHECKLIST).';</script>`}<script>setTimeout(function(){var b=document.getElementById('al-boot');if(b&&b.textContent.indexOf('Loading')===0)b.textContent='The client bundle loaded but did not start. Open the browser console (F12) and send the first error line.';},8000);</script></body></html>`;
 }
 function buildId() {
-  return true ? String("c96a1ade3277") : "dev";
+  return true ? String("b9569d227bee") : "dev";
 }
 function inlineCss(ctx) {
   try {
@@ -4262,20 +4387,23 @@ function createApp(N) {
       },
       outcomeIdFor: (key) => outcomeIdFor(dao.portfolio.lists(), key),
       tourFields: () => dao.tours.fields(),
+      stageOf: (id) => dao.people.stageOf(id),
+      notify: (args) => notifyMentions(N, ctx, args),
       defaultSubsidiaryId: () => {
         const subs = dao.portfolio.subsidiaries();
         const hit = subs.find((x) => String(x.name).trim().toLowerCase() === LEAD.SUBSIDIARY_NAME.toLowerCase()) || subs.find((x) => x.parent == null);
         return hit ? Number(hit.id) : null;
       },
-      findByEmail: (email) => dao.people.byEmail(email)
+      findByEmail: (email2) => dao.people.byEmail(email2)
     });
     return ctx;
   }
-  const routes = { bootstrap: routeBootstrap, lists: routeLists, summary: routeSummary, portfolio: routePortfolio, weekly: routeWeekly, velocity: routeVelocity, pipeline: routePipeline, unithistory: routeUnitHistory, team: routeTeam, tenants: routeTenants, leads: routeLeads, tours: routeTours, exceptions: routeExceptions, today: routeToday, savedviews: routeSavedViews, write: routeWrite, leasedialog: routeLeaseDialog, notes: routeNotes };
+  const routes = { bootstrap: routeBootstrap, lists: routeLists, summary: routeSummary, portfolio: routePortfolio, weekly: routeWeekly, velocity: routeVelocity, pipeline: routePipeline, unithistory: routeUnitHistory, team: routeTeam, tenants: routeTenants, leads: routeLeads, tours: routeTours, reprobe: routeReprobe, exceptions: routeExceptions, today: routeToday, savedviews: routeSavedViews, write: routeWrite, leasedialog: routeLeaseDialog, notes: routeNotes };
   function handle(context) {
     const route = String((context.request.parameters || {}).route || "").toLowerCase();
     const method = context.request.method;
     if (!route) {
+      schema.reset();
       const ctx = makeCtx(context);
       context.response.write(renderShell(ctx));
       return;
@@ -4373,6 +4501,40 @@ function marketOf(ctx, type, id, fields) {
   if (type === SAVED_VIEW.TYPE) return ctx.scope.all ? "unknown" : ctx.scope.marketIds[0] || null;
   return null;
 }
+function routeReprobe(ctx) {
+  ctx.schema.reset();
+  ctx.probeAll();
+  return { degraded: ctx.schema.degraded };
+}
+function notifyMentions(N, ctx, { scope, mentions, note }) {
+  if (!N.email || typeof N.email.send !== "function") return 0;
+  const unit = String(note.name || "").split(" — ")[0];
+  let link = "";
+  try {
+    const sc = N.runtime.getCurrentScript();
+    const rel = N.url.resolveScript({ scriptId: sc.id, deploymentId: sc.deploymentId, returnExternalUrl: false });
+    const host = N.url.resolveDomain({ hostType: N.url.HostType.APPLICATION });
+    link = `https://${host}${rel}#view=pipeline&q=${encodeURIComponent(unit)}`;
+  } catch (e) {
+    link = "";
+  }
+  const who = scope.name || "A colleague";
+  const text = String(note.custrecord_ad_note_text || "");
+  let sent = 0;
+  for (const id of [...new Set(mentions.map(Number).filter((n) => n > 0 && n !== Number(scope.userId)))]) {
+    try {
+      N.email.send({ author: Number(scope.userId), recipients: [id], subject: `${who} mentioned you · ${unit}`, body: `${who} mentioned you in a leasing note on ${unit}:
+
+${text}
+
+${link ? `Open in the Leasing Hub: ${link}` : ""}`.trim() });
+      sent += 1;
+    } catch (e) {
+      ctx.log && ctx.log.error && ctx.log.error({ title: "mention email failed", details: `${id}: ${e && e.message}` });
+    }
+  }
+  return sent;
+}
 function parseBody(body) {
   if (!body) return {};
   if (typeof body === "object") return body;
@@ -4402,7 +4564,7 @@ function safeCache(cacheMod) {
 // src/server/suitelet.js
 var app = null;
 function onRequest(context) {
-  if (!app) app = createApp({ query: import_query.default, record: import_record.default, runtime: import_runtime.default, log: import_log.default, file: import_file.default, cache: import_cache.default });
+  if (!app) app = createApp({ query: import_query.default, record: import_record.default, runtime: import_runtime.default, log: import_log.default, file: import_file.default, cache: import_cache.default, email: import_email.default, url: import_url.default });
   app.handle(context);
 }
 

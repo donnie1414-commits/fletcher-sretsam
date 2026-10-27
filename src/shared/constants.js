@@ -359,12 +359,20 @@ export const CALENDAR_URL = '/app/crm/calendar/calendar.nl';
  * The hub creates them the same way so every downstream count keeps working; it adds the owning agent on the native Sales Rep field.
  */
 export const LEAD = Object.freeze({
-  STATUS_NEW: 17,                              // entitystatus "Tenant - New"
+  // NetSuite's LEAD-stage statuses (entitystatus). The hub creates leads here and moves them with tours; a lead becomes a
+  // tenant the way it always has: attached to a lease. Tenant-Inquiring (18) is a current tenant asking to rent again and is
+  // listed with the leads (LEAD-DISCOVERY §3).
+  STATUS_NEW: 6, STATUS_IN_CONTACT: 19, STATUS_TOUR_SCHEDULED: 23, STATUS_TOUR_COMPLETED: 22, STATUS_RECEIVED_FORM: 20, STATUS_SPAM: 21, STATUS_DEAD: 24,
+  TENANT_INQUIRING: 18,
+  STAGE: 'LEAD',
   SUBSIDIARY_NAME: 'Amicus Parent Company',    // the subsidiary the Lead Form uses for new inquiries
   AGENT: 'salesrep',
+  UNITS: 'custentity_ad_lead_units',           // optional: Multiple Select → Units/Bedrooms, "units of interest" (SETUP-CHECKLIST D)
   NEW_DAYS: 14,                                // "new" view = created in the last N days
   CREATE_FIELDS: Object.freeze(['firstname', 'lastname', 'email', 'phone', 'mobilephone', 'isperson', 'subsidiary', 'salesrep', 'custentity_serp_group_size', 'custentity_serp_house_mates']),
 });
+export const LEAD_STATUS_IDS = Object.freeze(new Set([6, 19, 23, 22, 20, 21, 24]));
+export const LEAD_STATUS_LABELS = Object.freeze({ 6: 'New', 19: 'In Contact', 23: 'Tour Scheduled', 22: 'Tour Completed', 20: 'Received Lease Form', 21: 'Spam', 24: 'Dead Lead', 18: 'Tenant · Inquiring' });
 export const TOUR_OUTCOMES = Object.freeze([
   { key: 'SCHEDULED', label: 'Scheduled' },
   { key: 'COMPLETED', label: 'Completed' },

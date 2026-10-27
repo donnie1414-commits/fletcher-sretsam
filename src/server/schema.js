@@ -9,9 +9,10 @@
  *
  * createSchema({ query, log, cache? }) → { probe, projection, degraded, reset }
  */
-const probeCache = new Map(); // table → Map(field → boolean) — lives for the container's life
+const probeCache = new Map(); // table → Map(field → boolean) — lives for the container's life (reset on every full page load)
+const probedTables = new Set();
 
-export function createSchema({ query, log, cache = null, cacheTtl = 3600 }) {
+export function createSchema({ query, log, cache = null, cacheTtl = 600 }) {
   const degraded = [];
 
   function loadCached(table) {
@@ -22,6 +23,7 @@ export function createSchema({ query, log, cache = null, cacheTtl = 3600 }) {
     const m = new Map(); probeCache.set(table, m); return m;
   }
   function persist(table, m) {
+    probedTables.add(table);
     if (!cache) return;
     try { cache.put({ key: `schema:${table}`, value: JSON.stringify(Object.fromEntries(m)), ttl: cacheTtl }); } catch (e) { /* optional */ }
   }
@@ -64,5 +66,10 @@ export function createSchema({ query, log, cache = null, cacheTtl = 3600 }) {
   const alias = (s) => s.as || s.field;
   /** Record a feature that is off for a reason other than a missing column (a table the role cannot read). Once per feature. */
   function degradeFeature(entry) { if (!degraded.some((d) => d.table === entry.table && d.feature === entry.feature)) degraded.push({ table: entry.table, field: entry.field || '*', feature: entry.feature || null, reason: entry.reason || null }); }
-  return { probe, projection, degraded, degradeFeature, reset: () => probeCache.clear() };
+  /** Forget every probe so newly created fields and records are seen: called on each full page load and by ?route=reprobe. */
+  function reset() {
+    probeCache.clear(); degraded.length = 0;
+    if (cache) for (const t of probedTables) { try { cache.remove({ key: `schema:${t}` }); } catch (e) { /* optional */ } }
+  }
+  return { probe, projection, degraded, degradeFeature, reset };
 }

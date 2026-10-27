@@ -85,6 +85,7 @@ export async function api(route, params = {}) {
 export function invalidate(prefix) { for (const k of [...cache.keys()]) if (!prefix || k.startsWith(prefix)) cache.delete(k); }
 export async function post(route, body) {
   if (isPreview()) {
+    if (route === 'reprobe') return { degraded: [] };
     if (route === 'savedviews') { try { let views = JSON.parse(localStorage.getItem('al.views') || '[]'); const v = body.view; if (body.delete) views = views.filter((x) => x.id !== v.id); else if (v.id) views = views.map((x) => (x.id === v.id ? { ...x, ...v } : x)); else views.push({ ...v, id: String(Date.now()), mine: true }); localStorage.setItem('al.views', JSON.stringify(views)); } catch (e) { /* ignore */ } invalidate('savedviews'); return { results: [{ ok: true }] }; }
     return { results: (body.changes || []).map((c) => ({ changeId: c.changeId, ok: false, code: 'PREVIEW', message: 'Preview mode: nothing is written to NetSuite.' })), deferred: [] };
   }

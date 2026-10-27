@@ -11,7 +11,7 @@
  *  - Lease Tenants multiselect: pre-screen the whole set against the Property/AY filter, and
  *    capture-and-restore around any Academic Year or Property change (§5.5.1 rules 2 and 3).
  */
-import { UAS, UAS_NOTE, LEASE, CUSTOMER, TOUR, TOUR_OUTCOMES, LEAD, SAVED_VIEW, AUDIT, GOVERNANCE, foldStage, stageByKey, STAGE_OWNER } from '../shared/constants.js';
+import { UAS, UAS_NOTE, LEASE, CUSTOMER, TOUR, TOUR_OUTCOMES, LEAD, LEAD_STATUS_IDS, SAVED_VIEW, AUDIT, GOVERNANCE, foldStage, stageByKey, STAGE_OWNER } from '../shared/constants.js';
 import { validateHumanStageChange } from '../shared/rules/stages.js';
 
 /** record type → { create: bool, fields: Set(field ids) } */
@@ -23,7 +23,7 @@ export const ALLOWLIST = Object.freeze({
     // creation-only fields (lease dialog): checked in applyCreate, never on update
     'name', 'custrecord_serp_lease_duration_options', LEASE.MONTHLY_RENT, 'custrecord_serp_rent_actual_total', LEASE.TENANT_COUNT, 'custrecord_serp_group_type', 'custrecord_rent_target_per_bed', 'custrecord_serp_watersewer_included', 'custrecord_serp_gaselectric_included', 'custrecord_serp_additional_provisions', 'custrecord_serp_academic_start_date', 'custrecord_academic_end_date']) },
   // create = a new lead from the hub (A-22): the identity fields are creation-only; updates stay limited to the triage fields
-  [CUSTOMER.TYPE]: { create: true, fields: new Set(['entitystatus', CUSTOMER.PROPERTY, CUSTOMER.AY, 'custentity12', 'custentity9', 'custentity3', 'custentity_desired_location', 'custentity_serp_notes', 'custentity_serp_howdid_you_hear_about_us', 'custentity_serp_schools', ...LEAD.CREATE_FIELDS]) },
+  [CUSTOMER.TYPE]: { create: true, fields: new Set(['entitystatus', CUSTOMER.PROPERTY, CUSTOMER.AY, 'custentity12', 'custentity9', 'custentity3', 'custentity_desired_location', 'custentity_serp_notes', 'custentity_serp_howdid_you_hear_about_us', 'custentity_serp_schools', LEAD.UNITS, ...LEAD.CREATE_FIELDS]) },
   [TOUR.TYPE]: { create: true, fields: new Set(['title', 'startdate', 'starttime', 'endtime', 'timedevent', 'accesslevel', 'company', 'organizer', 'location', 'message', 'status', TOUR.UNIT, TOUR.OUTCOME, TOUR.AY]) },
   // App-owned record (§4.2 saved views): not in the §5.9 table, declared here explicitly rather than smuggled in.
   [SAVED_VIEW.TYPE]: { create: true, fields: new Set([SAVED_VIEW.OWNER, SAVED_VIEW.WORKSPACE, SAVED_VIEW.NAME, SAVED_VIEW.JSON, SAVED_VIEW.IS_DEFAULT, SAVED_VIEW.SHARED_MARKETS, 'isinactive', 'name']) },
@@ -62,7 +62,7 @@ function nsValue(field, v, ctxDate = null) {
  * createWrites({ record, sq, runtime, log, schema, auth, marketOf, clock, stageIdFor })
  *   stageIdFor(stageKey) → list value internal id | null   (from the schema probe; the board never sends ids)
  */
-export function createWrites({ record, sq, runtime, log, schema, auth, marketOf, clock = () => new Date().toISOString(), stageIdFor = null, outcomeIdFor = null, tourFields = null, defaultSubsidiaryId = null, findByEmail = null }) {
+export function createWrites({ record, sq, runtime, log, schema, auth, marketOf, clock = () => new Date().toISOString(), stageIdFor = null, outcomeIdFor = null, tourFields = null, defaultSubsidiaryId = null, findByEmail = null, stageOf = null, notify = null }) {
   const auditAvailable = () => { try { return schema.probe(AUDIT.TYPE, [AUDIT.CHANGE_ID]).get(AUDIT.CHANGE_ID) !== false; } catch (e) { return false; } };
 
   function remaining() { try { return runtime.getCurrentScript().getRemainingUsage(); } catch (e) { return Infinity; } }
@@ -93,6 +93,7 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
     if (fields.email && findByEmail) { const hits = findByEmail(fields.email); if (hits.length) throw new WriteError('DUPLICATE', `${[hits[0].firstname, hits[0].lastname].filter(Boolean).join(' ') || 'A customer'} already has this email (customer #${hits[0].id})`, { field: 'email', existingId: String(hits[0].id) }); }
     fields.isperson = true;
     if (fields.entitystatus == null || fields.entitystatus === '') fields.entitystatus = LEAD.STATUS_NEW;
+    if (Object.prototype.hasOwnProperty.call(fields, LEAD.UNITS)) { let have = true; try { have = schema.probe(CUSTOMER.TYPE, [LEAD.UNITS]).get(LEAD.UNITS) !== false; } catch (e) { have = true; } if (!have) { delete fields[LEAD.UNITS]; change.dropped = [...(change.dropped || []), LEAD.UNITS]; } }
     if (fields.subsidiary == null || fields.subsidiary === '') { const sub = defaultSubsidiaryId ? defaultSubsidiaryId() : null; if (!sub) throw new WriteError('BAD_CHANGE', `the lead subsidiary "${LEAD.SUBSIDIARY_NAME}" was not found`); fields.subsidiary = sub; }
     if (fields.salesrep == null || fields.salesrep === '') { const u = runtime.getCurrentUser(); if (u && u.id) fields.salesrep = Number(u.id); }
     if (fields.custentity_serp_group_size != null && fields.custentity_serp_group_size !== '' && !(Number(fields.custentity_serp_group_size) >= 0)) throw new WriteError('BAD_CHANGE', 'group size must be a number', { field: 'custentity_serp_group_size' });
@@ -121,6 +122,25 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
     for (const [f, ok] of [[TOUR.UNIT, have.unit], [TOUR.OUTCOME, have.outcome], [TOUR.AY, have.ay]]) if (!ok && Object.prototype.hasOwnProperty.call(fields, f)) { dropped.push(f); delete fields[f]; }
     if (dropped.length) change.dropped = dropped;
     change.tourDate = fields.startdate || null;
+  }
+  /**
+   * A tour moves a LEAD-stage record along: scheduling one takes New / In Contact to Tour Scheduled; a Completed outcome
+   * takes Tour Scheduled to Tour Completed. Tenants are never touched. Returns the new status id or null.
+   */
+  function advanceLead(scope, change, fields, isCreate) {
+    const company = fields.company ?? change.company; if (!company || !stageOf) return null;
+    const target = isCreate ? LEAD.STATUS_TOUR_SCHEDULED : change.outcomeKey === 'COMPLETED' ? LEAD.STATUS_TOUR_COMPLETED : null;
+    if (!target) return null;
+    let cur = null; try { cur = stageOf(company); } catch (e) { return null; }
+    if (!cur || String(cur.stage).toUpperCase() !== LEAD.STAGE) return null;
+    const from = Number(cur.entitystatus);
+    const allowed = target === LEAD.STATUS_TOUR_SCHEDULED ? [LEAD.STATUS_NEW, LEAD.STATUS_IN_CONTACT] : [LEAD.STATUS_TOUR_SCHEDULED, LEAD.STATUS_NEW, LEAD.STATUS_IN_CONTACT];
+    if (!allowed.includes(from)) return null;
+    try {
+      const rec = record.load({ type: CUSTOMER.TYPE, id: Number(company) }); rec.setValue({ fieldId: 'entitystatus', value: target }); rec.save();
+      audit(scope, { changeId: `${change.changeId}:lead`, recordType: CUSTOMER.TYPE }, company, 'entitystatus', from, target);
+      return target;
+    } catch (e) { log && log.error && log.error({ title: 'lead status step failed', details: `${company}: ${e && e.message}` }); return null; }
   }
   function validateChange(change) {
     if (!change || typeof change !== 'object') throw new WriteError('BAD_CHANGE', 'change is not an object');
@@ -175,6 +195,7 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
   function applyUpdate(scope, change, fields) {
     const rec = record.load({ type: change.recordType, id: change.recordId });
     const before = {}; for (const f of Object.keys(fields)) before[f] = rec.getValue({ fieldId: f });
+    if (change.recordType === TOUR.TYPE) { try { change.company = rec.getValue({ fieldId: 'company' }); } catch (e) { change.company = null; } }
     if (change.version != null && change.version !== '') {
       // Same read on both sides: the client's version came from SuiteQL, so compare against SuiteQL, not record.getValue's Date.
       const lm = versionOf(change.recordType, change.recordId) ?? (rec.getValue({ fieldId: 'lastmodified' }) || rec.getValue({ fieldId: 'lastmodifieddate' }) || null);
@@ -218,10 +239,21 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
       const screen = tenantFilterOk(fields[LEASE.PROPERTY], fields[LEASE.AY], fields[LEASE.TENANTS].map(String));
       if (!screen.ok) throw new WriteError('TENANT_FILTER', 'tenants do not match the lease Property/Academic Year', { bad: screen.bad });
     }
-    const rec = record.create({ type: change.recordType, isDynamic: false });
-    for (const [f, v] of Object.entries(fields)) rec.setValue({ fieldId: f, value: nsValue(f, v, change.tourDate || null) });
-    if (change.recordType === UAS.TYPE && Object.prototype.hasOwnProperty.call(fields, UAS.STAGE)) { rec.setValue({ fieldId: UAS.MANUAL_STAGE, value: nsValue(UAS.MANUAL_STAGE, fields[UAS.STAGE]) }); rec.setValue({ fieldId: UAS.STAGE_SOURCE, value: 1 }); rec.setValue({ fieldId: UAS.STAGE_DATE, value: change.stageKey === 'NONE' ? '' : localDate(clock().slice(0, 10)) }); }
-    const id = rec.save();
+    // A customer at a LEAD-stage status is created as NetSuite's Lead record (same entity table, stage LEAD).
+    const type = change.recordType === CUSTOMER.TYPE && LEAD_STATUS_IDS.has(Number(fields.entitystatus)) ? 'lead' : change.recordType;
+    const build = (fs) => {
+      const rec = record.create({ type, isDynamic: false });
+      for (const [f, v] of Object.entries(fs)) rec.setValue({ fieldId: f, value: nsValue(f, v, change.tourDate || null) });
+      if (change.recordType === UAS.TYPE && Object.prototype.hasOwnProperty.call(fs, UAS.STAGE)) { rec.setValue({ fieldId: UAS.MANUAL_STAGE, value: nsValue(UAS.MANUAL_STAGE, fs[UAS.STAGE]) }); rec.setValue({ fieldId: UAS.STAGE_SOURCE, value: 1 }); rec.setValue({ fieldId: UAS.STAGE_DATE, value: change.stageKey === 'NONE' ? '' : localDate(clock().slice(0, 10)) }); }
+      return rec;
+    };
+    let id;
+    try { id = build(fields).save(); }
+    catch (e) {
+      // The agent is not flagged as a Sales Rep on their employee record: save the lead without the owner rather than fail.
+      if (change.recordType === CUSTOMER.TYPE && fields.salesrep && /sales ?rep/i.test(String((e && e.message) || e))) { delete fields.salesrep; change.dropped = [...(change.dropped || []), 'salesrep']; id = build(fields).save(); }
+      else throw e;
+    }
     audit(scope, change, id, '*create*', null, JSON.stringify(fields));
     return { ok: true, created: true, recordType: change.recordType, recordId: String(id), after: fields, ...(change.dropped ? { dropped: change.dropped } : {}) };
   }
@@ -244,6 +276,8 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
         const market = marketOf(change.recordType, change.recordId, fields);
         if (!auth.can(scope, market)) throw new WriteError('DENIED_MARKET', `record is in market "${market || 'unknown'}" which is outside your scope`);
         const r = isCreate ? applyCreate(scope, change, fields) : applyUpdate(scope, change, fields);
+        if (change.recordType === TOUR.TYPE) { const step = advanceLead(scope, change, fields, isCreate); if (step) r.leadStatus = step; }
+        if (change.recordType === UAS_NOTE.TYPE && isCreate && notify && Array.isArray(fields.custrecord_ad_note_mentions) && fields.custrecord_ad_note_mentions.length) { try { r.notified = notify({ scope, mentions: fields.custrecord_ad_note_mentions, note: fields, recordId: r.recordId }); } catch (e) { log && log.error && log.error({ title: 'mention notify failed', details: e && e.message }); r.notified = false; } }
         results.push({ changeId: change.changeId, ...r });
       } catch (e) {
         const code = e instanceof WriteError ? e.code : 'ERROR';

@@ -62,8 +62,8 @@ export function TourDialog({ lead, unit, tour, sel, bootstrap, onClose, onDone }
   const ayDefault = (bootstrap.academicYears.find((a) => a.year === Number(sel.ay)) || {}).id || '';
   const [f, setF] = useState(() => ({
     customerId: tour ? tour.customerId : lead ? lead.id : '', customerName: tour ? (tour.customer || '') : lead ? lead.name : '',
-    propertyId: tour ? (tour.propertyId || '') : unit ? unit.propertyId : (lead && lead.properties && lead.properties[0] ? lead.properties[0].id : ''),
-    unitId: tour ? (tour.unitId || '') : unit ? (unit.unitId || '') : '',
+    propertyId: tour ? (tour.propertyId || '') : unit ? unit.propertyId : (lead && lead.unitsOfInterest && lead.unitsOfInterest[0] ? lead.unitsOfInterest[0].propertyId : lead && lead.properties && lead.properties[0] ? lead.properties[0].id : ''),
+    unitId: tour ? (tour.unitId || '') : unit ? (unit.unitId || '') : (lead && lead.unitsOfInterest && lead.unitsOfInterest[0] ? lead.unitsOfInterest[0].unitId : ''),
     date: tour ? tour.date : bootstrap.session.today, start: tour ? (tour.start || '') : nextSlot(), minutes: 30,
     organizerId: tour ? (tour.organizerId || me) : me, notes: tour ? (tour.notes || '') : '', outcome: tour ? (tour.outcome || 'SCHEDULED') : 'SCHEDULED', ayId: tour && tour.ayId ? tour.ayId : ayDefault,
   }));
@@ -94,9 +94,10 @@ export function TourDialog({ lead, unit, tour, sel, bootstrap, onClose, onDone }
           </div>
           <Select label="Academic year" value={f.ayId || ''} onChange={(v) => setF({ ...f, ayId: v })} options={[{ value: '', label: '—' }, ...bootstrap.academicYears.map((a) => ({ value: a.id, label: a.label }))]} />
         </div>
+        {!tour && lead && lead.unitsOfInterest && lead.unitsOfInterest.length > 0 && <div className="form-row wrap"><span className="field-label">Units they asked to see</span>{lead.unitsOfInterest.map((u) => <button key={u.id} type="button" className={`chip${f.unitId === u.unitId ? ' is-on' : ''}`} onClick={() => setF({ ...f, propertyId: u.propertyId || f.propertyId, unitId: u.unitId || '' })}>{u.property ? `${u.property} · ` : ''}{u.name}</button>)}</div>}
         <TourFields f={f} setF={setF} properties={properties} organizers={organizers} />
         {tour && <div className="form-row"><Select label="Outcome" value={f.outcome} onChange={(v) => setF({ ...f, outcome: v })} options={TOUR_OUTCOMES.map((o) => ({ value: o.key, label: o.label }))} /><span className="muted small">Cancelled also cancels the calendar event. Leased is for a tour that turned into a signed lease.</span></div>}
-        {out && (out.ok ? <div className="okbox small">{tour ? 'Tour updated.' : 'Tour scheduled.'} {out.dropped && out.dropped.length ? <span className="warn-text">The {out.dropped.map((d) => d.replace('custevent_ad_tour_', '')).join(', ')} field{out.dropped.length === 1 ? ' is' : 's are'} not created yet, so the tour was saved without {out.dropped.length === 1 ? 'it' : 'them'} (property and unit are in the location). See SETUP-CHECKLIST.</span> : null} {!isPreview() && <span> <a className="link" href={recordUrl('event', out.recordId)} target="_blank" rel="noreferrer">Open the event</a> · <a className="link" href={CALENDAR_URL} target="_blank" rel="noreferrer">Open my calendar</a></span>}</div>
+        {out && (out.ok ? <div className="okbox small">{tour ? 'Tour updated.' : 'Tour scheduled.'}{out.leadStatus ? <span> Lead moved to <strong>{out.leadStatus === 23 ? 'Tour Scheduled' : out.leadStatus === 22 ? 'Tour Completed' : out.leadStatus}</strong>.</span> : null} {out.dropped && out.dropped.length ? <span className="warn-text">The {out.dropped.map((d) => d.replace('custevent_ad_tour_', '')).join(', ')} field{out.dropped.length === 1 ? ' is' : 's are'} not created yet, so the tour was saved without {out.dropped.length === 1 ? 'it' : 'them'} (property and unit are in the location). See SETUP-CHECKLIST.</span> : null} {!isPreview() && <span> <a className="link" href={recordUrl('event', out.recordId)} target="_blank" rel="noreferrer">Open the event</a> · <a className="link" href={CALENDAR_URL} target="_blank" rel="noreferrer">Open my calendar</a></span>}</div>
           : <div className={`${out.code === 'PREVIEW' ? 'okbox' : 'errorbox'} small`}>{out.code === 'PREVIEW' ? out.message : `${out.code}: ${out.message}`}</div>)}
       </div>
     </Modal>

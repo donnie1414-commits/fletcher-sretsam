@@ -5,7 +5,7 @@ import { createAuth } from '../../src/server/auth.js';
 import { fakeRuntime, fakeSuiteQL, fakeRecordStore, fakeLog, fakeSchema } from './fakes.js';
 import { UAS, LEASE, CUSTOMER, AUDIT, TOUR, LEAD } from '../../src/shared/constants.js';
 
-function build({ employeeMarkets = 'Bethlehem', usage = 1000, auditMissing = false, store = {}, tenantLinks = { props: [], ays: [] }, marketOf = () => 'lehigh', tourFields = null, existingEmails = {}, outcomeIdFor = (k) => ({ SCHEDULED: 1, COMPLETED: 2, NO_SHOW: 3, CANCELLED: 4, LEASED: 5 })[k] || null } = {}) {
+function build({ employeeMarkets = 'Bethlehem', usage = 1000, auditMissing = false, store = {}, tenantLinks = { props: [], ays: [] }, marketOf = () => 'lehigh', tourFields = null, existingEmails = {}, outcomeIdFor = (k) => ({ SCHEDULED: 1, COMPLETED: 2, NO_SHOW: 3, CANCELLED: 4, LEASED: 5 })[k] || null, notify = null } = {}) {
   const auditRows = [];
   const rs = fakeRecordStore(store);
   const sq = fakeSuiteQL([
@@ -21,7 +21,7 @@ function build({ employeeMarkets = 'Bethlehem', usage = 1000, auditMissing = fal
   // audit records written through record.create land in the fake store; expose them to the replay query
   const origCreate = rs.record.create;
   rs.record.create = (o) => { const r = origCreate(o); if (o.type === AUDIT.TYPE) { const vals = {}; const set = r.setValue; r.setValue = ({ fieldId, value }) => { vals[fieldId] = value; set({ fieldId, value }); }; const save = r.save; r.save = () => { const id = save(); auditRows.push({ changeId: vals[AUDIT.CHANGE_ID], rt: vals[AUDIT.RECORD_TYPE], rid: vals[AUDIT.RECORD_ID], after: vals[AUDIT.AFTER] }); return id; }; } return r; };
-  const writes = createWrites({ record: rs.record, sq, runtime, log: fakeLog, schema, auth, marketOf, clock: () => '2026-10-24T12:00:00.000Z', tourFields, outcomeIdFor, defaultSubsidiaryId: () => 1, findByEmail: (e) => existingEmails[String(e).toLowerCase()] || [] });
+  const writes = createWrites({ record: rs.record, sq, runtime, log: fakeLog, schema, auth, marketOf, clock: () => '2026-10-24T12:00:00.000Z', tourFields, outcomeIdFor, defaultSubsidiaryId: () => 1, findByEmail: (e) => existingEmails[String(e).toLowerCase()] || [], stageOf: (id) => { const c = (rs.store[CUSTOMER.TYPE] || {})[id]; return c ? { stage: c.stage, entitystatus: c.entitystatus } : null; }, notify });
   return { writes, scope: auth.resolve(), rs, auditRows, runtime };
 }
 const uasStore = () => ({ [UAS.TYPE]: { 11: { [UAS.STAGE]: null, [UAS.FOLLOWUP]: null, lastmodified: 'v0' } } });
@@ -127,7 +127,7 @@ test('version check: the SuiteQL stamp the row was read with matches the same st
   assert.equal(sameVersion(null, 'v0'), true, 'no stamp on record ⇒ nothing to compare');
 });
 
-test('lead create: a person at Tenant-New in the Lead Form subsidiary, owned by the creator; identity fields are creation-only; duplicates by email are refused with the existing id', () => {
+test('lead create: a Lead record at Lead-New in the Lead Form subsidiary, owned by the creator; identity fields are creation-only; duplicates by email are refused with the existing id', () => {
   const { writes, scope, rs } = build({ existingEmails: { 'dup@example.com': [{ id: 777, firstname: 'Dee', lastname: 'Dup' }] } });
   const r = writes.apply([
     { changeId: 'l1', recordType: CUSTOMER.TYPE, fields: { firstname: 'Ann', lastname: 'Lee', email: 'ann@example.com', custentity_serp_schools: 2, [CUSTOMER.PROPERTY]: [10], custentity_desired_location: '411 Webster' } },
@@ -135,7 +135,7 @@ test('lead create: a person at Tenant-New in the Lead Form subsidiary, owned by 
     { changeId: 'l3', recordType: CUSTOMER.TYPE, fields: { custentity_desired_location: 'no name no email' } },
     { changeId: 'l4', recordType: CUSTOMER.TYPE, recordId: 777, fields: { firstname: 'Rename' } },
   ], scope);
-  assert.equal(r.results[0].ok, true); const row = rs.store[CUSTOMER.TYPE][r.results[0].recordId];
+  assert.equal(r.results[0].ok, true); const row = rs.store.lead[r.results[0].recordId]; assert.ok(row, 'created through the Lead record type');
   assert.equal(row.entitystatus, LEAD.STATUS_NEW); assert.equal(row.isperson, true); assert.equal(row.subsidiary, 1); assert.equal(row.salesrep, 42); assert.deepEqual(row[CUSTOMER.PROPERTY], [10]);
   assert.equal(r.results[1].code, 'DUPLICATE'); assert.equal(r.results[1].existingId, '777');
   assert.equal(r.results[2].code, 'BAD_CHANGE');
@@ -149,7 +149,8 @@ test('tour create: an Event on the organiser calendar with defaults; times becom
     { changeId: 't2', recordType: TOUR.TYPE, fields: { starttime: '10:30' } },
   ], scope);
   assert.equal(r.results[1].ok, true); const ev = rs.store[TOUR.TYPE][r.results[1].recordId];
-  assert.equal(ev.company, Number(r.results[0].recordId)); assert.equal(ev.organizer, 42); assert.equal(ev.status, 'CONFIRMED'); assert.equal(ev.accesslevel, 'PUBLIC'); assert.equal(ev.timedevent, true);
+  assert.equal(ev.company, Number(r.results[0].recordId));
+  assert.equal(r.results[1].leadStatus, undefined, 'a lead created in the same batch lives in the lead store, which the status step does not see in this fake'); assert.equal(ev.organizer, 42); assert.equal(ev.status, 'CONFIRMED'); assert.equal(ev.accesslevel, 'PUBLIC'); assert.equal(ev.timedevent, true);
   assert.ok(ev.startdate instanceof Date && ev.startdate.getDate() === 3); assert.ok(ev.starttime instanceof Date && ev.starttime.getHours() === 10 && ev.starttime.getMinutes() === 30 && ev.starttime.getDate() === 3, 'start time carries the tour date');
   assert.ok(ev.endtime instanceof Date && ev.endtime.getHours() === 11 && ev.endtime.getMinutes() === 0, 'end = start + 30 min by default');
   assert.equal(r.results[2].code, 'BAD_CHANGE');
@@ -164,4 +165,28 @@ test('tour: missing custom fields are dropped and reported, the outcome key maps
   assert.equal(r.results[0].ok, true); assert.deepEqual(r.results[0].dropped, [TOUR.UNIT, TOUR.AY]); const ev = rs.store[TOUR.TYPE][r.results[0].recordId]; assert.equal(ev[TOUR.UNIT], undefined); assert.equal(ev[TOUR.OUTCOME], 1);
   assert.equal(r.results[1].ok, true); assert.equal(rs.store[TOUR.TYPE][500][TOUR.OUTCOME], 4); assert.equal(rs.store[TOUR.TYPE][500].status, 'CANCELLED');
   assert.equal(r.results[2].code, 'BAD_CHANGE');
+});
+
+test('a tour moves a LEAD-stage record to Tour Scheduled, a Completed outcome to Tour Completed; tenants are left alone; an un-flagged Sales Rep is dropped rather than failing the lead', () => {
+  const store = { [CUSTOMER.TYPE]: { 900: { stage: 'LEAD', entitystatus: 6, lastmodifieddate: 'v0' }, 901: { stage: 'CUSTOMER', entitystatus: 13, lastmodifieddate: 'v0' } }, [TOUR.TYPE]: { 500: { startdate: new Date(2026, 10, 3), company: 900, status: 'CONFIRMED', lastmodified: 'v0' } } };
+  const { writes, scope, rs } = build({ store });
+  const r = writes.apply([
+    { changeId: 'a1', recordType: TOUR.TYPE, fields: { startdate: '2026-11-03', starttime: '10:00', company: 900 } },
+    { changeId: 'a2', recordType: TOUR.TYPE, fields: { startdate: '2026-11-03', starttime: '11:00', company: 901 } },
+    { changeId: 'a3', recordType: TOUR.TYPE, recordId: 500, fields: { [TOUR.OUTCOME]: 'COMPLETED' } },
+  ], scope);
+  assert.equal(r.results[0].leadStatus, LEAD.STATUS_TOUR_SCHEDULED);
+  assert.equal(r.results[1].leadStatus, undefined); assert.equal(rs.store[CUSTOMER.TYPE][901].entitystatus, 13);
+  assert.equal(r.results[2].leadStatus, LEAD.STATUS_TOUR_COMPLETED); assert.equal(rs.store[CUSTOMER.TYPE][900].entitystatus, 22);
+  // Sales Rep not flagged on the employee: NetSuite rejects the reference; the lead is saved without it and the drop is reported
+  const origCreate = rs.record.create; let attempts = 0;
+  rs.record.create = (o) => { const rec = origCreate(o); if (o.type === 'lead') { const save = rec.save; rec.save = () => { attempts += 1; if (attempts === 1) throw new Error('Invalid salesrep reference key 42.'); return save(); }; } return rec; };
+  const r2 = writes.apply([{ changeId: 'a4', recordType: CUSTOMER.TYPE, fields: { firstname: 'No', lastname: 'Rep', email: 'norep@example.com' } }], scope);
+  assert.equal(r2.results[0].ok, true); assert.deepEqual(r2.results[0].dropped, ['salesrep']); assert.equal(rs.store.lead[r2.results[0].recordId].salesrep, undefined);
+});
+test('@mentions on a new note notify the mentioned employees (not the author)', () => {
+  const calls = [];
+  const { writes, scope } = build({ notify: (a) => { calls.push(a); return a.mentions.length; } });
+  const r = writes.apply([{ changeId: 'n1', recordType: 'customrecord_ad_uas_note', fields: { name: '1 Ashe St Unit - A — 2026-10-27', custrecord_ad_note_status: 11, custrecord_ad_note_text: 'hi @Pat', custrecord_ad_note_date: '2026-10-27', custrecord_ad_note_mentions: [7, 8] } }], scope);
+  assert.equal(r.results[0].ok, true); assert.equal(r.results[0].notified, 2); assert.deepEqual(calls[0].mentions, [7, 8]);
 });

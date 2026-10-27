@@ -49,9 +49,9 @@ export function Deck({ sel, boot, onExit }) {
   };
   return (
     <div className="deck" role="dialog" aria-label="Presentation">
-      <div className="deck-head"><div><span className="ay">{sl.ay ? ayFull(sl.ay.year) : 'All future academic years'}</span><h2>{sl.title}</h2><p className="muted">{line}</p></div><span className="pos">{at + 1} of {slides.length}</span></div>
+      <div className="deck-head"><div><span className={`ay-badge${sl.ay ? '' : ' all'}`}>{sl.ay ? `AY ${ayShort(sl.ay.year)} · ${ayFull(sl.ay.year)}` : 'All future academic years'}</span><h2>{sl.title}{sl.ay ? <span className="muted"> · AY {ayShort(sl.ay.year)}</span> : ''}</h2><p className="muted">{line}</p></div><span className="pos">{at + 1} of {slides.length}</span></div>
       <div className="deck-body">{content()}</div>
-      <div className="slide-bar"><b>{sl.title}</b><span className="spacer" /><span>{at + 1} / {slides.length}</span><Button small onClick={() => go(at - 1)} disabled={at === 0}>←</Button><Button small onClick={() => go(at + 1)} disabled={at >= slides.length - 1}>→</Button><Button small onClick={onExit}>Exit</Button></div>
+      <div className="slide-bar"><b>{sl.title}</b>{sl.ay && <span className="ay-badge sm">AY {ayShort(sl.ay.year)}</span>}<span className="spacer" /><span>{at + 1} / {slides.length}</span><Button small onClick={() => go(at - 1)} disabled={at === 0}>←</Button><Button small onClick={() => go(at + 1)} disabled={at >= slides.length - 1}>→</Button><Button small onClick={onExit}>Exit</Button></div>
     </div>
   );
 }

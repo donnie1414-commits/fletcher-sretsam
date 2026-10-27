@@ -2,7 +2,7 @@
  * DAO — tenants (customers) with server-side filter/sort/page (§6.5), and the
  * relationship-field map tables (§5.5.1 rule 1: never put the field in an expression).
  */
-import { CUSTOMER } from '../../shared/constants.js';
+import { CUSTOMER, LEAD } from '../../shared/constants.js';
 import { sqlIn, esc } from './suiteql.js';
 
 export const TENANT_SORTS = { name: 'c.lastname, c.firstname', created: 'c.datecreated DESC', status: 'c.entitystatus', email: 'c.email' };
@@ -23,6 +23,7 @@ export function createPeopleDao({ sq, schema }) {
       { field: 'custentity_serp_howdid_you_hear_about_us', as: 'hear_us', optional: true, feature: 'lead source' },
       { field: 'custentity12', as: 'agent_assigned', optional: true, feature: 'agent assigned' },
       { field: 'salesrep', as: 'agent' }, { field: 'salesrep', as: 'agent_name', expr: 'BUILTIN.DF(c.salesrep)' },
+      { field: LEAD.UNITS, as: 'units', optional: true, feature: 'lead units of interest' },
       { field: 'custentity9', as: 'tour_date', optional: true }, { field: 'custentity3', as: 'tour_scheduled', optional: true },
       { field: 'custentity4', as: 'lease_sent', optional: true }, { field: 'custentity5', as: 'lease_signed', optional: true },
       { field: CUSTOMER.RR_UPLOAD_STATUS, as: 'rr_upload_status', optional: true },
@@ -35,7 +36,8 @@ export function createPeopleDao({ sq, schema }) {
   function tenants({ filters = {}, sort = 'name', page = 0, pageSize = 100 } = {}) {
     const where = [];
     if (!filters.includeInactive) where.push("c.isinactive = 'F'");
-    if (filters.stage) where.push(`c.stage = '${esc(filters.stage)}'`);
+    if (filters.leadSet) where.push(`(c.stage = '${LEAD.STAGE}' OR c.entitystatus IN (${LEAD.TENANT_INQUIRING}))`);
+    else if (filters.stage) where.push(`c.stage = '${esc(filters.stage)}'`);
     if (filters.statusIds && filters.statusIds.length) where.push(`c.entitystatus IN (${sqlIn(filters.statusIds)})`);
     if (filters.q) { const q = esc(String(filters.q).toLowerCase()); where.push(`(LOWER(c.firstname || ' ' || c.lastname) LIKE '%${q}%' OR LOWER(c.email) LIKE '%${q}%' OR c.phone LIKE '%${q}%' OR LOWER(c.custentity_desired_location) LIKE '%${q}%')`); }
     if (filters.missingProperty) where.push(`NOT EXISTS (SELECT 1 FROM ${CUSTOMER.PROPERTY_MAP} m WHERE m.mapone = c.id)`);
@@ -59,6 +61,8 @@ export function createPeopleDao({ sq, schema }) {
     return sq.few(`SELECT LOWER(email) AS email, COUNT(*) AS n FROM ${C} WHERE isinactive = 'F' AND email IS NOT NULL GROUP BY LOWER(email) HAVING COUNT(*) > 1`);
   }
   /** Active customers sharing an email (the lead dialog's duplicate check). */
+  /** Stage and status of one entity (the tour → lead status step). */
+  function stageOf(id) { return sq.one(`SELECT stage, entitystatus FROM ${C} WHERE id = ?`, [Number(id)]); }
   function byEmail(email) { if (!email) return []; return sq.few(`SELECT id, firstname, lastname, entitystatus, datecreated FROM ${C} WHERE isinactive = 'F' AND LOWER(email) = '${esc(String(email).trim().toLowerCase())}' ORDER BY id`); }
   function statusList() { return sq.few(`SELECT key AS id, name, entitytype, inactive FROM entitystatus ORDER BY entitytype, key`); }
   /** The @mention picker: employees with the Lease KPI Markets field set (the leasing team). Degrades to [] when the role cannot read employees. */
@@ -67,5 +71,5 @@ export function createPeopleDao({ sq, schema }) {
     catch (e) { try { return sq.few(`SELECT e.id, e.entityid FROM employee e WHERE e.isinactive = 'F' AND e.custentity_lkr_markets IS NOT NULL ORDER BY e.entityid`).map((e) => ({ id: String(e.id), name: e.entityid })); } catch (e2) { return []; } }
   }
   function probe() { select(); }
-  return { tenants, byIds, byEmail, propertyLinks, ayLinks, leaseLinks, duplicates, statusList, team, probe };
+  return { tenants, byIds, byEmail, stageOf, propertyLinks, ayLinks, leaseLinks, duplicates, statusList, team, probe };
 }

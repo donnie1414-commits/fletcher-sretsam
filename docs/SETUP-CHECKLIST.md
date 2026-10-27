@@ -40,6 +40,7 @@ Never put `amicus_leasing_app.js` on the Suitelet script record (§3.3). `npm ru
 | Event (`calendarevent`) | `custevent_ad_tour_unit` | List/Record → Units/Bedrooms | the tour link (§5.6) |
 | Event | `custevent_ad_tour_outcome` | List → `customlist_ad_tour_outcome` | values: Scheduled, Completed, No-show, Cancelled, Leased |
 | Event | `custevent_ad_tour_ay` | List/Record → Academic Year | which AY the tour counts toward |
+| Customer / Lead (Entity field) | `custentity_ad_lead_units` | Multiple Select → Units/Bedrooms | "units of interest" on a lead (A-22); the tour scheduler starts from the first one. Applies to Customer, Lead, Prospect. Optional: without it the units chosen when adding a lead still prefill a tour scheduled in the same save |
 | Employee | `custentity_lkr_markets` | Multiple Select (city/market names) | existing per the brief; confirm (A-20) |
 
 The three Event fields switch on the full tour feature (unit link on the Pipeline, outcome, AY). Until they exist the app still schedules tours: the Event is created with the property and unit in its Location and the save reports which fields were left out. Create the list `customlist_ad_tour_outcome` first (values exactly as above), then the three fields; tick *Show in list* and give the leasing roles access on each.

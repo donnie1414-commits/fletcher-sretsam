@@ -1,7 +1,7 @@
 /** Client entry: four top-level items, one accent, shell-first. Everything else fetches its own JSON when opened (§3.6). */
 import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { getBootstrap, isPreview, BUILD, serverBuild, stylesApplied } from './api.js';
+import { getBootstrap, isPreview, BUILD, serverBuild, stylesApplied, post } from './api.js';
 import { useUrlState, usePref, useMedia } from './state.js';
 import { Segmented, Select, Button, cx } from './ui.jsx';
 import { Today } from './screens/Today.jsx';
@@ -42,6 +42,7 @@ function App({ boot }) {
           {!present && <input className="search" type="search" placeholder="Search units, properties, tenants" aria-label="Search" defaultValue={url.q} onKeyDown={(e) => { if (e.key === 'Enter') setUrl({ q: e.target.value, view: url.view === 'people' ? 'people' : 'pipeline' }); }} onBlur={(e) => e.target.value !== url.q && setUrl({ q: e.target.value })} />}
           <button type="button" className={cx('badge-btn', excCount > 0 && 'has')} onClick={() => setDrawer(true)} aria-label={`Exceptions: ${excCount ?? '…'}`} title="Exceptions">⚠ {excCount == null ? '…' : excCount}</button>
           {isPreview() ? <Button small title="Preview: NetSuite's calendar opens here in NetSuite" disabled>Calendar</Button> : <a className="btn btn-sm" href={CALENDAR_URL} target="_blank" rel="noreferrer" title="My NetSuite calendar (tours are events on it)">Calendar</a>}
+          {!isPreview() && boot.links && boot.links.auditLog && <a className="btn btn-sm" href={boot.links.auditLog} target="_blank" rel="noreferrer" title="Every change the hub has made: who, when, old and new value">Change log</a>}
           <Button small onClick={() => setTheme(theme === 'dark' ? 'light' : theme === 'light' ? 'auto' : 'dark')} title={`Theme: ${theme}`} aria-label="Toggle theme">{theme === 'dark' ? '☾' : theme === 'light' ? '☀' : '◐'}</Button>
           <Button small onClick={() => setDensity(density === 'compact' ? 'comfortable' : 'compact')} title="Density" aria-label="Toggle density">{density === 'compact' ? '≡' : '☰'}</Button>
           <Button small onClick={() => setPresent(!present)} title="Presentation mode" aria-label="Presentation mode">{present ? 'Exit' : '▭'}</Button>
@@ -51,7 +52,7 @@ function App({ boot }) {
       {staleFiles && <div className="banner warn">The app files NetSuite is serving are from build <code>{BUILD}</code>, but the Suitelet is build <code>{sb}</code>. Re-upload <code>amicus_leasing_app.js</code> and <code>amicus_leasing_app.css</code> from the same hand-back as the Suitelet (DEPLOY.md, section 6), then reload with Ctrl+Shift+R.</div>}
       {!styled && <div className="banner warn">The stylesheet did not apply, so this page is unstyled. In the File Cabinet open <code>amicus_leasing_app.css</code>, check its type is CSS File (not Plain Text) and that it starts with <code>:root{'{'}--accent</code>, then reload with Ctrl+Shift+R.</div>}
       {!boot.scope.all && boot.scope.marketIds.length === 0 && <div className="banner warn">You have no market access: {boot.scope.reason}. Ask an administrator to set your markets.</div>}
-      {boot.degraded && boot.degraded.length > 0 && url.view !== 'reporting' && <div className="banner">Some fields are not created yet, so these features are off: {boot.degraded.map((d) => d.feature || d.field).filter((v, i, a) => a.indexOf(v) === i).join(' · ')}.</div>}
+      {boot.degraded && boot.degraded.length > 0 && url.view !== 'reporting' && <div className="banner">Some fields are not created yet, so these features are off: {boot.degraded.map((d) => d.feature || d.field).filter((v, i, a) => a.indexOf(v) === i).join(' · ')}. {!isPreview() && <button type="button" className="linkish" onClick={async () => { await post('reprobe', {}); window.location.reload(); }}>Re-check now</button>}</div>}
       <main className="main">
         {url.view === 'today' && <Today sel={sel} go={go} openExceptions={() => setDrawer(true)} bootstrap={boot} />}
         {url.view === 'pipeline' && <Pipeline sel={sel} setSel={setUrl} density={density} isMobile={isMobile} bootstrap={boot} />}

@@ -1,5 +1,7 @@
 # §5.5.0 Lead discovery — write-up for review
 
+> **Resolved 2026-10-27** (A-22): leads use the LEAD stage (Lead · New → Tour Scheduled → Tour Completed), the agent lives on the native Sales Rep field, and tenants at Tenant · Inquiring are listed with the leads. The findings below are kept as the record of what the account held before that decision.
+
 Probed live on 2026-10-23 through the NetSuite connector (role `customrole_ai_claude`, account 8229294, read-only SuiteQL).
 Nothing in §6.5 Leads has been designed. This document stops at the findings and one recommendation about *which data to design for*.
 
