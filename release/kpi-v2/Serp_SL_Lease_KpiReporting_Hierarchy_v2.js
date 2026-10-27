@@ -322,15 +322,13 @@ define(['N/query', 'N/search', 'N/ui/serverWidget', 'N/runtime', 'N/url', 'N/log
 	#lkr .wrap.scroll{max-height:460px;overflow:auto}
 	#lkr .wrap.scroll thead th{position:sticky;top:0;z-index:1}
 	/* Frozen headers (2026-10-27): a table wrapper scrolls inside the viewport instead of with the page, so the header rows
-	   stay visible while scrolling down and the Total row stays at the bottom. Short tables are unaffected. Collapsed borders
-	   do not travel with a sticky header, so the cell edges are drawn with inset shadows instead. */
+	   stay visible while scrolling down and the Total row stays at the bottom. Short tables are unaffected. The header CELLS
+	   are sticky, and the client script gives the second and third header rows their offset. Chromium paints sticky cells
+	   wrongly in a collapsed-border table (body text shows through), so these tables use separate borders with no spacing. */
 	#lkr .wrap{overflow:auto;max-height:calc(100vh - 150px)}
-	#lkr .wrap thead{position:sticky;top:0;z-index:2}
-	#lkr .wrap thead th{box-shadow:inset 0 -1px 0 var(--line)}
-	#lkr table.tree thead th.grp-start{box-shadow:inset 1px 0 0 var(--line),inset 0 -1px 0 var(--line)}
-	#lkr table.tree thead tr.gh th[rowspan="3"]{box-shadow:inset 0 -1px 0 var(--line)}
-	#lkr .wrap tfoot{position:sticky;bottom:0;z-index:2}
-	#lkr .wrap tfoot td{box-shadow:inset 0 2px 0 var(--line);border-top:0}
+	#lkr .wrap table{border-collapse:separate;border-spacing:0}
+	#lkr .wrap thead th{position:sticky;top:0;z-index:2}
+	#lkr .wrap tfoot td{position:sticky;bottom:0;z-index:2}
 	#lkr.present .wrap{max-height:none}
 	#lkr.hide-desc .sec-note,#lkr.hide-desc .kpi small{display:none}
 	#lkr.hide-desc .wk-head .sec-note,#lkr.hide-desc .rt-pick .sec-note,#lkr.hide-desc .pace-note,#lkr.hide-desc .yoy-none{display:block}
@@ -913,6 +911,25 @@ define(['N/query', 'N/search', 'N/ui/serverWidget', 'N/runtime', 'N/url', 'N/log
 	const CLIENT_SCRIPT = String.raw`
 	<script>
 	(function () {
+		/* freeze:start — header cells below the first row need their own sticky offset; rerun whenever the report redraws or resizes. */
+		var freezeTimer = null;
+		function freezeHeads() {
+			freezeTimer = null;
+			var heads = document.querySelectorAll('#lkr .wrap thead');
+			for (var h = 0; h < heads.length; h++) {
+				var rows = heads[h].rows, y = 0;
+				for (var i = 0; i < rows.length; i++) {
+					var cells = rows[i].cells;
+					for (var j = 0; j < cells.length; j++) cells[j].style.top = y + 'px';
+					y += rows[i].getBoundingClientRect().height;
+				}
+			}
+		}
+		function queueFreeze() { if (freezeTimer === null) freezeTimer = window.requestAnimationFrame(freezeHeads); }
+		queueFreeze();
+		window.addEventListener('resize', queueFreeze);
+		if (window.MutationObserver) new MutationObserver(queueFreeze).observe(document.getElementById('lkr'), { childList: true, subtree: true, attributes: true, attributeFilter: ['data-rt', 'class', 'hidden'] });
+		/* freeze:end */
 		var D = window.LKR_DATA || {};
 		var root = document.getElementById('lkr');
 
