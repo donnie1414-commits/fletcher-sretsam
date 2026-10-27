@@ -23,17 +23,17 @@ const args = new Set(process.argv.slice(2));
 fs.mkdirSync('dist', { recursive: true });
 
 /** The build id is the hash of the client files; the Suitelet puts it in the asset URLs so browsers never keep a stale bundle after a re-upload. */
-async function buildServer(buildId) {
+async function buildServer() {
+  // Built with the placeholder; the id is stamped afterwards so a server-only change still produces a new build id.
   const r = await esbuild.build({
     entryPoints: ['src/server/suitelet.js'], bundle: true, write: false, format: 'cjs', platform: 'neutral', target: ['es2020'],
-    external: N_MODULES, legalComments: 'none', minify: false, treeShaking: true, charset: 'utf8', logLevel: 'silent', define: { __AL_BUILD__: JSON.stringify(buildId) },
+    external: N_MODULES, legalComments: 'none', minify: false, treeShaking: true, charset: 'utf8', logLevel: 'silent', define: { __AL_BUILD__: JSON.stringify(BUILD_PLACEHOLDER) },
   });
   const code = r.outputFiles[0].text;
   const used = N_MODULES.filter((m) => code.includes(`require("${m}")`));
   const header = fs.readFileSync('src/server/suitelet.js', 'utf8').match(/\/\*\*[\s\S]*?\*\//)[0];
   const wrapped = `${header}\ndefine(${JSON.stringify(used)}, function (${used.map((m, i) => `__n${i}`).join(', ')}) {\n  'use strict';\n  var __N = {${used.map((m, i) => `${JSON.stringify(m)}: __n${i}`).join(', ')}};\n  var require = function (id) { if (Object.prototype.hasOwnProperty.call(__N, id)) return __N[id]; throw new Error('module not available in the server bundle: ' + id); };\n  var module = { exports: {} }; var exports = module.exports;\n${code}\n  if (typeof module.exports.onRequest !== 'function') throw new Error('bundle does not export onRequest');\n  return module.exports;\n});\n`;
-  fs.writeFileSync('dist/amicus_leasing_sl.js', wrapped.replace(/\r\n/g, '\n'));
-  return wrapped.length;
+  return wrapped.replace(/\r\n/g, '\n');
 }
 async function buildClient() {
   // The source is written against the React API; the bundle ships preact/compat under it (same API, ~120 KB smaller),
@@ -45,11 +45,7 @@ async function buildClient() {
   const cssText = css.outputFiles[0].text;
   // The build id is the hash of the client files as built (placeholder still in place), then stamped into the bundle so the
   // client, the Suitelet and MANIFEST.json all carry the same id and the app can tell when the uploaded files disagree.
-  const buildId = crypto.createHash('sha256').update(raw).update(cssText).digest('hex').slice(0, 12);
-  const code = raw.split(BUILD_PLACEHOLDER).join(buildId);
-  fs.writeFileSync('dist/amicus_leasing_app.js', code);
-  fs.writeFileSync('dist/amicus_leasing_app.css', cssText);
-  return { js: Buffer.byteLength(code), css: Buffer.byteLength(cssText), gz: zlib.gzipSync(code).length + zlib.gzipSync(cssText).length, buildId };
+  return { raw, cssText };
 }
 function loadCheck() {
   // §8.7 — node --check is not evidence a module loads. Execute the AMD wrapper with fake N modules.
@@ -70,15 +66,19 @@ function lineEndings(p) { const s = fs.readFileSync(p, 'utf8'); return s.include
 (async () => {
   if (!args.has('--check-only')) {
     if (!args.has('--skip-tests')) { execSync('node --test "test/**/*.test.js"', { stdio: 'inherit' }); }
-    const c = await buildClient();
-    const serverBytes = await buildServer(c.buildId);
-    console.log(`build ${c.buildId} · server bundle ${serverBytes} B · client ${c.js} B min (${(c.js / 1024).toFixed(0)} KB) · css ${c.css} B · initial gzip ${c.gz} B`);
+    const { raw, cssText } = await buildClient();
+    const serverRaw = await buildServer();
+    // One id for the three files: the hash of all of them as built, stamped into the client and the Suitelet.
+    const buildId = crypto.createHash('sha256').update(raw).update(cssText).update(serverRaw).digest('hex').slice(0, 12);
+    const code = raw.split(BUILD_PLACEHOLDER).join(buildId);
+    fs.writeFileSync('dist/amicus_leasing_app.js', code); fs.writeFileSync('dist/amicus_leasing_app.css', cssText); fs.writeFileSync('dist/amicus_leasing_sl.js', serverRaw.split(BUILD_PLACEHOLDER).join(buildId));
+    console.log(`build ${buildId} · server bundle ${Buffer.byteLength(serverRaw)} B · client ${Buffer.byteLength(code)} B min (${(Buffer.byteLength(code) / 1024).toFixed(0)} KB) · css ${Buffer.byteLength(cssText)} B · initial gzip ${zlib.gzipSync(code).length + zlib.gzipSync(cssText).length} B`);
   }
   const exportsSeen = loadCheck();
   await engineLoadCheck();
   // §8.7 — the client and the Suitelet must carry the same build id (the app warns the user when NetSuite serves a mismatched pair).
   const clientText = fs.readFileSync('dist/amicus_leasing_app.js', 'utf8'); const serverText = fs.readFileSync('dist/amicus_leasing_sl.js', 'utf8');
-  if (clientText.includes(BUILD_PLACEHOLDER)) throw new Error('client bundle still carries the build placeholder');
+  if (clientText.includes(BUILD_PLACEHOLDER) || serverText.includes(BUILD_PLACEHOLDER)) throw new Error('a bundle still carries the build placeholder');
   const stamped = /String\("([0-9a-f]{12})"\)/.exec(serverText); if (!stamped) throw new Error('server bundle carries no build id');
   if (!clientText.includes(`"${stamped[1]}"`)) throw new Error(`client bundle does not carry build id ${stamped[1]}`);
   const build = stamped[1];
