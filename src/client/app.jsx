@@ -1,7 +1,7 @@
 /** Client entry: four top-level items, one accent, shell-first. Everything else fetches its own JSON when opened (§3.6). */
 import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { getBootstrap, isPreview } from './api.js';
+import { getBootstrap, isPreview, BUILD, serverBuild, stylesApplied } from './api.js';
 import { useUrlState, usePref, useMedia } from './state.js';
 import { Segmented, Select, Button, cx } from './ui.jsx';
 import { Today } from './screens/Today.jsx';
@@ -19,6 +19,10 @@ function App({ boot }) {
   const [present, setPresent] = useState(false);
   const [drawer, setDrawer] = useState(false);
   const isMobile = useMedia('(max-width: 720px)');
+  const [styled, setStyled] = useState(true);
+  useEffect(() => { setStyled(stylesApplied()); }, []);
+  const sb = serverBuild();
+  const staleFiles = !isPreview() && sb && sb !== 'dev' && BUILD !== 'dev' && sb !== BUILD;
   useEffect(() => { document.documentElement.setAttribute('data-theme', theme === 'auto' ? '' : theme); }, [theme]);
   const sel = useMemo(() => ({ ay: Number(url.ay), basis: url.basis, fund: url.fund || null, market: url.market || null, q: url.q || '' }), [url.ay, url.basis, url.fund, url.market, url.q]);
   const excCount = useExceptionCount(sel);
@@ -40,8 +44,11 @@ function App({ boot }) {
           <Button small onClick={() => setTheme(theme === 'dark' ? 'light' : theme === 'light' ? 'auto' : 'dark')} title={`Theme: ${theme}`} aria-label="Toggle theme">{theme === 'dark' ? '☾' : theme === 'light' ? '☀' : '◐'}</Button>
           <Button small onClick={() => setDensity(density === 'compact' ? 'comfortable' : 'compact')} title="Density" aria-label="Toggle density">{density === 'compact' ? '≡' : '☰'}</Button>
           <Button small onClick={() => setPresent(!present)} title="Presentation mode" aria-label="Presentation mode">{present ? 'Exit' : '▭'}</Button>
+          {!isMobile && <span className="build" title={sb && sb !== BUILD ? `app files ${BUILD} · Suitelet ${sb}` : 'Build id: compare with MANIFEST.json after an upload'}>build {BUILD}</span>}
         </div>
       </header>
+      {staleFiles && <div className="banner warn">The app files NetSuite is serving are from build <code>{BUILD}</code>, but the Suitelet is build <code>{sb}</code>. Re-upload <code>amicus_leasing_app.js</code> and <code>amicus_leasing_app.css</code> from the same hand-back as the Suitelet (DEPLOY.md, section 6), then reload with Ctrl+Shift+R.</div>}
+      {!styled && <div className="banner warn">The stylesheet did not apply, so this page is unstyled. In the File Cabinet open <code>amicus_leasing_app.css</code>, check its type is CSS File (not Plain Text) and that it starts with <code>:root{'{'}--accent</code>, then reload with Ctrl+Shift+R.</div>}
       {!boot.scope.all && boot.scope.marketIds.length === 0 && <div className="banner warn">You have no market access: {boot.scope.reason}. Ask an administrator to set your markets.</div>}
       {boot.degraded && boot.degraded.length > 0 && url.view !== 'reporting' && <div className="banner">Some fields are not created yet, so these features are off: {boot.degraded.map((d) => d.feature || d.field).filter((v, i, a) => a.indexOf(v) === i).join(' · ')}.</div>}
       <main className="main">

@@ -13,6 +13,11 @@ export function getBootstrap() {
   return bootstrap;
 }
 export const isPreview = () => !!window.__AL_PREVIEW;
+/** The build id compiled into this bundle (tools/build.js), and the one the Suitelet that served the page was built from. */
+export const BUILD = typeof __AL_BUILD__ !== 'undefined' ? String(__AL_BUILD__) : 'dev'; // eslint-disable-line no-undef
+export const serverBuild = () => (typeof window.__AL_SERVER_BUILD === 'string' ? window.__AL_SERVER_BUILD : null);
+/** True when the app stylesheet took effect: its first rule defines --accent on :root. Unstyled pages are the clearest sign of a bad upload. */
+export const stylesApplied = () => { try { return !!getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(); } catch (e) { return true; } };
 function scriptBase() { const u = new URL(window.location.href); u.hash = ''; return u.toString(); }
 
 async function previewGet(route, params) {

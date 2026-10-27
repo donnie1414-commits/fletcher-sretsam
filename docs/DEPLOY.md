@@ -6,11 +6,11 @@ The files are in the hand-back:
 
 | File | What it is | Size (bytes) | SHA-256 (first 12) |
 |---|---|---|---|
-| `amicus_leasing_sl.js` | the Suitelet (server). Starts `/** @NApiVersion 2.1 @NScriptType Suitelet` | 198,676 | `c049be00a056` |
-| `amicus_leasing_app.js` | the client bundle. One minified line starting `(()=>{` | 174,600 | `8330f00285ef` |
-| `amicus_leasing_app.css` | the stylesheet. Starts `:root{` | 23,348 | `968da194034c` |
+| `amicus_leasing_sl.js` | the Suitelet (server). Starts `/** @NApiVersion 2.1 @NScriptType Suitelet` | 205,603 | `cee96bffbb29` |
+| `amicus_leasing_app.js` | the client bundle. One minified line starting `(()=>{` | 185,616 | `5cd51385ab5f` |
+| `amicus_leasing_app.css` | the stylesheet. Starts `:root{--accent` | 39,883 | `b1ce51b0b1e5` |
 
-`MANIFEST.json` carries the full hashes. Sizes are the quick check after upload: File Cabinet shows the byte size on each file.
+`MANIFEST.json` carries the full hashes and the **build id `4a4f19937275`**. Sizes are the quick check after upload: File Cabinet shows the byte size on each file. The build id is the check inside the app: it is printed at the right end of the header (`build 4a4f19937275`), and the three files of one hand-back always share it.
 
 **Only `amicus_leasing_sl.js` ever goes on a Script record.** The other two are plain files the Suitelet links to by internal id.
 
@@ -55,9 +55,11 @@ If the account blocks `.js` uploads through Add File, use Documents › Files �
 
 Open the deployment URL.
 
-- A page that reads **Loading Amicus Leasing…** for under a second, then the Today screen with your scope in the header. Done.
+- A page that reads **Loading Amicus Leasing…** for under a second, then the Today screen with your scope in the header and `build 4a4f19937275` at the right end of the header. Done.
+- An orange banner **"The app files NetSuite is serving are from build …, but the Suitelet is build …"**: the `.js`/`.css` in the File Cabinet and the Suitelet come from different hand-backs. Re-upload the two client files from this hand-back (section 6), then reload with Ctrl+Shift+R. This is the usual reason the app looks older or different from the preview.
+- An orange banner **"The stylesheet did not apply"**: the page is running without its styles. The Suitelet normally copies the stylesheet into the page itself, so this only happens when it cannot read the `.css` file; check the `custscript_al_client_css` id and that the file's type in the File Cabinet is *CSS File*.
 - **"Client bundle not configured"**: one or both file-id parameters are empty or point at the wrong file. Check step 3.5.
-- **Blank white page**: open the browser console (F12). If it reports a Content-Security-Policy block on the `.js` file, the account does not allow Suitelets to load scripts from the File Cabinet. Upload the two files in `tools/csp-probe/` from the source archive as a second Suitelet, open it once, and send me the line it prints; the fallback is a one-line change that serves the bundle through the Suitelet itself.
+- **Blank white page** or stuck on *Loading…*: open the browser console (F12) and send me the first red line. The page names the asset URL it tried when the bundle fails to load.
 - **"You have no market access"**: the user lock is on and your employee record's market field is blank. Fill the field or untick the lock while testing.
 - A grey banner **"Some fields are not created yet, so these features are off: …"**: expected until the optional fields in SETUP-CHECKLIST.md are created. Each named feature is simply off; nothing else is affected.
 
@@ -71,7 +73,7 @@ The Suitelet runs as the signed-in user. The leasing roles need:
 
 ## 6. Updating later
 
-Re-upload, never re-create: open the existing file in the File Cabinet and use **Edit › Select File** to replace its content. The internal id does not change, so the script parameters keep working and nothing on the script record is touched. Compare the byte size with the new `MANIFEST.json` afterwards.
+Re-upload, never re-create: open the existing file in the File Cabinet and use **Edit › Select File** to replace its content. The internal id does not change, so the script parameters keep working and nothing on the script record is touched. Always replace **all three** files from the same hand-back, then reload the app with Ctrl+Shift+R and check that the header shows the build id from `MANIFEST.json` and no orange banner. The page's asset links carry the build id, so a browser never keeps an old copy once the Suitelet is replaced; the stylesheet is copied into the page by the Suitelet on every open, so it can never be stale or blocked on its own.
 
 From the repo, `npm run deploy` does the same three uploads with a SHA-256 check and refuses to put the client bundle on the Suitelet slot. It needs a `deploy.map.json` with the three internal ids (the command prints the template) and read-write File Cabinet credentials; it is a dry run unless given `--yes`.
 

@@ -68,10 +68,15 @@ test('server path against the snapshot', { skip: fx ? false : 'no snapshot' }, a
     const withFiles = createApp({ ...N, runtime: fakeRuntime({ roleId: 3, params: { custscript_al_client_js: 229898, custscript_al_client_css: 229899 } }), file: { load: ({ id }) => ({ id, fileType: id === 229898 ? 'JAVASCRIPT' : 'STYLESHEET', getContents: () => (id === 229898 ? '(()=>{/*bundle*/})();' : ':root{}') }) } });
     const shell = request(withFiles, { script: '123', deploy: '1', compid: 'ACME' });
     assert.ok(/\/app\/site\/hosting\/scriptlet\.nl\?script=123&deploy=1&compid=ACME&route=asset&kind=js&v=[0-9a-f]+/.test(shell.text), 'the script tag points back at the Suitelet with a version');
-    assert.ok(/route=asset&kind=css&v=[0-9a-f]+/.test(shell.text));
+    assert.ok(shell.text.includes('<style id="al-css"') && shell.text.includes(':root{}'), 'the stylesheet is inlined into the page, so file type, caching and CSP cannot change how the app looks');
+    assert.ok(!/<link rel="stylesheet"/.test(shell.text), 'no stylesheet link when the inline copy is present');
+    assert.ok(/<meta name="al-build" content="[^"]+">/.test(shell.text) && shell.text.includes('window.__AL_SERVER_BUILD='), 'the page carries the build id for the client to compare');
     const js = request(withFiles, { route: 'asset', kind: 'js' }); assert.equal(js.headers['Content-Type'], 'application/javascript'); assert.equal(js.headers['Inline'], 'T'); assert.equal(js.text, '(()=>{/*bundle*/})();');
     const css = request(withFiles, { route: 'asset', kind: 'css' }); assert.equal(css.headers['Content-Type'], 'text/css'); assert.equal(css.text, ':root{}');
-    const broken = createApp({ ...withFiles, file: { load: () => { throw Object.assign(new Error('Insufficient permission'), { name: 'INSUFFICIENT_PERMISSION' }); } } }); void broken;
+    const escaped = createApp({ ...N, runtime: fakeRuntime({ roleId: 3, params: { custscript_al_client_js: 1, custscript_al_client_css: 2 } }), file: { load: ({ id }) => ({ id, getContents: () => (id === 1 ? ';' : '.x{content:"</style><script>"}') }) } });
+    const esc = request(escaped, {}).text; assert.ok(!esc.includes('</style><script>') && esc.includes('<\\/style><script>'), 'a </style> inside the CSS cannot end the tag early');
+    const broken = createApp({ ...N, runtime: fakeRuntime({ roleId: 3, params: { custscript_al_client_js: 229898, custscript_al_client_css: 229899 } }), file: { load: () => { throw Object.assign(new Error('Insufficient permission'), { name: 'INSUFFICIENT_PERMISSION' }); } } });
+    const fb = request(broken, { script: '123', deploy: '1' }).text; assert.ok(/<link rel="stylesheet" href="[^"]*route=asset&kind=css&v=[0-9a-f]+"/.test(fb), 'when the file cannot be read the page falls back to linking the asset route');
     const none = request(app, { route: 'asset', kind: 'js' }); assert.ok(none.text.includes('not configured'));
   });
   await t.test('write route requires POST + header and returns per-row results', () => {

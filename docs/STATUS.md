@@ -23,7 +23,7 @@ Branch `claude/amicus-leasing-rebuild-v3-3gvip0`. Nothing has been deployed or w
 2. **Tie-out**: paste the live Summary by market for AY 26-27 / 27-28 / 28-29, both bases, into `docs/TIE-OUT.md` (or send a screenshot). I cannot open the live Suitelet from this session.
 3. **Overlap rule sign-off** (`docs/OVERLAP-DELTA.md`). It stays off until you tick the box.
 4. **Assumptions A-2, A-4, A-5, A-6, A-8** in `docs/ASSUMPTIONS.md` change numbers; the rest are confirmations.
-5. **CSP experiment**: upload the two files in `tools/csp-probe/` (one Suitelet, one .js) and open the Suitelet once. It prints OK or FAILED. If FAILED, the fallback is to serve the bundle through the Suitelet itself (`?route=asset`) — a small change in `shell.js`, not a return to inlining.
+5. ~~CSP experiment~~ — resolved: the bundle is served through the Suitelet (`?route=asset`), the stylesheet is inlined into the page, and the header shows the build id with a banner when the uploaded files disagree with the Suitelet.
 6. Run the four `[ADMIN]` queries in `tools/probe.js` from an Administrator session (events, tasks, scripts/workflows on customer and lease, employee market field). This role cannot see them.
 
 ## What this role could not see

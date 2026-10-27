@@ -3739,14 +3739,32 @@ function renderShell(ctx) {
   const boot = routeBootstrap(ctx);
   const json = JSON.stringify(boot).replace(/<\/(script)/gi, "<\\/$1").replace(/<!--/g, "<\\!--");
   const js = assetUrl(ctx, "js"), css = assetUrl(ctx, "css");
-  return `<!doctype html><html lang="en" data-theme="auto"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Amicus Leasing</title>${css ? `<link rel="stylesheet" href="${css}">` : ""}<style>html,body{margin:0;background:#fff;color:#111;font:14px/1.4 system-ui,sans-serif}@media(prefers-color-scheme:dark){html,body{background:#121417;color:#e6e8eb}}#root{min-height:100vh}.al-boot{padding:24px;max-width:720px}</style></head><body><div id="root"><div class="al-boot" id="al-boot">Loading Amicus Leasing…</div></div><script type="application/json" id="al-bootstrap">${json}</script>${js ? `<script src="${js}" defer onerror="document.getElementById('al-boot').textContent='The client bundle could not be loaded from ${js.replace(/'/g, "")} — open the browser console (F12) for the reason.'"></script>` : `<script>document.getElementById('al-boot').textContent='Client bundle not configured: set the script parameters custscript_al_client_js / custscript_al_client_css to the File Cabinet ids of amicus_leasing_app.js / .css (see SETUP-CHECKLIST).';</script>`}<script>setTimeout(function(){var b=document.getElementById('al-boot');if(b&&b.textContent.indexOf('Loading')===0)b.textContent='The client bundle loaded but did not start. Open the browser console (F12) and send the first error line.';},8000);</script></body></html>`;
+  const build = buildId();
+  const inline = css ? inlineCss(ctx) : null;
+  const styleTag = inline != null ? `<style id="al-css" data-build="${build}">${inline}</style>` : css ? `<link rel="stylesheet" href="${css}">` : "";
+  return `<!doctype html><html lang="en" data-theme="auto"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="al-build" content="${build}"><title>Amicus Leasing</title><style>html,body{margin:0;background:#fff;color:#111;font:14px/1.4 system-ui,sans-serif}@media(prefers-color-scheme:dark){html,body{background:#121417;color:#e6e8eb}}#root{min-height:100vh}.al-boot{padding:24px;max-width:720px}</style>${styleTag}</head><body><div id="root"><div class="al-boot" id="al-boot">Loading Amicus Leasing…</div></div><script type="application/json" id="al-bootstrap">${json}</script><script>window.__AL_SERVER_BUILD=${JSON.stringify(build)};</script>${js ? `<script src="${js}" defer onerror="document.getElementById('al-boot').textContent='The client bundle could not be loaded from ${js.replace(/'/g, "")} — open the browser console (F12) for the reason.'"></script>` : `<script>document.getElementById('al-boot').textContent='Client bundle not configured: set the script parameters custscript_al_client_js / custscript_al_client_css to the File Cabinet ids of amicus_leasing_app.js / .css (see SETUP-CHECKLIST).';</script>`}<script>setTimeout(function(){var b=document.getElementById('al-boot');if(b&&b.textContent.indexOf('Loading')===0)b.textContent='The client bundle loaded but did not start. Open the browser console (F12) and send the first error line.';},8000);</script></body></html>`;
+}
+function buildId() {
+  return true ? String("4a4f19937275") : "dev";
+}
+function inlineCss(ctx) {
+  try {
+    const id = fileId(ctx, "css");
+    if (!id) return null;
+    const text = ctx.N.file.load({ id }).getContents();
+    if (typeof text !== "string" || !text.trim()) return null;
+    return text.replace(/<\/(style)/gi, "<\\/$1");
+  } catch (e) {
+    ctx.log && ctx.log.audit && ctx.log.audit({ title: "stylesheet not inlined", details: `${e && e.name}: ${e && e.message}` });
+    return null;
+  }
 }
 function assetUrl(ctx, kind) {
   const id = fileId(ctx, kind);
   if (!id) return null;
   const p = ctx.params || {};
   const keep = ["script", "deploy", "compid", "whence"].filter((k) => p[k] != null && p[k] !== "").map((k) => `${k}=${encodeURIComponent(p[k])}`);
-  const v = true ? "bf015d100a9f" : id;
+  const v = buildId() === "dev" ? id : buildId();
   return `/app/site/hosting/scriptlet.nl?${keep.join("&")}&route=asset&kind=${kind}&v=${v}`;
 }
 function fileId(ctx, kind) {

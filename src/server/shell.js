@@ -10,7 +10,26 @@ export function renderShell(ctx) {
   const boot = routeBootstrap(ctx);
   const json = JSON.stringify(boot).replace(/<\/(script)/gi, '<\\/$1').replace(/<!--/g, '<\\!--');
   const js = assetUrl(ctx, 'js'), css = assetUrl(ctx, 'css');
-  return `<!doctype html><html lang="en" data-theme="auto"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Amicus Leasing</title>${css ? `<link rel="stylesheet" href="${css}">` : ''}<style>html,body{margin:0;background:#fff;color:#111;font:14px/1.4 system-ui,sans-serif}@media(prefers-color-scheme:dark){html,body{background:#121417;color:#e6e8eb}}#root{min-height:100vh}.al-boot{padding:24px;max-width:720px}</style></head><body><div id="root"><div class="al-boot" id="al-boot">Loading Amicus Leasing…</div></div><script type="application/json" id="al-bootstrap">${json}</script>${js ? `<script src="${js}" defer onerror="document.getElementById('al-boot').textContent='The client bundle could not be loaded from ${js.replace(/'/g, '')} — open the browser console (F12) for the reason.'"></script>` : `<script>document.getElementById('al-boot').textContent='Client bundle not configured: set the script parameters custscript_al_client_js / custscript_al_client_css to the File Cabinet ids of amicus_leasing_app.js / .css (see SETUP-CHECKLIST).';</script>`}<script>setTimeout(function(){var b=document.getElementById('al-boot');if(b&&b.textContent.indexOf('Loading')===0)b.textContent='The client bundle loaded but did not start. Open the browser console (F12) and send the first error line.';},8000);</script></body></html>`;
+  const build = buildId();
+  // The stylesheet is inlined into the page (see inlineCss): nothing about how the File Cabinet types, caches or
+  // serves a .css file can then change how the app looks. The <link> is only the fallback when the file cannot be read.
+  const inline = css ? inlineCss(ctx) : null;
+  const styleTag = inline != null ? `<style id="al-css" data-build="${build}">${inline}</style>` : (css ? `<link rel="stylesheet" href="${css}">` : '');
+  return `<!doctype html><html lang="en" data-theme="auto"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="al-build" content="${build}"><title>Amicus Leasing</title><style>html,body{margin:0;background:#fff;color:#111;font:14px/1.4 system-ui,sans-serif}@media(prefers-color-scheme:dark){html,body{background:#121417;color:#e6e8eb}}#root{min-height:100vh}.al-boot{padding:24px;max-width:720px}</style>${styleTag}</head><body><div id="root"><div class="al-boot" id="al-boot">Loading Amicus Leasing…</div></div><script type="application/json" id="al-bootstrap">${json}</script><script>window.__AL_SERVER_BUILD=${JSON.stringify(build)};</script>${js ? `<script src="${js}" defer onerror="document.getElementById('al-boot').textContent='The client bundle could not be loaded from ${js.replace(/'/g, '')} — open the browser console (F12) for the reason.'"></script>` : `<script>document.getElementById('al-boot').textContent='Client bundle not configured: set the script parameters custscript_al_client_js / custscript_al_client_css to the File Cabinet ids of amicus_leasing_app.js / .css (see SETUP-CHECKLIST).';</script>`}<script>setTimeout(function(){var b=document.getElementById('al-boot');if(b&&b.textContent.indexOf('Loading')===0)b.textContent='The client bundle loaded but did not start. Open the browser console (F12) and send the first error line.';},8000);</script></body></html>`;
+}
+/** The build id compiled into this Suitelet (tools/build.js); the client bundle carries the same id, and the app warns when the two differ. */
+export function buildId() { return typeof __AL_BUILD__ !== 'undefined' ? String(__AL_BUILD__) : 'dev'; } // eslint-disable-line no-undef
+/** The stylesheet's text for inlining, or null when the file cannot be read (then the <link> fallback is used). "</style" inside CSS would end the tag early. */
+function inlineCss(ctx) {
+  try {
+    const id = fileId(ctx, 'css'); if (!id) return null;
+    const text = ctx.N.file.load({ id }).getContents();
+    if (typeof text !== 'string' || !text.trim()) return null;
+    return text.replace(/<\/(style)/gi, '<\\/$1');
+  } catch (e) {
+    ctx.log && ctx.log.audit && ctx.log.audit({ title: 'stylesheet not inlined', details: `${e && e.name}: ${e && e.message}` });
+    return null;
+  }
 }
 /** Same-origin URL for an asset: the Suitelet's own URL with route=asset. Falls back to the File Cabinet URL if the id is not set. */
 function assetUrl(ctx, kind) {
@@ -19,7 +38,7 @@ function assetUrl(ctx, kind) {
   const p = ctx.params || {};
   const keep = ['script', 'deploy', 'compid', 'whence'].filter((k) => p[k] != null && p[k] !== '').map((k) => `${k}=${encodeURIComponent(p[k])}`);
   // v = the build id (hash of the client files) so a re-uploaded file is fetched fresh; the file id alone never changes.
-  const v = typeof __AL_BUILD__ !== 'undefined' ? __AL_BUILD__ : id; // eslint-disable-line no-undef
+  const v = buildId() === 'dev' ? id : buildId();
   return `/app/site/hosting/scriptlet.nl?${keep.join('&')}&route=asset&kind=${kind}&v=${v}`;
 }
 export function fileId(ctx, kind) {

@@ -18,6 +18,7 @@ import * as esbuild from 'esbuild';
 
 const BUDGET = { clientMinifiedBytes: 250 * 1024, initialGzipBytes: 150 * 1024, shellBytes: 4 * 1024 };
 const N_MODULES = ['N/query', 'N/record', 'N/runtime', 'N/log', 'N/file', 'N/cache', 'N/url', 'N/search', 'N/crypto', 'N/encode', 'N/https', 'N/redirect'];
+const BUILD_PLACEHOLDER = '__AL_BUILD_PLACEHOLDER__';
 const args = new Set(process.argv.slice(2));
 fs.mkdirSync('dist', { recursive: true });
 
@@ -38,12 +39,17 @@ async function buildClient() {
   // The source is written against the React API; the bundle ships preact/compat under it (same API, ~120 KB smaller),
   // which is what keeps the client inside the 250 KB budget with every v2 screen in it. Flip REACT_RUNTIME=react to bundle React itself.
   const alias = process.env.REACT_RUNTIME === 'react' ? {} : { react: 'preact/compat', 'react-dom/client': 'preact/compat/client', 'react-dom': 'preact/compat', 'react/jsx-runtime': 'preact/jsx-runtime' };
-  const r = await esbuild.build({ entryPoints: ['src/client/app.jsx'], bundle: true, write: false, format: 'iife', platform: 'browser', target: ['es2018'], minify: true, sourcemap: false, jsx: 'automatic', jsxImportSource: process.env.REACT_RUNTIME === 'react' ? 'react' : 'preact', alias, legalComments: 'none', define: { 'process.env.NODE_ENV': '"production"' }, logLevel: 'silent' });
-  const code = r.outputFiles[0].text.replace(/\r\n/g, '\n');
-  fs.writeFileSync('dist/amicus_leasing_app.js', code);
+  const r = await esbuild.build({ entryPoints: ['src/client/app.jsx'], bundle: true, write: false, format: 'iife', platform: 'browser', target: ['es2018'], minify: true, sourcemap: false, jsx: 'automatic', jsxImportSource: process.env.REACT_RUNTIME === 'react' ? 'react' : 'preact', alias, legalComments: 'none', define: { 'process.env.NODE_ENV': '"production"', __AL_BUILD__: JSON.stringify(BUILD_PLACEHOLDER) }, logLevel: 'silent' });
+  const raw = r.outputFiles[0].text.replace(/\r\n/g, '\n');
   const css = await esbuild.build({ entryPoints: ['src/styles/app.css'], bundle: true, write: false, minify: true, logLevel: 'silent' });
-  fs.writeFileSync('dist/amicus_leasing_app.css', css.outputFiles[0].text);
-  return { js: Buffer.byteLength(code), css: Buffer.byteLength(css.outputFiles[0].text), gz: zlib.gzipSync(code).length + zlib.gzipSync(css.outputFiles[0].text).length };
+  const cssText = css.outputFiles[0].text;
+  // The build id is the hash of the client files as built (placeholder still in place), then stamped into the bundle so the
+  // client, the Suitelet and MANIFEST.json all carry the same id and the app can tell when the uploaded files disagree.
+  const buildId = crypto.createHash('sha256').update(raw).update(cssText).digest('hex').slice(0, 12);
+  const code = raw.split(BUILD_PLACEHOLDER).join(buildId);
+  fs.writeFileSync('dist/amicus_leasing_app.js', code);
+  fs.writeFileSync('dist/amicus_leasing_app.css', cssText);
+  return { js: Buffer.byteLength(code), css: Buffer.byteLength(cssText), gz: zlib.gzipSync(code).length + zlib.gzipSync(cssText).length, buildId };
 }
 function loadCheck() {
   // §8.7 — node --check is not evidence a module loads. Execute the AMD wrapper with fake N modules.
@@ -65,23 +71,28 @@ function lineEndings(p) { const s = fs.readFileSync(p, 'utf8'); return s.include
   if (!args.has('--check-only')) {
     if (!args.has('--skip-tests')) { execSync('node --test "test/**/*.test.js"', { stdio: 'inherit' }); }
     const c = await buildClient();
-    const buildId = crypto.createHash('sha256').update(fs.readFileSync('dist/amicus_leasing_app.js')).update(fs.readFileSync('dist/amicus_leasing_app.css')).digest('hex').slice(0, 12);
-    const serverBytes = await buildServer(buildId);
-    console.log(`server bundle ${serverBytes} B · client ${c.js} B min (${(c.js / 1024).toFixed(0)} KB) · css ${c.css} B · initial gzip ${c.gz} B`);
+    const serverBytes = await buildServer(c.buildId);
+    console.log(`build ${c.buildId} · server bundle ${serverBytes} B · client ${c.js} B min (${(c.js / 1024).toFixed(0)} KB) · css ${c.css} B · initial gzip ${c.gz} B`);
   }
   const exportsSeen = loadCheck();
   await engineLoadCheck();
+  // §8.7 — the client and the Suitelet must carry the same build id (the app warns the user when NetSuite serves a mismatched pair).
+  const clientText = fs.readFileSync('dist/amicus_leasing_app.js', 'utf8'); const serverText = fs.readFileSync('dist/amicus_leasing_sl.js', 'utf8');
+  if (clientText.includes(BUILD_PLACEHOLDER)) throw new Error('client bundle still carries the build placeholder');
+  const stamped = /String\("([0-9a-f]{12})"\)/.exec(serverText); if (!stamped) throw new Error('server bundle carries no build id');
+  if (!clientText.includes(`"${stamped[1]}"`)) throw new Error(`client bundle does not carry build id ${stamped[1]}`);
+  const build = stamped[1];
   const clientBytes = fs.statSync('dist/amicus_leasing_app.js').size;
   const gz = zlib.gzipSync(fs.readFileSync('dist/amicus_leasing_app.js')).length + zlib.gzipSync(fs.readFileSync('dist/amicus_leasing_app.css')).length;
   const failures = [];
   if (clientBytes > BUDGET.clientMinifiedBytes) failures.push(`client bundle ${clientBytes} B exceeds ${BUDGET.clientMinifiedBytes} B`);
   if (gz > BUDGET.initialGzipBytes) failures.push(`initial payload ${gz} B gzipped exceeds ${BUDGET.initialGzipBytes} B`);
   const manifest = {
-    builtAt: new Date().toISOString(), budgets: BUDGET, files: {},
+    builtAt: new Date().toISOString(), build, budgets: BUDGET, files: {},
     roles: { 'dist/amicus_leasing_sl.js': 'suitelet-entry', 'dist/amicus_leasing_app.js': 'client-bundle', 'dist/amicus_leasing_app.css': 'client-styles' },
   };
   for (const f of Object.keys(manifest.roles)) manifest.files[f] = { bytes: fs.statSync(f).size, sha256: sha256(f), lineEndings: lineEndings(f) };
   fs.writeFileSync('dist/MANIFEST.json', JSON.stringify(manifest, null, 2));
-  console.log(`load check: server exports [${exportsSeen.join(', ')}]; engine exports OK; manifest written`);
+  console.log(`load check: server exports [${exportsSeen.join(', ')}]; engine exports OK; build ${build}; manifest written`);
   if (failures.length) { console.error('BUDGET FAILURE:\n  ' + failures.join('\n  ')); process.exit(1); }
 })().catch((e) => { console.error(e); process.exit(1); });
