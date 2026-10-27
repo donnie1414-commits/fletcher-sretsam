@@ -28,9 +28,9 @@ What it is: a log of every change the hub makes (who, when, which record, old va
 | Field | `_ad_wa_field` | Free-Form Text | |
 | Before | `_ad_wa_before` | Long Text | |
 | After | `_ad_wa_after` | Long Text | |
-| Change id | `_ad_wa_change_id` | Free-Form Text | Validation & Defaulting subtab: tick **Unique** |
+| Change id | `_ad_wa_change_id` | Free-Form Text | |
 
-The last one, Change id, is the important setting: *Unique* is what prevents a change being written twice.
+The hub looks a change id up before writing, so no uniqueness setting is needed on the field.
 
 ---
 

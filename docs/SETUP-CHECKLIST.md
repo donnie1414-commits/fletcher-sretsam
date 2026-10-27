@@ -50,7 +50,7 @@ The three Event fields switch on the full tour feature (unit link on the Pipelin
 
 **Saved views** `customrecord_ad_saved_view` (§4.2): fields `custrecord_ad_sv_owner` (List/Record → Employee), `custrecord_ad_sv_workspace` (Free-form text), `custrecord_ad_sv_name` (Free-form text), `custrecord_ad_sv_json` (Long Text), `custrecord_ad_sv_default` (Checkbox), `custrecord_ad_sv_shared_markets` (Free-form text). Access: leasing roles create/edit own.
 
-**Write audit** `customrecord_ad_write_audit` (§5.9): `custrecord_ad_wa_who` (List/Record → Employee), `custrecord_ad_wa_when` (Date/Time), `custrecord_ad_wa_rectype` (text), `custrecord_ad_wa_recid` (text), `custrecord_ad_wa_field` (text), `custrecord_ad_wa_before` (Long Text), `custrecord_ad_wa_after` (Long Text), `custrecord_ad_wa_change_id` (text, **unique**). Until it exists, writes are logged to the script execution log and the UI shows "audit: log-only".
+**Write audit** `customrecord_ad_write_audit` (§5.9): `custrecord_ad_wa_who` (List/Record → Employee), `custrecord_ad_wa_when` (Date/Time), `custrecord_ad_wa_rectype` (text), `custrecord_ad_wa_recid` (text), `custrecord_ad_wa_field` (text), `custrecord_ad_wa_before` (Long Text), `custrecord_ad_wa_after` (Long Text), `custrecord_ad_wa_change_id` (text; the hub looks it up before writing, no unique setting needed). Until it exists, writes are logged to the script execution log and the UI shows "audit: log-only".
 
 ## F. Per-click order
 
