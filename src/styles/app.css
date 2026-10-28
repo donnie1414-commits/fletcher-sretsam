@@ -245,3 +245,10 @@ table.dense th { background:var(--surface); } table.dense tfoot td { background:
 
 .existing-leases ul { margin:4px 0 0; padding-left:18px; } .existing-leases li.conflict { color:var(--warn); } .existing-leases li.resolved { opacity:.8; }
 .errorbox ul { margin:6px 0 0; padding-left:18px; } .errorbox li { margin:4px 0; }
+
+/* Pipeline action buttons */
+.act-cell { display:flex; flex-direction:column; align-items:flex-start; gap:4px; }
+.btn-act { font-weight:600; color:var(--accent-ink, var(--accent)); background:var(--accent-soft); border:1px solid var(--accent); border-radius:6px; padding:3px 10px; white-space:nowrap; text-decoration:none; line-height:1.4; }
+.btn-act:hover { filter:brightness(.96); } .btn-act.done { background:var(--good-soft, var(--accent-soft)); border-color:var(--good, var(--accent)); color:var(--good, var(--accent)); }
+.btn-act.warn { background:var(--warn-soft); border-color:var(--warn); color:var(--warn); }
+.density-compact .act-cell { flex-direction:row; flex-wrap:wrap; }
