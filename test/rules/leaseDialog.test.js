@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { calendarDates, targetRentPerBed, prefill, buildLeaseChanges } from '../../src/shared/rules/leaseDialog.js';
+import { calendarDates, targetRentPerBed, prefill, buildLeaseChanges, overlappingLeases, nextFreeStart, datesOverlap } from '../../src/shared/rules/leaseDialog.js';
 import { MARKETS, LEASE } from '../../src/shared/constants.js';
 
 const cal = MARKETS.find((m) => m.id === 'binghamton').calendar;
@@ -47,4 +47,21 @@ test('whole house covers every unit at the property; the write has no unit link'
   const s = prefill({ type: 'WH', groupType: 'NEW' }, data, new Set());
   const ch = buildLeaseChanges(s, data, { leaseType: { WH: '1', UNIT: '2', BED: '3' }, groupType: { NEW: '1' } }, LEASE);
   assert.equal(ch.length, 1); assert.equal(ch[0].fields[LEASE.UNIT], null); assert.equal(ch[0].fields[LEASE.TENANT_COUNT], 6); assert.equal(ch[0].fields.name, '48 Leroy St AY 27-28');
+});
+
+test('overlap: same beds and touching dates collide; a property-wide lease collides with everything; bedrooms only with themselves', () => {
+  const ex = [
+    { id: 'u', name: 'Unit 1 lease', start: '2027-06-01', end: '2028-05-23', level: 'unit', unitId: '1', bedroomId: null },
+    { id: 'b', name: 'Bedroom A', start: '2027-06-01', end: '2027-12-31', level: 'bedroom', unitId: '2', bedroomId: '2a' },
+    { id: 'p', name: 'Whole house', start: '2028-06-01', end: '2029-05-23', level: 'property', unitId: null, bedroomId: null },
+    { id: 'x', name: 'archived', start: '2027-06-01', end: '2028-05-23', level: 'unit', unitId: '1', bedroomId: null, inactive: true },
+  ];
+  assert.equal(datesOverlap('2028-05-23', '2028-08-01', '2027-06-01', '2028-05-23'), true, 'sharing one day is an overlap');
+  assert.deepEqual(overlappingLeases('2028-01-01', '2028-05-01', ex, { level: 'unit', unitId: '1', bedroomIds: [] }).map((l) => l.id), ['u']);
+  assert.deepEqual(overlappingLeases('2028-05-24', '2028-05-31', ex, { level: 'unit', unitId: '1', bedroomIds: [] }).map((l) => l.id), [], 'the day after the end is free');
+  assert.deepEqual(overlappingLeases('2028-06-01', '2028-08-01', ex, { level: 'unit', unitId: '1', bedroomIds: [] }).map((l) => l.id), ['p'], 'a whole-house lease blocks every unit');
+  assert.deepEqual(overlappingLeases('2027-09-01', '2027-10-01', ex, { level: 'bedroom', unitId: '2', bedroomIds: ['2b'] }).map((l) => l.id), [], 'another bedroom in the unit is free');
+  assert.deepEqual(overlappingLeases('2027-09-01', '2027-10-01', ex, { level: 'bedroom', unitId: '2', bedroomIds: ['2a'] }).map((l) => l.id), ['b']);
+  assert.deepEqual(overlappingLeases('2027-09-01', '2027-10-01', ex, { level: 'unit', unitId: '2', bedroomIds: [] }).map((l) => l.id), ['b'], 'a unit lease collides with a bedroom lease in it');
+  assert.equal(nextFreeStart('2027-06-01', '2028-05-23', ex, { level: 'unit', unitId: '1', bedroomIds: [] }), '2028-05-24');
 });

@@ -6,11 +6,11 @@ The files are in the hand-back:
 
 | File | What it is | Size (bytes) | SHA-256 (first 12) |
 |---|---|---|---|
-| `amicus_leasing_sl.js` | the Suitelet (server). Starts `/** @NApiVersion 2.1 @NScriptType Suitelet` | 235,901 | `25527f4eb58f` |
-| `amicus_leasing_app.js` | the client bundle. One minified line starting `(()=>{` | 218,757 | `002033239042` |
-| `amicus_leasing_app.css` | the stylesheet. Starts `:root{--accent` | 42,332 | `5e5cc41e519f` |
+| `amicus_leasing_sl.js` | the Suitelet (server). Starts `/** @NApiVersion 2.1 @NScriptType Suitelet` | 239,975 | `b26392f78c1d` |
+| `amicus_leasing_app.js` | the client bundle. One minified line starting `(()=>{` | 223,563 | `27b16d53e1a9` |
+| `amicus_leasing_app.css` | the stylesheet. Starts `:root{--accent` | 42,544 | `b65445399ad9` |
 
-`MANIFEST.json` carries the full hashes and the **build id `29a1d8a7aae6`**. Sizes are the quick check after upload: File Cabinet shows the byte size on each file. The build id is the check inside the app: it is printed at the right end of the header (`build 29a1d8a7aae6`), and the three files of one hand-back always share it.
+`MANIFEST.json` carries the full hashes and the **build id `e71c65ab37ec`**. Sizes are the quick check after upload: File Cabinet shows the byte size on each file. The build id is the check inside the app: it is printed at the right end of the header (`build e71c65ab37ec`), and the three files of one hand-back always share it.
 
 **Only `amicus_leasing_sl.js` ever goes on a Script record.** The other two are plain files the Suitelet links to by internal id.
 
@@ -66,7 +66,7 @@ If the tab does not appear for a role, its Audience on the Center Tab or the dep
 
 Open the deployment URL.
 
-- A page that reads **Loading Amicus Leasing…** for under a second, then the Today screen with your scope in the header and `build 29a1d8a7aae6` at the right end of the header. Done.
+- A page that reads **Loading Amicus Leasing…** for under a second, then the Today screen with your scope in the header and `build e71c65ab37ec` at the right end of the header. Done.
 - An orange banner **"The app files NetSuite is serving are from build …, but the Suitelet is build …"**: the `.js`/`.css` in the File Cabinet and the Suitelet come from different hand-backs. Re-upload the two client files from this hand-back (section 6), then reload with Ctrl+Shift+R. This is the usual reason the app looks older or different from the preview.
 - An orange banner **"The stylesheet did not apply"**: the page is running without its styles. The Suitelet normally copies the stylesheet into the page itself, so this only happens when it cannot read the `.css` file; check the `custscript_al_client_css` id and that the file's type in the File Cabinet is *CSS File*.
 - **"Client bundle not configured"**: one or both file-id parameters are empty or point at the wrong file. Check step 3.5.
@@ -81,7 +81,7 @@ The Suitelet runs as the signed-in user. The leasing roles need:
 - **View** on Property, Units/Bedrooms, Lease Record, Academic Year, Academic Year Details, Unit Leasing Status, Unit Leasing Note, Customer, Subsidiary.
 - **Edit** on Unit Leasing Status, Unit Leasing Note, Lease Record and Customer for the pipeline edits, notes, lease creation and tenant assignment. Create on Unit Leasing Status and Unit Leasing Note.
 - The "Lease records made inactive this week" section needs *System Notes* visibility on the role; without it the section says so and the rest of the page is unaffected.
-- **Tours and leads** (added 2026-10-27): *Events* Full, *Customers* Create (this also covers Lead records), *Employee Record* View. For @mention emails the role needs *Send Email* (Permissions › Setup subtab, level Full); without it the note is saved and the email is skipped. The email goes from the author to each mentioned employee's NetSuite email address (Lists › Employees › the employee › Email), so that must be filled in. Without Events access the Tours sections say "calendar events are not readable by this role" and everything else works. The three optional Event fields are in SETUP-CHECKLIST section D.
+- **Tours and leads** (added 2026-10-27): *Events* Full, *Customers* Create (this also covers Lead records), *Employee Record* View. @mention emails need no role permission: the Suitelet sends them server-side. They go from the author to each mentioned employee's NetSuite email address (Lists › Employees › the employee › Email), so that field must be filled in; an employee with no email is skipped and the note still saves. Without Events access the Tours sections say "calendar events are not readable by this role" and everything else works. The three optional Event fields are in SETUP-CHECKLIST section D.
 
 ## 6. Updating later
 

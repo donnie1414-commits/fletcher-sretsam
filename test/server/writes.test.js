@@ -5,7 +5,7 @@ import { createAuth } from '../../src/server/auth.js';
 import { fakeRuntime, fakeSuiteQL, fakeRecordStore, fakeLog, fakeSchema } from './fakes.js';
 import { UAS, LEASE, CUSTOMER, AUDIT, TOUR, LEAD } from '../../src/shared/constants.js';
 
-function build({ employeeMarkets = 'Bethlehem', usage = 1000, auditMissing = false, store = {}, tenantLinks = { props: [], ays: [] }, marketOf = () => 'lehigh', tourFields = null, existingEmails = {}, outcomeIdFor = (k) => ({ SCHEDULED: 1, COMPLETED: 2, NO_SHOW: 3, CANCELLED: 4, LEASED: 5 })[k] || null, notify = null } = {}) {
+function build({ employeeMarkets = 'Bethlehem', usage = 1000, auditMissing = false, store = {}, tenantLinks = { props: [], ays: [] }, marketOf = () => 'lehigh', tourFields = null, existingEmails = {}, outcomeIdFor = (k) => ({ SCHEDULED: 1, COMPLETED: 2, NO_SHOW: 3, CANCELLED: 4, LEASED: 5 })[k] || null, notify = null, overlapsFor = null } = {}) {
   const auditRows = [];
   const rs = fakeRecordStore(store);
   const sq = fakeSuiteQL([
@@ -21,7 +21,7 @@ function build({ employeeMarkets = 'Bethlehem', usage = 1000, auditMissing = fal
   // audit records written through record.create land in the fake store; expose them to the replay query
   const origCreate = rs.record.create;
   rs.record.create = (o) => { const r = origCreate(o); if (o.type === AUDIT.TYPE) { const vals = {}; const set = r.setValue; r.setValue = ({ fieldId, value }) => { vals[fieldId] = value; set({ fieldId, value }); }; const save = r.save; r.save = () => { const id = save(); auditRows.push({ changeId: vals[AUDIT.CHANGE_ID], rt: vals[AUDIT.RECORD_TYPE], rid: vals[AUDIT.RECORD_ID], after: vals[AUDIT.AFTER], when: vals[AUDIT.WHEN] }); return id; }; } return r; };
-  const writes = createWrites({ record: rs.record, sq, runtime, log: fakeLog, schema, auth, marketOf, clock: () => '2026-10-24T12:00:00.000Z', tourFields, outcomeIdFor, defaultSubsidiaryId: () => 1, findByEmail: (e) => existingEmails[String(e).toLowerCase()] || [], stageOf: (id) => { const c = (rs.store[CUSTOMER.TYPE] || {})[id]; return c ? { stage: c.stage, entitystatus: c.entitystatus } : null; }, notify });
+  const writes = createWrites({ record: rs.record, sq, runtime, log: fakeLog, schema, auth, marketOf, clock: () => '2026-10-24T12:00:00.000Z', tourFields, outcomeIdFor, defaultSubsidiaryId: () => 1, findByEmail: (e) => existingEmails[String(e).toLowerCase()] || [], stageOf: (id) => { const c = (rs.store[CUSTOMER.TYPE] || {})[id]; return c ? { stage: c.stage, entitystatus: c.entitystatus } : null; }, notify, overlapsFor });
   return { writes, scope: auth.resolve(), rs, auditRows, runtime };
 }
 const uasStore = () => ({ [UAS.TYPE]: { 11: { [UAS.STAGE]: null, [UAS.FOLLOWUP]: null, lastmodified: 'v0' } } });
@@ -197,4 +197,20 @@ test('tour: a single-select unit or AY field refuses the list; the first value i
   rs.record.create = (o) => { const rec = origCreate(o); if (o.type === TOUR.TYPE) { const vals = {}; const set = rec.setValue; rec.setValue = (a) => { vals[a.fieldId] = a.value; set(a); }; const save = rec.save; rec.save = () => { if (Array.isArray(vals[TOUR.AY])) throw new Error(`You have entered an Invalid Field Value 2,3 for the following field: ${TOUR.AY}`); return save(); }; } return rec; };
   const r = writes.apply([{ changeId: 's1', recordType: TOUR.TYPE, fields: { startdate: '2026-11-03', [TOUR.UNIT]: [55, 56], [TOUR.AY]: [2, 3] } }], scope);
   assert.equal(r.results[0].ok, true); assert.equal(r.results[0].singleValued, true); const ev = rs.store[TOUR.TYPE][r.results[0].recordId]; assert.equal(ev[TOUR.AY], 2); assert.deepEqual(ev[TOUR.UNIT], [55, 56], 'only the field NetSuite named is collapsed');
+});
+
+test('a new lease whose dates overlap an existing one on the same beds is refused with the overlaps; ending the other lease first in the same batch clears the way', () => {
+  const store = { [LEASE.TYPE]: { 300: { [LEASE.PROPERTY]: 10, [LEASE.UNIT]: 55, [LEASE.START]: new Date(2027, 5, 1), [LEASE.END]: new Date(2028, 4, 23), [LEASE.TENANTS]: [], lastmodified: 'v0' } } };
+  let live = null; // the fake store the writes actually mutate (build() deep-copies the seed)
+  const overlapsFor = (fields) => { const l = live[LEASE.TYPE][300]; const end = l[LEASE.END] instanceof Date ? l[LEASE.END].toISOString().slice(0, 10) : String(l[LEASE.END]).slice(0, 10); const start = String(fields[LEASE.START]); return l.isinactive || start > end ? [] : [{ id: '300', name: 'Unit 55 AY 27-28', start: '2027-06-01', end }]; };
+  const { writes, scope, rs } = build({ store, overlapsFor }); live = rs.store;
+  const r = writes.apply([
+    { changeId: 'o1', recordType: LEASE.TYPE, fields: { name: 'new', [LEASE.PROPERTY]: 10, [LEASE.UNIT]: 55, [LEASE.START]: '2028-01-01', [LEASE.END]: '2028-07-31', 'custrecord_serp_lease_type_test': 2 } },
+    { changeId: 'o2', recordType: LEASE.TYPE, recordId: 300, version: 'v0', fields: { [LEASE.END]: '2027-12-31' } },
+    { changeId: 'o3', recordType: LEASE.TYPE, fields: { name: 'new', [LEASE.PROPERTY]: 10, [LEASE.UNIT]: 55, [LEASE.START]: '2028-01-01', [LEASE.END]: '2028-07-31', 'custrecord_serp_lease_type_test': 2 } },
+  ], scope);
+  assert.equal(r.results[0].code, 'LEASE_OVERLAP'); assert.equal(r.results[0].overlaps[0].id, '300');
+  assert.equal(r.results[1].ok, true);
+  assert.equal(r.results[2].ok, true); assert.equal(r.results[2].created, true);
+  assert.equal(Object.keys(rs.store[LEASE.TYPE]).length, 2);
 });

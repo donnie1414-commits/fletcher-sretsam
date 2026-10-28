@@ -68,7 +68,7 @@ function nsValue(field, v, ctxDate = null) {
  * createWrites({ record, sq, runtime, log, schema, auth, marketOf, clock, stageIdFor })
  *   stageIdFor(stageKey) → list value internal id | null   (from the schema probe; the board never sends ids)
  */
-export function createWrites({ record, sq, runtime, log, schema, auth, marketOf, clock = () => new Date().toISOString(), stageIdFor = null, outcomeIdFor = null, tourFields = null, defaultSubsidiaryId = null, findByEmail = null, stageOf = null, notify = null }) {
+export function createWrites({ record, sq, runtime, log, schema, auth, marketOf, clock = () => new Date().toISOString(), stageIdFor = null, outcomeIdFor = null, tourFields = null, defaultSubsidiaryId = null, findByEmail = null, stageOf = null, notify = null, overlapsFor = null }) {
   const auditAvailable = () => { try { return schema.probe(AUDIT.TYPE, [AUDIT.CHANGE_ID]).get(AUDIT.CHANGE_ID) !== false; } catch (e) { return false; } };
 
   function remaining() { try { return runtime.getCurrentScript().getRemainingUsage(); } catch (e) { return Infinity; } }
@@ -163,6 +163,12 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
       if (!isCreate && change.recordType === CUSTOMER.TYPE && CUSTOMER_CREATE_ONLY.has(f)) throw new WriteError('DENIED_FIELD', `field ${f} may only be set when creating a lead; edit the customer record for changes`, { field: f });
     }
     if (change.recordType === CUSTOMER.TYPE && isCreate) prepareLead(change, fields);
+    if (change.recordType === LEASE.TYPE && isCreate && overlapsFor) {
+      // §5.3 one lease per bed at a time: a new lease may only cover months nobody else holds. The client offers to end the
+      // other lease early or archive it; this is the guard behind that offer.
+      const hits = overlapsFor(fields);
+      if (hits.length) throw new WriteError('LEASE_OVERLAP', `the dates overlap ${hits.map((h) => `${h.name} (${h.start} – ${h.end})`).join(', ')}; end that lease early or archive it first`, { overlaps: hits.map((h) => ({ id: h.id, name: h.name, start: h.start, end: h.end })) });
+    }
     if (change.recordType === TOUR.TYPE) prepareTour(change, fields, isCreate);
     if (change.recordType === UAS.TYPE && isCreate && (!fields[UAS.UNIT] || !fields[UAS.AY])) throw new WriteError('BAD_CHANGE', 'a status row needs a unit and an academic year');
     if (change.recordType === UAS.TYPE && Object.prototype.hasOwnProperty.call(fields, UAS.STAGE)) {
@@ -295,7 +301,7 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
       } catch (e) {
         const code = e instanceof WriteError ? e.code : 'ERROR';
         log && log.error && log.error({ title: `write failed ${code}`, details: `${change && change.changeId}: ${e && e.message}` });
-        results.push({ changeId: change && change.changeId, ok: false, code, message: e && e.message, ...pick(e, ['field', 'current', 'version', 'bad', 'dropped', 'final', 'existingId']) });
+        results.push({ changeId: change && change.changeId, ok: false, code, message: e && e.message, ...pick(e, ['field', 'current', 'version', 'bad', 'dropped', 'final', 'existingId', 'overlaps']) });
       }
     }
     return { results, deferred };

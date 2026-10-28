@@ -1,6 +1,6 @@
 {
-  "builtAt": "2026-10-28T01:17:25.362Z",
-  "build": "29a1d8a7aae6",
+  "builtAt": "2026-10-28T01:41:16.430Z",
+  "build": "e71c65ab37ec",
   "budgets": {
     "clientMinifiedBytes": 256000,
     "initialGzipBytes": 153600,
@@ -8,18 +8,18 @@
   },
   "files": {
     "dist/amicus_leasing_sl.js": {
-      "bytes": 235901,
-      "sha256": "25527f4eb58f60769d69f77fbe1295c99b6200d761d34f1dc74ea72f97e7b9ae",
+      "bytes": 239975,
+      "sha256": "b26392f78c1d9bebd04e30199b69c9a75079fae3fc4eab4909ae44ed715cc170",
       "lineEndings": "LF"
     },
     "dist/amicus_leasing_app.js": {
-      "bytes": 218757,
-      "sha256": "002033239042ef29e869775e927ab33fc51f6d02e3e013ce376d76d9d5e23c75",
+      "bytes": 223563,
+      "sha256": "27b16d53e1a93ef700dd655dafe737edf27adc4597e00779908c27eec20b3738",
       "lineEndings": "LF"
     },
     "dist/amicus_leasing_app.css": {
-      "bytes": 42332,
-      "sha256": "5e5cc41e519f60f111edf0719044338f59c65aaca0605ef6dcc2cdea2b3f4377",
+      "bytes": 42544,
+      "sha256": "b65445399ad9640de8d3296b772a0eff3b1e4ad2bc25434b9dfd499f3e29ed3b",
       "lineEndings": "LF"
     }
   },

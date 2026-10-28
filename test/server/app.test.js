@@ -66,6 +66,7 @@ test('server path against the snapshot', { skip: fx ? false : 'no snapshot' }, a
     const v = request(app, { route: 'velocity', ay: '2027' }).json(); assert.ok(v.ays.length >= 2 && v.proforma.length > 500);
     const exf = request(app, { route: 'exceptions', ay: '2027' }).json(); assert.ok(Array.isArray(exf.blocking) && Array.isArray(exf.leaseQuality) && Array.isArray(exf.tenantQuality) && Array.isArray(exf.records));
     const uh = request(app, { route: 'unithistory', ay: '2027', unit: first.rows[0].key }).json(); assert.ok(uh.unit && uh.years.length >= 2);
+    const leased = first.rows.find((r) => r.unitId && r.leases.length); const ld = request(app, { route: 'leasedialog', ay: '2027', unit: leased.unitId }).json(); assert.ok(ld.existing.length >= 1 && ld.existing.every((l) => l.start && l.end && ['unit', 'bedroom', 'property'].includes(l.level)), 'the lease dialog lists the leases already on the unit');
     const team = request(app, { route: 'team' }).json(); assert.ok(Array.isArray(team.team));
     const ex = request(app, { route: 'exceptions', ay: '2027' }).json(); assert.ok(ex.groups.length >= 1); assert.ok(ex.groups.every((g, i, a) => i === 0 || a[i - 1].severity <= g.severity));
     const today = request(app, { route: 'today', ay: '2027' }).json(); assert.ok(today.exceptions.count >= 0 && today.blockedTenants);

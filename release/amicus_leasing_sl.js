@@ -1259,7 +1259,7 @@ function nsValue(field, v, ctxDate = null) {
   if (TIME_FIELDS.has(field)) return localTime(v, ctxDate);
   return v;
 }
-function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schema, auth, marketOf: marketOf2, clock = () => (/* @__PURE__ */ new Date()).toISOString(), stageIdFor = null, outcomeIdFor: outcomeIdFor2 = null, tourFields = null, defaultSubsidiaryId = null, findByEmail = null, stageOf = null, notify = null }) {
+function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schema, auth, marketOf: marketOf2, clock = () => (/* @__PURE__ */ new Date()).toISOString(), stageIdFor = null, outcomeIdFor: outcomeIdFor2 = null, tourFields = null, defaultSubsidiaryId = null, findByEmail = null, stageOf = null, notify = null, overlapsFor = null }) {
   const auditAvailable = () => {
     try {
       return schema.probe(AUDIT.TYPE, [AUDIT.CHANGE_ID]).get(AUDIT.CHANGE_ID) !== false;
@@ -1406,6 +1406,10 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
       if (!isCreate && change.recordType === CUSTOMER.TYPE && CUSTOMER_CREATE_ONLY.has(f)) throw new WriteError("DENIED_FIELD", `field ${f} may only be set when creating a lead; edit the customer record for changes`, { field: f });
     }
     if (change.recordType === CUSTOMER.TYPE && isCreate) prepareLead(change, fields);
+    if (change.recordType === LEASE.TYPE && isCreate && overlapsFor) {
+      const hits = overlapsFor(fields);
+      if (hits.length) throw new WriteError("LEASE_OVERLAP", `the dates overlap ${hits.map((h) => `${h.name} (${h.start} – ${h.end})`).join(", ")}; end that lease early or archive it first`, { overlaps: hits.map((h) => ({ id: h.id, name: h.name, start: h.start, end: h.end })) });
+    }
     if (change.recordType === TOUR.TYPE) prepareTour(change, fields, isCreate);
     if (change.recordType === UAS.TYPE && isCreate && (!fields[UAS.UNIT] || !fields[UAS.AY])) throw new WriteError("BAD_CHANGE", "a status row needs a unit and an academic year");
     if (change.recordType === UAS.TYPE && Object.prototype.hasOwnProperty.call(fields, UAS.STAGE)) {
@@ -1579,7 +1583,7 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
       } catch (e) {
         const code = e instanceof WriteError ? e.code : "ERROR";
         log2 && log2.error && log2.error({ title: `write failed ${code}`, details: `${change && change.changeId}: ${e && e.message}` });
-        results.push({ changeId: change && change.changeId, ok: false, code, message: e && e.message, ...pick(e, ["field", "current", "version", "bad", "dropped", "final", "existingId"]) });
+        results.push({ changeId: change && change.changeId, ok: false, code, message: e && e.message, ...pick(e, ["field", "current", "version", "bad", "dropped", "final", "existingId", "overlaps"]) });
       }
     }
     return { results, deferred };
@@ -3255,6 +3259,90 @@ function runEngine(fixture, { ay, basis = DEFAULT_BASIS, flags = FEATURE_FLAGS, 
   };
 }
 
+// src/shared/rules/leaseDialog.js
+function datesOverlap(aStart, aEnd, bStart, bEnd) {
+  if (!aStart || !aEnd || !bStart || !bEnd) return false;
+  return compare(aStart, bEnd) <= 0 && compare(bStart, aEnd) <= 0;
+}
+function overlappingLeases(start, end, existing, scope) {
+  return (existing || []).filter((l) => {
+    if (l.inactive) return false;
+    if (!datesOverlap(start, end, l.start, l.end)) return false;
+    if (scope.level === "property" || l.level === "property") return true;
+    if (String(l.unitId) !== String(scope.unitId)) return false;
+    if (scope.level === "unit" || l.level === "unit") return true;
+    return scope.bedroomIds.includes(String(l.bedroomId));
+  });
+}
+
+// src/server/routes/leaseDialog.js
+function routeLeaseDialog(ctx) {
+  const ay = ctx.selectedAy(), basis = ctx.basis();
+  const unitId = String(ctx.params.unit || "");
+  const r = ctx.run(ay, basis);
+  const inv = r.inventory;
+  const u = inv.unitsById.get(unitId);
+  if (!u) return { error: `unit ${unitId} not found`, meta: { status: 404 } };
+  const p = inv.propertiesById.get(u.propertyId);
+  if (!p || !ctx.inScope(p.marketId)) return { error: "outside your markets", meta: { status: 403 } };
+  const targetFor = (unit) => {
+    const t = r.targets.find((x) => x.ay === ay && x.unitId === unit.id);
+    return t ? t.targetMonthly ?? (t.targetPerBed != null ? t.targetPerBed * unit.beds : null) : null;
+  };
+  const leafFree = (leaf) => !(r.placement.leafResults.get(leaf.key) || { occupied: 0 }).occupied;
+  const prior = ctx.run(ay - 1, basis);
+  const priorLeaseIds = [...new Set(u.leaves.flatMap((l) => (prior.placement.leafResults.get(l.key) || { placements: [] }).placements.map((pl) => pl.leaseId)))];
+  const priorTenantIds = [...new Set(priorLeaseIds.flatMap((id) => (prior.placement.leaseResults.get(id) || { lease: { tenantIds: [] } }).lease.tenantIds))];
+  const names = priorTenantIds.length ? ctx.dao.people.byIds(priorTenantIds).map((c) => [c.firstname, c.lastname].filter(Boolean).join(" ")).filter(Boolean) : [];
+  const market = MARKETS.find((m) => m.id === p.marketId) || null;
+  const lookups = ctx.load().lookups;
+  const existing = ctx.load().prepared.leases.filter((l) => !l.inactive && (l.propertyId === p.id || l.unitId && (inv.unitsById.get(l.unitId) || {}).propertyId === p.id || l.unitId && inv.bedroomsById.get(l.unitId) && (inv.unitsById.get(inv.bedroomsById.get(l.unitId).unitId) || {}).propertyId === p.id)).map((l) => leaseScopeRow(inv, l)).filter((l) => l.level === "property" || l.unitId === u.id).sort((a, b) => String(a.start || "").localeCompare(String(b.start || "")));
+  return {
+    existing,
+    ay,
+    ayId: ctx.ayIdFor(ay),
+    ayNextId: ctx.ayIdFor(ay + 1),
+    basis,
+    property: { id: p.id, name: p.name, marketId: p.marketId, calendar: market ? market.calendar : null, units: p.units.map((id) => {
+      const x = inv.unitsById.get(id);
+      return { id: x.id, name: x.name, beds: x.beds, targetMonthly: targetFor(x) };
+    }) },
+    unit: { id: u.id, name: u.name, beds: u.beds, targetMonthly: targetFor(u), bedrooms: u.bedrooms.map((b) => ({ id: b.id, name: b.name, beds: b.beds, free: leafFree(b) })) },
+    priorTenantNames: names,
+    ids: { leaseType: invert(lookups.leaseTypeIds), groupType: groupTypeIds(ctx) }
+  };
+}
+function invert(m) {
+  const o = {};
+  for (const [id, key] of Object.entries(m || {})) o[key] = id;
+  return o;
+}
+function groupTypeIds(ctx) {
+  const list = ctx.dao.portfolio.lists().customlist_lease_group_type || [];
+  const o = {};
+  for (const v of list) {
+    const n = String(v.name).toLowerCase();
+    o[n.startsWith("new") ? "NEW" : n.startsWith("transfer") ? "TRANSFER" : n.startsWith("renew") ? "RENEWAL" : n] = String(v.id);
+  }
+  return o;
+}
+function leaseScopeRow(inv, l) {
+  let level = "property", unitId = null, bedroomId = null, unitName = null, bedroomName = null;
+  if (l.unitId && inv.unitsById.has(l.unitId)) {
+    level = "unit";
+    unitId = l.unitId;
+    unitName = inv.unitsById.get(l.unitId).name;
+  } else if (l.unitId && inv.bedroomsById.has(l.unitId)) {
+    const b = inv.bedroomsById.get(l.unitId);
+    level = "bedroom";
+    unitId = b.unitId;
+    bedroomId = l.unitId;
+    unitName = (inv.unitsById.get(b.unitId) || {}).name || null;
+    bedroomName = b.name;
+  }
+  return { id: l.id, name: l.name, start: l.start, end: l.end, statusKey: l.statusKey, typeKey: l.typeKey, level, unitId, bedroomId, unitName, bedroomName, inactive: !!l.inactive, version: l.lastModified || null, monthly: l.monthlyRent };
+}
+
 // src/server/scoping.js
 function inScope(scope, marketId) {
   return scope.all || scope.markets.has(marketId);
@@ -4186,56 +4274,6 @@ function routeWrite(ctx, body) {
   return ctx.writes.apply(changes, ctx.scope);
 }
 
-// src/server/routes/leaseDialog.js
-function routeLeaseDialog(ctx) {
-  const ay = ctx.selectedAy(), basis = ctx.basis();
-  const unitId = String(ctx.params.unit || "");
-  const r = ctx.run(ay, basis);
-  const inv = r.inventory;
-  const u = inv.unitsById.get(unitId);
-  if (!u) return { error: `unit ${unitId} not found`, meta: { status: 404 } };
-  const p = inv.propertiesById.get(u.propertyId);
-  if (!p || !ctx.inScope(p.marketId)) return { error: "outside your markets", meta: { status: 403 } };
-  const targetFor = (unit) => {
-    const t = r.targets.find((x) => x.ay === ay && x.unitId === unit.id);
-    return t ? t.targetMonthly ?? (t.targetPerBed != null ? t.targetPerBed * unit.beds : null) : null;
-  };
-  const leafFree = (leaf) => !(r.placement.leafResults.get(leaf.key) || { occupied: 0 }).occupied;
-  const prior = ctx.run(ay - 1, basis);
-  const priorLeaseIds = [...new Set(u.leaves.flatMap((l) => (prior.placement.leafResults.get(l.key) || { placements: [] }).placements.map((pl) => pl.leaseId)))];
-  const priorTenantIds = [...new Set(priorLeaseIds.flatMap((id) => (prior.placement.leaseResults.get(id) || { lease: { tenantIds: [] } }).lease.tenantIds))];
-  const names = priorTenantIds.length ? ctx.dao.people.byIds(priorTenantIds).map((c) => [c.firstname, c.lastname].filter(Boolean).join(" ")).filter(Boolean) : [];
-  const market = MARKETS.find((m) => m.id === p.marketId) || null;
-  const lookups = ctx.load().lookups;
-  return {
-    ay,
-    ayId: ctx.ayIdFor(ay),
-    ayNextId: ctx.ayIdFor(ay + 1),
-    basis,
-    property: { id: p.id, name: p.name, marketId: p.marketId, calendar: market ? market.calendar : null, units: p.units.map((id) => {
-      const x = inv.unitsById.get(id);
-      return { id: x.id, name: x.name, beds: x.beds, targetMonthly: targetFor(x) };
-    }) },
-    unit: { id: u.id, name: u.name, beds: u.beds, targetMonthly: targetFor(u), bedrooms: u.bedrooms.map((b) => ({ id: b.id, name: b.name, beds: b.beds, free: leafFree(b) })) },
-    priorTenantNames: names,
-    ids: { leaseType: invert(lookups.leaseTypeIds), groupType: groupTypeIds(ctx) }
-  };
-}
-function invert(m) {
-  const o = {};
-  for (const [id, key] of Object.entries(m || {})) o[key] = id;
-  return o;
-}
-function groupTypeIds(ctx) {
-  const list = ctx.dao.portfolio.lists().customlist_lease_group_type || [];
-  const o = {};
-  for (const v of list) {
-    const n = String(v.name).toLowerCase();
-    o[n.startsWith("new") ? "NEW" : n.startsWith("transfer") ? "TRANSFER" : n.startsWith("renew") ? "RENEWAL" : n] = String(v.id);
-  }
-  return o;
-}
-
 // src/server/routes/notes.js
 function routeNotes(ctx) {
   const rowId = String(ctx.params.row || "");
@@ -4259,7 +4297,7 @@ function renderShell(ctx) {
   return `<!doctype html><html lang="en" data-theme="auto"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="al-build" content="${build}"><title>Amicus Leasing</title><style>html,body{margin:0;background:#fff;color:#111;font:14px/1.4 system-ui,sans-serif}@media(prefers-color-scheme:dark){html,body{background:#121417;color:#e6e8eb}}#root{min-height:100vh}.al-boot{padding:24px;max-width:720px}</style>${styleTag}</head><body><div id="root"><div class="al-boot" id="al-boot">Loading Amicus Leasing…</div></div><script type="application/json" id="al-bootstrap">${json}</script><script>window.__AL_SERVER_BUILD=${JSON.stringify(build)};</script>${js ? `<script src="${js}" defer onerror="document.getElementById('al-boot').textContent='The client bundle could not be loaded from ${js.replace(/'/g, "")} — open the browser console (F12) for the reason.'"></script>` : `<script>document.getElementById('al-boot').textContent='Client bundle not configured: set the script parameters custscript_al_client_js / custscript_al_client_css to the File Cabinet ids of amicus_leasing_app.js / .css (see SETUP-CHECKLIST).';</script>`}<script>setTimeout(function(){var b=document.getElementById('al-boot');if(b&&b.textContent.indexOf('Loading')===0)b.textContent='The client bundle loaded but did not start. Open the browser console (F12) and send the first error line.';},8000);</script></body></html>`;
 }
 function buildId() {
-  return true ? String("29a1d8a7aae6") : "dev";
+  return true ? String("e71c65ab37ec") : "dev";
 }
 function inlineCss(ctx) {
   try {
@@ -4427,6 +4465,7 @@ function createApp(N) {
       tourFields: () => dao.tours.fields(),
       stageOf: (id) => dao.people.stageOf(id),
       notify: (args) => notifyMentions(N, ctx, args),
+      overlapsFor: (fields) => leaseOverlaps(ctx, fields),
       defaultSubsidiaryId: () => {
         const subs = dao.portfolio.subsidiaries();
         const hit = subs.find((x) => String(x.name).trim().toLowerCase() === LEAD.SUBSIDIARY_NAME.toLowerCase()) || subs.find((x) => x.parent == null);
@@ -4538,6 +4577,19 @@ function marketOf(ctx, type, id, fields) {
   }
   if (type === SAVED_VIEW.TYPE) return ctx.scope.all ? "unknown" : ctx.scope.marketIds[0] || null;
   return null;
+}
+function leaseOverlaps(ctx, fields) {
+  const p = ctx.load();
+  const inv = p.prepared.inventory;
+  const propertyId = fields[LEASE.PROPERTY] != null ? String(fields[LEASE.PROPERTY]) : null;
+  if (!propertyId || !fields[LEASE.START] || !fields[LEASE.END]) return [];
+  const unitIds = [...inv.propertiesById.get(propertyId)?.units || []];
+  const bedIds = unitIds.flatMap((u) => (inv.unitsById.get(u) || { bedrooms: [] }).bedrooms.map((b) => b.id));
+  const raw = ctx.sq.few(`SELECT id, name, isinactive, ${LEASE.PROPERTY} AS property, ${LEASE.UNIT} AS unit, custrecord_serp_lease_type_test AS lease_type, ${LEASE.STATUS} AS status, ${LEASE.START} AS start_date, ${LEASE.END} AS end_date, lastmodified FROM ${LEASE.TYPE} WHERE isinactive = 'F' AND (${LEASE.PROPERTY} = ${Number(propertyId)}${unitIds.length || bedIds.length ? ` OR ${LEASE.UNIT} IN (${[...unitIds, ...bedIds].map(Number).join(",")})` : ""})`);
+  const existing = raw.map((r) => leaseScopeRow(inv, normalizeLease(r, { leaseTypeIds: p.lookups.leaseTypeIds, leaseStatusIds: p.lookups.leaseStatusIds, ayYears: p.prepared.ayYears })));
+  const link = fields[LEASE.UNIT] != null && fields[LEASE.UNIT] !== "" ? String(fields[LEASE.UNIT]) : null;
+  const scope = !link ? { level: "property", unitId: null, bedroomIds: [] } : inv.unitsById.has(link) ? { level: "unit", unitId: link, bedroomIds: [] } : inv.bedroomsById.has(link) ? { level: "bedroom", unitId: inv.bedroomsById.get(link).unitId, bedroomIds: [link] } : { level: "unit", unitId: link, bedroomIds: [] };
+  return overlappingLeases(toISO(fields[LEASE.START]), toISO(fields[LEASE.END]), existing, scope);
 }
 function routeReprobe(ctx) {
   ctx.schema.reset();

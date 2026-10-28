@@ -11,6 +11,9 @@ import { createToursDao } from './dao/tours.js';
 import { createAuth } from './auth.js';
 import { createWrites } from './writes.js';
 import { prepare, runEngine, lookupsFromLists } from '../shared/rules/index.js';
+import { normalizeLease } from '../shared/rules/lease.js';
+import { overlappingLeases } from '../shared/rules/leaseDialog.js';
+import { leaseScopeRow } from './routes/leaseDialog.js';
 import { ayForDate, toISO, ayYearFromLabel, ayShort } from '../shared/rules/dates.js';
 import { scopedSummary, scopedTree, inScope, propertyIdsInScope, keepFor } from './scoping.js';
 import { routeBootstrap, routeLists } from './routes/bootstrap.js';
@@ -75,7 +78,7 @@ export function createApp(N) {
     };
     ctx.writes = createWrites({ record: N.record, sq, runtime: N.runtime, log, schema, auth, marketOf: (type, id, fields) => marketOf(ctx, type, id, fields), stageIdFor: (key) => { for (const [id, k] of Object.entries(ctx.load().lookups.stageIds)) if (k === key) return Number(id); return null; },
       outcomeIdFor: (key) => outcomeIdFor(dao.portfolio.lists(), key), tourFields: () => dao.tours.fields(),
-      stageOf: (id) => dao.people.stageOf(id), notify: (args) => notifyMentions(N, ctx, args),
+      stageOf: (id) => dao.people.stageOf(id), notify: (args) => notifyMentions(N, ctx, args), overlapsFor: (fields) => leaseOverlaps(ctx, fields),
       defaultSubsidiaryId: () => { const subs = dao.portfolio.subsidiaries(); const hit = subs.find((x) => String(x.name).trim().toLowerCase() === LEAD.SUBSIDIARY_NAME.toLowerCase()) || subs.find((x) => x.parent == null); return hit ? Number(hit.id) : null; },
       findByEmail: (email) => dao.people.byEmail(email) });
     return ctx;
@@ -140,6 +143,21 @@ export function marketOf(ctx, type, id, fields) {
   }
   if (type === SAVED_VIEW.TYPE) return ctx.scope.all ? 'unknown' : ctx.scope.marketIds[0] || null; // owner-scoped, checked in the route
   return null;
+}
+/**
+ * The active leases a new lease would collide with, read fresh (an earlier change in the same batch may have ended or
+ * archived one). Same beds AND overlapping dates (shared rule); a property-wide lease collides with everything there.
+ */
+function leaseOverlaps(ctx, fields) {
+  const p = ctx.load(); const inv = p.prepared.inventory;
+  const propertyId = fields[LEASE.PROPERTY] != null ? String(fields[LEASE.PROPERTY]) : null;
+  if (!propertyId || !fields[LEASE.START] || !fields[LEASE.END]) return [];
+  const unitIds = [...inv.propertiesById.get(propertyId)?.units || []]; const bedIds = unitIds.flatMap((u) => (inv.unitsById.get(u) || { bedrooms: [] }).bedrooms.map((b) => b.id));
+  const raw = ctx.sq.few(`SELECT id, name, isinactive, ${LEASE.PROPERTY} AS property, ${LEASE.UNIT} AS unit, custrecord_serp_lease_type_test AS lease_type, ${LEASE.STATUS} AS status, ${LEASE.START} AS start_date, ${LEASE.END} AS end_date, lastmodified FROM ${LEASE.TYPE} WHERE isinactive = 'F' AND (${LEASE.PROPERTY} = ${Number(propertyId)}${unitIds.length || bedIds.length ? ` OR ${LEASE.UNIT} IN (${[...unitIds, ...bedIds].map(Number).join(',')})` : ''})`);
+  const existing = raw.map((r) => leaseScopeRow(inv, normalizeLease(r, { leaseTypeIds: p.lookups.leaseTypeIds, leaseStatusIds: p.lookups.leaseStatusIds, ayYears: p.prepared.ayYears })));
+  const link = fields[LEASE.UNIT] != null && fields[LEASE.UNIT] !== '' ? String(fields[LEASE.UNIT]) : null;
+  const scope = !link ? { level: 'property', unitId: null, bedroomIds: [] } : inv.unitsById.has(link) ? { level: 'unit', unitId: link, bedroomIds: [] } : inv.bedroomsById.has(link) ? { level: 'bedroom', unitId: inv.bedroomsById.get(link).unitId, bedroomIds: [link] } : { level: 'unit', unitId: link, bedroomIds: [] };
+  return overlappingLeases(toISO(fields[LEASE.START]), toISO(fields[LEASE.END]), existing, scope);
 }
 /** POST ?route=reprobe — forget the field/record probes and report what is still missing (the banner's "Re-check setup"). */
 function routeReprobe(ctx) { ctx.schema.reset(); ctx.probeAll(); return { degraded: ctx.schema.degraded }; }

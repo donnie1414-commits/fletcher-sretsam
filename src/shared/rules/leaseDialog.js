@@ -3,7 +3,7 @@
  * has touched is in `touched` and is never auto-overwritten; everything else is recomputed from the
  * inputs by `prefill()` on each change. One rule, not per-field special cases.
  */
-import { addYears, toISO, monthsBetweenCeil } from './dates.js';
+import { addYears, toISO, monthsBetweenCeil, addDays, compare } from './dates.js';
 
 const pad = (n) => String(n).padStart(2, '0');
 /** Market calendar dates for an AY: start in the AY's first calendar year, end in the next (or two years out). */
@@ -67,4 +67,42 @@ export function buildLeaseChanges(s, data, ids, F) {
   if (s.type === 'BED') return (s.bedroomIds || []).map((bid) => { const b = data.unit.bedrooms.find((x) => x.id === bid); return mk(`${data.unit.name} ${b ? b.name : bid} ${ayLabel}`, bid, s.rentPerBed != null ? s.rentPerBed * (b ? b.beds : 1) : null, 1); });
   if (s.type === 'WH') return [mk(`${data.property.name} ${ayLabel}`, null, s.monthly, names.length || s.bedsCovered)];
   return [mk(`${data.unit.name} ${ayLabel}`, data.unit.id, s.monthly, names.length || s.bedsCovered)];
+}
+
+/** What a new lease would cover, for the overlap check: the property, one unit, or some bedrooms of one unit. */
+export function leaseScope(state, data) {
+  if (state.type === 'WH') return { level: 'property', unitId: null, bedroomIds: [] };
+  if (state.type === 'BED') return { level: 'bedroom', unitId: data.unit.id, bedroomIds: (state.bedroomIds || []).map(String) };
+  return { level: 'unit', unitId: data.unit.id, bedroomIds: [] };
+}
+/** Two inclusive date ranges touch when neither ends before the other starts. */
+export function datesOverlap(aStart, aEnd, bStart, bEnd) {
+  if (!aStart || !aEnd || !bStart || !bEnd) return false;
+  return compare(aStart, bEnd) <= 0 && compare(bStart, aEnd) <= 0;
+}
+/**
+ * The existing leases a new lease would collide with: same dates AND the same beds. A property-wide lease collides with
+ * everything at the property; a unit lease with that unit's leases and its bedrooms'; a bedroom lease with the property,
+ * its unit, and the same bedroom. `existing` rows carry { id, name, start, end, level, unitId, bedroomId, statusKey }.
+ */
+export function overlappingLeases(start, end, existing, scope) {
+  return (existing || []).filter((l) => {
+    if (l.inactive) return false;
+    if (!datesOverlap(start, end, l.start, l.end)) return false;
+    if (scope.level === 'property' || l.level === 'property') return true;
+    if (String(l.unitId) !== String(scope.unitId)) return false;
+    if (scope.level === 'unit' || l.level === 'unit') return true;
+    return scope.bedroomIds.includes(String(l.bedroomId));
+  });
+}
+/** The first day after the latest existing lease that would collide at these beds, on or after `from`. */
+export function nextFreeStart(from, end, existing, scope) {
+  let start = from;
+  for (let i = 0; i < 12; i++) {
+    const hits = overlappingLeases(start, end, existing, scope);
+    if (!hits.length) return start;
+    const latest = hits.reduce((m, l) => (compare(l.end, m) > 0 ? l.end : m), hits[0].end);
+    start = addDays(latest, 1);
+  }
+  return start;
 }

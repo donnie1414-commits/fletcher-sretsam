@@ -2,8 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRoute } from '../../hooks.js';
 import { post, invalidate, isPreview } from '../../api.js';
 import { Modal, Button, Select, Skeleton, ErrorBox, Toggle, Pill } from '../../ui.jsx';
+import { recordUrl } from '../../api.js';
 import { fmtInt, fmtMoney, fmtMoney2, fmtDate } from '../../format.js';
-import { prefill, buildLeaseChanges } from '../../../shared/rules/leaseDialog.js';
+import { prefill, buildLeaseChanges, leaseScope, overlappingLeases, nextFreeStart } from '../../../shared/rules/leaseDialog.js';
+import { addDays, ayForDate } from '../../../shared/rules/dates.js';
+import { getBootstrap } from '../../api.js';
 import { LEASE, GROUP_TYPES, LEASE_TYPES, UAS } from '../../../shared/constants.js';
 
 /**
@@ -17,27 +20,38 @@ export function LeaseDialog({ row, sel, onClose, onCreated }) {
   const [touched, setTouched] = useState(() => new Set());
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
-  useEffect(() => { if (!data) return; const t = row.leaseTerms || {}; const base = { type: t.type || 'UNIT', twoYear: !!t.twoYear, groupType: t.groupType || 'NEW', bedroomIds: t.bedroomIds || [], water: !!t.water, gas: !!t.gas, provisions: t.provisions || '', notes: t.notes || '', expectedNames: t.expectedNames || '' }; const tch = new Set(Object.keys(t).filter((k) => ['start', 'end', 'rentPerBed', 'expectedNames', 'bedroomIds'].includes(k))); if (t.start) base.start = t.start; if (t.end) base.end = t.end; if (t.rentPerBed != null) base.rentPerBed = t.rentPerBed; setTouched(tch); setState(prefill(base, data, tch)); }, [data]); // eslint-disable-line
+  const [resolutions, setResolutions] = useState({}); // leaseId → { action: 'end', end } | { action: 'archive' }
+  useEffect(() => { if (!data) return; const t = row.leaseTerms || {}; const base = { type: t.type || 'UNIT', twoYear: !!t.twoYear, groupType: t.groupType || 'NEW', bedroomIds: t.bedroomIds || [], water: !!t.water, gas: !!t.gas, provisions: t.provisions || '', notes: t.notes || '', expectedNames: t.expectedNames || '' }; const tch = new Set(Object.keys(t).filter((k) => ['start', 'end', 'rentPerBed', 'expectedNames', 'bedroomIds'].includes(k))); if (t.start) base.start = t.start; if (t.end) base.end = t.end; if (t.rentPerBed != null) base.rentPerBed = t.rentPerBed; setTouched(tch); let st = prefill(base, data, tch); if (!tch.has('start') && st.start && st.end && (data.existing || []).length) { const free = nextFreeStart(st.start, st.end, data.existing, leaseScope(st, data)); if (free !== st.start) { tch.add('start'); st = prefill({ ...st, start: free }, data, tch); } } setTouched(tch); setState(st); }, [data]); // eslint-disable-line
   const set = (k, v, isTouch = true) => { const tch = new Set(touched); if (isTouch) tch.add(k); setTouched(tch); setState((s) => prefill({ ...s, [k]: v }, data, tch)); };
   const reset = (k) => { const tch = new Set(touched); tch.delete(k); setTouched(tch); setState((s) => prefill(s, data, tch)); };
   const settle = useMemo(() => { if (!data || !state) return null; const perBed = (u) => (u.settleMonthly != null && u.beds ? u.settleMonthly / u.beds : null); if (state.type === 'WH') { const us = data.property.units.filter((u) => u.settleMonthly != null); const beds = us.reduce((s, u) => s + u.beds, 0); return beds ? us.reduce((s, u) => s + u.settleMonthly, 0) / beds : null; } return perBed(data.unit); }, [data, state && state.type]);
   if (!row) return null;
   const changesPreview = data && state ? buildLeaseChanges(state, data, data.ids, LEASE) : [];
+  // Overlap: the new dates may not touch an existing lease on the same beds; each hit must be ended early or archived first.
+  const scope = data && state ? leaseScope(state, data) : null;
+  const conflicts = data && state && scope ? overlappingLeases(state.start, state.end, (data.existing || []).filter((l) => !resolutions[l.id]), scope) : [];
+  const resolved = Object.entries(resolutions).map(([id, r]) => ({ lease: (data.existing || []).find((l) => l.id === id), ...r })).filter((x) => x.lease);
+  const endEarly = (l) => setResolutions({ ...resolutions, [l.id]: { action: 'end', end: addDays(state.start, -1) } });
+  const archive = (l) => setResolutions({ ...resolutions, [l.id]: { action: 'archive' } });
+  const undo = (id) => { const r = { ...resolutions }; delete r[id]; setResolutions(r); };
   const monthlyPerLease = state && state.monthly;
   const breach = settle != null && state && state.rentPerBed != null && state.rentPerBed < settle;
   const create = async () => {
     setBusy(true); setResult(null);
-    const changes = changesPreview.map((c, i) => ({ ...c, changeId: `lease:${row.key}:${Date.now()}:${i}` }));
+    const boot = getBootstrap();
+    const ayYear = ayForDate(state.start); const ayRow = boot && boot.academicYears.find((a) => a.year === ayYear);
+    const fixes = resolved.map((x, i) => ({ changeId: `lease-fix:${x.lease.id}:${Date.now()}:${i}`, recordType: LEASE.TYPE, recordId: x.lease.id, version: x.lease.version || undefined, fields: x.action === 'archive' ? { isinactive: true } : { [LEASE.END]: x.end } }));
+    const changes = [...fixes, ...changesPreview.map((c, i) => ({ ...c, changeId: `lease:${row.key}:${Date.now()}:${i}`, fields: { ...c.fields, ...(ayRow ? { [LEASE.AY]: Number(ayRow.id), name: String(c.fields.name).replace(/AY \d{2}-\d{2}$/, `AY ${String(ayYear).slice(2)}-${String(ayYear + 1).slice(2)}`) } : {}) } }))];
     // the captured terms shadow the lease on the status row (custrecord_ad_uas_lease_terms), when the field exists
     if (row.rowId && !row.leaseTermsOff) changes.push({ changeId: `terms:${row.key}:${Date.now()}`, recordType: UAS.TYPE, recordId: row.rowId, version: row.version, fields: { [UAS.LEASE_TERMS]: JSON.stringify({ type: state.type, twoYear: state.twoYear, start: state.start, end: state.end, rentPerBed: state.rentPerBed, groupType: state.groupType, bedroomIds: state.bedroomIds, water: state.water, gas: state.gas, provisions: state.provisions, notes: state.notes, expectedNames: state.expectedNames, capturedAt: new Date().toISOString() }) } });
     const res = await post('write', { changes });
     setBusy(false);
     const results = res.results || [];
     const created = results.filter((r) => r.ok && r.created);
-    setResult({ results, created: created.length, failed: results.filter((r) => !r.ok) });
+    setResult({ results, created: created.length, failed: results.filter((r) => !r.ok), fixed: results.filter((r) => r.ok && !r.created).length });
     if (created.length) { invalidate('pipeline'); invalidate('leasedialog'); onCreated && onCreated(row, created); }
   };
-  const foot = <div className="toolbar"><span className="muted small">{isPreview() ? 'Preview: nothing is written.' : 'Creates the lease record with no status; set In Process once it is sent.'}</span><span className="spacer" /><Button small onClick={onClose}>Cancel</Button><Button kind="primary" small disabled={busy || !state || !state.start || !state.end || state.rentPerBed == null || (state.type === 'BED' && !(state.bedroomIds || []).length)} onClick={create}>{busy ? 'Creating…' : changesPreview.length > 1 ? `Create ${changesPreview.length} lease records` : 'Create lease record'}</Button></div>;
+  const foot = <div className="toolbar"><span className="muted small">{isPreview() ? 'Preview: nothing is written.' : resolved.length ? `${resolved.length} existing lease${resolved.length === 1 ? '' : 's'} will be updated first, then the new lease is created with no status.` : 'Creates the lease record with no status; set In Process once it is sent.'}</span><span className="spacer" /><Button small onClick={onClose}>Cancel</Button><Button kind="primary" small disabled={busy || !state || !state.start || !state.end || state.rentPerBed == null || (state.type === 'BED' && !(state.bedroomIds || []).length) || conflicts.length > 0} onClick={create}>{busy ? 'Creating…' : changesPreview.length > 1 ? `Create ${changesPreview.length} lease records` : 'Create lease record'}</Button></div>;
   return (
     <Modal open onClose={onClose} title={<span>Lease terms · {row.unit === '(whole property)' ? row.property : row.unit} <span className="muted small">{row.property}</span></span>} foot={foot} width={760}>
       {!row.unitId ? <p className="muted">This property has no unit records, so a lease cannot be linked here. Create the Units/Bedrooms records first.</p>
@@ -56,6 +70,14 @@ export function LeaseDialog({ row, sel, onClose, onCreated }) {
               <label className="field"><span className="field-label">Term</span><span className="field-static">{state.termMonths != null ? `${state.termMonths} months` : '–'}</span></label>
               {state.calendarMissing && <span className="warn-text small">No lease calendar is configured for this market (see ASSUMPTIONS A-4); enter the dates.</span>}
             </div>
+            {(data.existing || []).length > 0 && <div className="existing-leases small">
+              <span className="field-label">Leases already on {state.type === 'WH' ? 'this property' : 'this unit'}</span>
+              <ul>{data.existing.map((l) => { const r = resolutions[l.id]; const hit = conflicts.some((c) => c.id === l.id); return <li key={l.id} className={hit ? 'conflict' : r ? 'resolved' : ''}><a className="link" href={recordUrl('lease', l.id)} target="_blank" rel="noreferrer">{l.name}</a> <span className="muted">{fmtDate(l.start)} – {fmtDate(l.end)}{l.level === 'bedroom' ? ` · ${l.bedroomName}` : l.level === 'property' ? ' · whole property' : ''}{l.statusKey && l.statusKey !== 'NONE' ? ` · ${l.statusKey === 'EXECUTED' ? 'executed' : 'in process'}` : ' · no status'}</span>{r && <span className="warn-text"> → {r.action === 'archive' ? 'will be archived' : `will end ${fmtDate(r.end)}`} <button type="button" className="linkish" onClick={() => undo(l.id)}>undo</button></span>}</li>; })}</ul>
+            </div>}
+            {conflicts.length > 0 && <div className="errorbox small">
+              <strong>These dates overlap {conflicts.length === 1 ? 'an existing lease' : `${conflicts.length} existing leases`}.</strong> A bed can only be on one lease at a time. Move the dates to free months, or for each one choose: end it early (its end date becomes {fmtDate(addDays(state.start, -1))}, the day before this lease starts) or archive it (made inactive; nothing is deleted).
+              <ul>{conflicts.map((l) => <li key={l.id}>{l.name} <span className="muted">{fmtDate(l.start)} – {fmtDate(l.end)}</span> <Button small onClick={() => endEarly(l)}>End early</Button> <Button small onClick={() => archive(l)}>Archive</Button></li>)}</ul>
+            </div>}
             <div className="form-row">
               <label className="field"><span className="field-label">Rent per bed {touched.has('rentPerBed') && <button type="button" className="linkish" onClick={() => reset('rentPerBed')}>target</button>}</span><input type="number" step="5" min="0" value={state.rentPerBed == null ? '' : Math.round(state.rentPerBed * 100) / 100} onChange={(e) => set('rentPerBed', e.target.value === '' ? null : Number(e.target.value))} /></label>
               <label className="field"><span className="field-label">Beds covered</span><span className="field-static">{fmtInt(state.bedsCovered)}</span></label>
@@ -70,7 +92,7 @@ export function LeaseDialog({ row, sel, onClose, onCreated }) {
             </div>
             <div className="form-row"><label className="field grow"><span className="field-label">Additional provisions</span><textarea rows={2} value={state.provisions || ''} onChange={(e) => set('provisions', e.target.value, false)} /></label><label className="field grow"><span className="field-label">Notes</span><textarea rows={2} value={state.notes || ''} onChange={(e) => set('notes', e.target.value, false)} /></label></div>
             <details className="small"><summary className="muted">What will be written ({changesPreview.length} lease record{changesPreview.length === 1 ? '' : 's'}, no status)</summary><ul className="muted">{changesPreview.map((c, i) => <li key={i}>{c.fields.name}: {fmtDate(c.fields[LEASE.START])} – {fmtDate(c.fields[LEASE.END])} · {fmtMoney2(c.fields[LEASE.MONTHLY_RENT])}/mo · {c.fields[LEASE.TENANT_COUNT]} tenant(s){c.fields[LEASE.UNIT] ? ` · link #${c.fields[LEASE.UNIT]}` : ' · whole property'}</li>)}</ul></details>
-            {result && <div className={`${result.failed.length ? 'errorbox' : 'okbox'} small`}>{result.created ? `Created ${result.created} lease record${result.created === 1 ? '' : 's'}.` : ''} {result.failed.map((f, i) => <div key={i}>{f.code}: {f.message}</div>)}</div>}
+            {result && <div className={`${result.failed.length ? 'errorbox' : 'okbox'} small`}>{result.fixed ? `Updated ${result.fixed} existing lease${result.fixed === 1 ? '' : 's'}. ` : ''}{result.created ? `Created ${result.created} lease record${result.created === 1 ? '' : 's'}.` : ''} {result.failed.map((f, i) => <div key={i}>{f.code}: {f.message}</div>)}</div>}
           </div>
         )}
     </Modal>

@@ -111,6 +111,7 @@ Legend: **✓ built** · **≈ built differently** (same information, new placem
 | Lead statuses | automatic | Lead · New on create → Tour Scheduled when a tour is booked → Tour Completed on a Completed outcome (A-22) |
 | @mention emails | Pipeline › Notes | a NetSuite email to each mentioned colleague with the note and a link back to the unit |
 | Change log | header › Change log | the write audit record's list page (every hub write: who, when, old → new) |
+| Add another lease | Pipeline › stage cell › Add another lease… | a further lease on a unit that already has one, only for months no lease holds; overlapping dates are refused (client and server) with the choice to end the other lease early or archive it |
 | Re-check setup | banner › Re-check now | forgets the field/record probes so newly created fields are seen without waiting; a full page load does the same |
 
 ## Not carried over on purpose
