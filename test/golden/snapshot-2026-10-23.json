@@ -16,6 +16,10 @@
   {
    "at": "2026-10-24T01:18:16.873Z",
    "reason": "Commercial/land/office leases place for rent on zero-bed units (A-21): commercial monthly was 0; student figures unchanged"
+  },
+  {
+   "at": "2026-10-28T02:03:35.689Z",
+   "reason": "89 Spring St - STR (property 39, 19 beds) moved to the short-term rental segment at the user's request; student beds 5348 -> 5329"
   }
  ],
  "inventory": {
@@ -36,38 +40,38 @@
  "runs": {
   "2026:proforma": {
    "student": {
-    "beds": 5348,
-    "occupied": 4907,
+    "beds": 5329,
+    "occupied": 4888,
     "occPct": 0.92,
     "finOccPct": 0.87,
-    "monthly": 4579366.46,
-    "annual": 51838279.69,
+    "monthly": 4534822.16,
+    "annual": 51303748.09,
     "people": 4474,
-    "rentPerBed": 933.23,
+    "rentPerBed": 927.75,
     "byType": {
      "WH": 2780,
-     "UNIT": 2025,
+     "UNIT": 2006,
      "BED": 102
     },
     "carriedBeds": 12,
-    "targetMonthly": 2308086
+    "targetMonthly": 2263542
    },
    "str": {
-    "beds": 0,
-    "occupied": 0,
-    "occPct": null,
-    "finOccPct": null,
-    "monthly": 0,
-    "annual": 0,
+    "beds": 19,
+    "occupied": 19,
+    "occPct": 1,
+    "finOccPct": 1,
+    "monthly": 44544.3,
+    "annual": 534531.6,
     "people": 0,
-    "rentPerBed": null,
+    "rentPerBed": 2344.44,
     "byType": {
      "WH": 0,
-     "UNIT": 0,
+     "UNIT": 19,
      "BED": 0
     },
     "carriedBeds": 0,
-    "targetMonthly": 0
+    "targetMonthly": 44544
    },
    "commercial": {
     "monthly": 0,
@@ -75,21 +79,21 @@
    },
    "byFund": {
     "A1": {
-     "beds": 1500,
-     "occupied": 1414,
+     "beds": 1481,
+     "occupied": 1395,
      "occPct": 0.94,
      "finOccPct": 0.93,
-     "monthly": 1612415.27,
-     "annual": 19188053.24,
+     "monthly": 1567870.97,
+     "annual": 18653521.64,
      "people": 1311,
-     "rentPerBed": 1140.32,
+     "rentPerBed": 1123.92,
      "byType": {
       "WH": 839,
-      "UNIT": 572,
+      "UNIT": 553,
       "BED": 3
      },
      "carriedBeds": 1,
-     "targetMonthly": 606816
+     "targetMonthly": 562272
     },
     "A2": {
      "beds": 2362,
@@ -145,21 +149,21 @@
      "targetMonthly": 241979
     },
     "charleston": {
-     "beds": 60,
-     "occupied": 60,
+     "beds": 41,
+     "occupied": 41,
      "occPct": 1,
      "finOccPct": 1,
-     "monthly": 106144.3,
-     "annual": 1273731.6,
+     "monthly": 61600,
+     "annual": 739200,
      "people": 41,
-     "rentPerBed": 1769.07,
+     "rentPerBed": 1502.44,
      "byType": {
       "WH": 33,
-      "UNIT": 27,
+      "UNIT": 8,
       "BED": 0
      },
      "carriedBeds": 0,
-     "targetMonthly": 106144
+     "targetMonthly": 61600
     },
     "new-orleans": {
      "beds": 116,
@@ -270,8 +274,8 @@
      "occupied": 146
     },
     "A1:charleston": {
-     "beds": 60,
-     "occupied": 60
+     "beds": 41,
+     "occupied": 41
     },
     "A1:new-orleans": {
      "beds": 107,
@@ -344,45 +348,45 @@
    "tenantDoubles": 5,
    "pipeline": {
     "rows": 1438,
-    "bedsStudent": 5348,
-    "bedsStr": 0,
+    "bedsStudent": 5329,
+    "bedsStr": 19,
     "bedsCommercial": 3
    }
   },
   "2026:executed": {
    "student": {
-    "beds": 5348,
-    "occupied": 4900,
+    "beds": 5329,
+    "occupied": 4881,
     "occPct": 0.92,
     "finOccPct": 0.87,
-    "monthly": 4574299.79,
-    "annual": 51810679.66,
+    "monthly": 4529755.49,
+    "annual": 51276148.06,
     "people": 4469,
-    "rentPerBed": 933.53,
+    "rentPerBed": 928.04,
     "byType": {
      "WH": 2774,
-     "UNIT": 2024,
+     "UNIT": 2005,
      "BED": 102
     },
     "carriedBeds": 12,
-    "targetMonthly": 2308086
+    "targetMonthly": 2263542
    },
    "str": {
-    "beds": 0,
-    "occupied": 0,
-    "occPct": null,
-    "finOccPct": null,
-    "monthly": 0,
-    "annual": 0,
+    "beds": 19,
+    "occupied": 19,
+    "occPct": 1,
+    "finOccPct": 1,
+    "monthly": 44544.3,
+    "annual": 534531.6,
     "people": 0,
-    "rentPerBed": null,
+    "rentPerBed": 2344.44,
     "byType": {
      "WH": 0,
-     "UNIT": 0,
+     "UNIT": 19,
      "BED": 0
     },
     "carriedBeds": 0,
-    "targetMonthly": 0
+    "targetMonthly": 44544
    },
    "commercial": {
     "monthly": 0,
@@ -390,21 +394,21 @@
    },
    "byFund": {
     "A1": {
-     "beds": 1500,
-     "occupied": 1414,
+     "beds": 1481,
+     "occupied": 1395,
      "occPct": 0.94,
      "finOccPct": 0.93,
-     "monthly": 1612415.27,
-     "annual": 19188053.24,
+     "monthly": 1567870.97,
+     "annual": 18653521.64,
      "people": 1311,
-     "rentPerBed": 1140.32,
+     "rentPerBed": 1123.92,
      "byType": {
       "WH": 839,
-      "UNIT": 572,
+      "UNIT": 553,
       "BED": 3
      },
      "carriedBeds": 1,
-     "targetMonthly": 606816
+     "targetMonthly": 562272
     },
     "A2": {
      "beds": 2362,
@@ -460,21 +464,21 @@
      "targetMonthly": 241979
     },
     "charleston": {
-     "beds": 60,
-     "occupied": 60,
+     "beds": 41,
+     "occupied": 41,
      "occPct": 1,
      "finOccPct": 1,
-     "monthly": 106144.3,
-     "annual": 1273731.6,
+     "monthly": 61600,
+     "annual": 739200,
      "people": 41,
-     "rentPerBed": 1769.07,
+     "rentPerBed": 1502.44,
      "byType": {
       "WH": 33,
-      "UNIT": 27,
+      "UNIT": 8,
       "BED": 0
      },
      "carriedBeds": 0,
-     "targetMonthly": 106144
+     "targetMonthly": 61600
     },
     "new-orleans": {
      "beds": 116,
@@ -585,8 +589,8 @@
      "occupied": 146
     },
     "A1:charleston": {
-     "beds": 60,
-     "occupied": 60
+     "beds": 41,
+     "occupied": 41
     },
     "A1:new-orleans": {
      "beds": 107,
@@ -659,16 +663,16 @@
    "tenantDoubles": 4,
    "pipeline": {
     "rows": 1438,
-    "bedsStudent": 5348,
-    "bedsStr": 0,
+    "bedsStudent": 5329,
+    "bedsStr": 19,
     "bedsCommercial": 3
    }
   },
   "2027:proforma": {
    "student": {
-    "beds": 5348,
+    "beds": 5329,
     "occupied": 2798,
-    "occPct": 0.52,
+    "occPct": 0.53,
     "finOccPct": 0.5,
     "monthly": 3014067.12,
     "annual": 33971278.91,
@@ -680,13 +684,13 @@
      "BED": 3
     },
     "carriedBeds": 4,
-    "targetMonthly": 4447827.59
+    "targetMonthly": 4401946.92
    },
    "str": {
-    "beds": 0,
+    "beds": 19,
     "occupied": 0,
-    "occPct": null,
-    "finOccPct": null,
+    "occPct": 0,
+    "finOccPct": 0,
     "monthly": 0,
     "annual": 0,
     "people": 0,
@@ -697,7 +701,7 @@
      "BED": 0
     },
     "carriedBeds": 0,
-    "targetMonthly": 0
+    "targetMonthly": 45880.67
    },
    "commercial": {
     "monthly": 3004.82,
@@ -705,10 +709,10 @@
    },
    "byFund": {
     "A1": {
-     "beds": 1500,
+     "beds": 1481,
      "occupied": 783,
-     "occPct": 0.52,
-     "finOccPct": 0.52,
+     "occPct": 0.53,
+     "finOccPct": 0.53,
      "monthly": 967318.52,
      "annual": 11603962.24,
      "people": 604,
@@ -719,7 +723,7 @@
       "BED": 0
      },
      "carriedBeds": 0,
-     "targetMonthly": 1741960.8
+     "targetMonthly": 1696080.13
     },
     "A2": {
      "beds": 2362,
@@ -775,10 +779,10 @@
      "targetMonthly": 271586.31
     },
     "charleston": {
-     "beds": 60,
+     "beds": 41,
      "occupied": 23,
-     "occPct": 0.38,
-     "finOccPct": 0.38,
+     "occPct": 0.56,
+     "finOccPct": 0.56,
      "monthly": 36250,
      "annual": 435000,
      "people": 22,
@@ -789,7 +793,7 @@
       "BED": 0
      },
      "carriedBeds": 0,
-     "targetMonthly": 109328.67
+     "targetMonthly": 63448
     },
     "new-orleans": {
      "beds": 116,
@@ -900,7 +904,7 @@
      "occupied": 12
     },
     "A1:charleston": {
-     "beds": 60,
+     "beds": 41,
      "occupied": 23
     },
     "A1:new-orleans": {
@@ -975,14 +979,14 @@
    "tenantDoubles": 27,
    "pipeline": {
     "rows": 1438,
-    "bedsStudent": 5348,
-    "bedsStr": 0,
+    "bedsStudent": 5329,
+    "bedsStr": 19,
     "bedsCommercial": 3
    }
   },
   "2027:executed": {
    "student": {
-    "beds": 5348,
+    "beds": 5329,
     "occupied": 2314,
     "occPct": 0.43,
     "finOccPct": 0.41,
@@ -996,13 +1000,13 @@
      "BED": 0
     },
     "carriedBeds": 4,
-    "targetMonthly": 4447827.59
+    "targetMonthly": 4401946.92
    },
    "str": {
-    "beds": 0,
+    "beds": 19,
     "occupied": 0,
-    "occPct": null,
-    "finOccPct": null,
+    "occPct": 0,
+    "finOccPct": 0,
     "monthly": 0,
     "annual": 0,
     "people": 0,
@@ -1013,7 +1017,7 @@
      "BED": 0
     },
     "carriedBeds": 0,
-    "targetMonthly": 0
+    "targetMonthly": 45880.67
    },
    "commercial": {
     "monthly": 3004.82,
@@ -1021,7 +1025,7 @@
    },
    "byFund": {
     "A1": {
-     "beds": 1500,
+     "beds": 1481,
      "occupied": 714,
      "occPct": 0.48,
      "finOccPct": 0.48,
@@ -1035,7 +1039,7 @@
       "BED": 0
      },
      "carriedBeds": 0,
-     "targetMonthly": 1741960.8
+     "targetMonthly": 1696080.13
     },
     "A2": {
      "beds": 2362,
@@ -1091,10 +1095,10 @@
      "targetMonthly": 271586.31
     },
     "charleston": {
-     "beds": 60,
+     "beds": 41,
      "occupied": 9,
-     "occPct": 0.15,
-     "finOccPct": 0.15,
+     "occPct": 0.22,
+     "finOccPct": 0.22,
      "monthly": 11900,
      "annual": 142800,
      "people": 9,
@@ -1105,7 +1109,7 @@
       "BED": 0
      },
      "carriedBeds": 0,
-     "targetMonthly": 109328.67
+     "targetMonthly": 63448
     },
     "new-orleans": {
      "beds": 116,
@@ -1216,7 +1220,7 @@
      "occupied": 0
     },
     "A1:charleston": {
-     "beds": 60,
+     "beds": 41,
      "occupied": 9
     },
     "A1:new-orleans": {
@@ -1284,16 +1288,16 @@
    "tenantDoubles": 0,
    "pipeline": {
     "rows": 1438,
-    "bedsStudent": 5348,
-    "bedsStr": 0,
+    "bedsStudent": 5329,
+    "bedsStr": 19,
     "bedsCommercial": 3
    }
   },
   "2028:proforma": {
    "student": {
-    "beds": 5348,
+    "beds": 5329,
     "occupied": 989,
-    "occPct": 0.18,
+    "occPct": 0.19,
     "finOccPct": 0.17,
     "monthly": 1346516.4,
     "annual": 15144117.54,
@@ -1305,13 +1309,13 @@
      "BED": 0
     },
     "carriedBeds": 56,
-    "targetMonthly": 4680472.59
+    "targetMonthly": 4633641.92
    },
    "str": {
-    "beds": 0,
+    "beds": 19,
     "occupied": 0,
-    "occPct": null,
-    "finOccPct": null,
+    "occPct": 0,
+    "finOccPct": 0,
     "monthly": 0,
     "annual": 0,
     "people": 0,
@@ -1322,7 +1326,7 @@
      "BED": 0
     },
     "carriedBeds": 0,
-    "targetMonthly": 0
+    "targetMonthly": 46830.67
    },
    "commercial": {
     "monthly": 928.82,
@@ -1330,10 +1334,10 @@
    },
    "byFund": {
     "A1": {
-     "beds": 1500,
+     "beds": 1481,
      "occupied": 604,
-     "occPct": 0.4,
-     "finOccPct": 0.37,
+     "occPct": 0.41,
+     "finOccPct": 0.38,
      "monthly": 831067.44,
      "annual": 9212791.84,
      "people": 580,
@@ -1344,7 +1348,7 @@
       "BED": 0
      },
      "carriedBeds": 27,
-     "targetMonthly": 1816711.8
+     "targetMonthly": 1769881.13
     },
     "A2": {
      "beds": 2362,
@@ -1400,7 +1404,7 @@
      "targetMonthly": 283937.31
     },
     "charleston": {
-     "beds": 60,
+     "beds": 41,
      "occupied": 0,
      "occPct": 0,
      "finOccPct": 0,
@@ -1414,7 +1418,7 @@
       "BED": 0
      },
      "carriedBeds": 0,
-     "targetMonthly": 112328.67
+     "targetMonthly": 65498
     },
     "new-orleans": {
      "beds": 116,
@@ -1525,7 +1529,7 @@
      "occupied": 0
     },
     "A1:charleston": {
-     "beds": 60,
+     "beds": 41,
      "occupied": 0
     },
     "A1:new-orleans": {
@@ -1593,14 +1597,14 @@
    "tenantDoubles": 0,
    "pipeline": {
     "rows": 1438,
-    "bedsStudent": 5348,
-    "bedsStr": 0,
+    "bedsStudent": 5329,
+    "bedsStr": 19,
     "bedsCommercial": 3
    }
   },
   "2028:executed": {
    "student": {
-    "beds": 5348,
+    "beds": 5329,
     "occupied": 919,
     "occPct": 0.17,
     "finOccPct": 0.16,
@@ -1614,13 +1618,13 @@
      "BED": 0
     },
     "carriedBeds": 39,
-    "targetMonthly": 4680472.59
+    "targetMonthly": 4633641.92
    },
    "str": {
-    "beds": 0,
+    "beds": 19,
     "occupied": 0,
-    "occPct": null,
-    "finOccPct": null,
+    "occPct": 0,
+    "finOccPct": 0,
     "monthly": 0,
     "annual": 0,
     "people": 0,
@@ -1631,7 +1635,7 @@
      "BED": 0
     },
     "carriedBeds": 0,
-    "targetMonthly": 0
+    "targetMonthly": 46830.67
    },
    "commercial": {
     "monthly": 928.82,
@@ -1639,9 +1643,9 @@
    },
    "byFund": {
     "A1": {
-     "beds": 1500,
+     "beds": 1481,
      "occupied": 600,
-     "occPct": 0.4,
+     "occPct": 0.41,
      "finOccPct": 0.37,
      "monthly": 825467.44,
      "annual": 9145591.84,
@@ -1653,7 +1657,7 @@
       "BED": 0
      },
      "carriedBeds": 23,
-     "targetMonthly": 1816711.8
+     "targetMonthly": 1769881.13
     },
     "A2": {
      "beds": 2362,
@@ -1709,7 +1713,7 @@
      "targetMonthly": 283937.31
     },
     "charleston": {
-     "beds": 60,
+     "beds": 41,
      "occupied": 0,
      "occPct": 0,
      "finOccPct": 0,
@@ -1723,7 +1727,7 @@
       "BED": 0
      },
      "carriedBeds": 0,
-     "targetMonthly": 112328.67
+     "targetMonthly": 65498
     },
     "new-orleans": {
      "beds": 116,
@@ -1834,7 +1838,7 @@
      "occupied": 0
     },
     "A1:charleston": {
-     "beds": 60,
+     "beds": 41,
      "occupied": 0
     },
     "A1:new-orleans": {
@@ -1902,8 +1906,8 @@
    "tenantDoubles": 0,
    "pipeline": {
     "rows": 1438,
-    "bedsStudent": 5348,
-    "bedsStr": 0,
+    "bedsStudent": 5329,
+    "bedsStr": 19,
     "bedsCommercial": 3
    }
   }

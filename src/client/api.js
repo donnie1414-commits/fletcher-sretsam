@@ -39,7 +39,7 @@ async function previewGet(route, params) {
       const cur = await pick(has(base) ? base : `weekly-${combo}`);
       return params.week && wk !== cur.week ? { ...cur, previewNote: `Preview: only the last ${pv.weeks.length} weeks are precomputed; showing ${cur.week}.` } : cur;
     }
-    case 'pipeline': { const full = await pick(`pipeline-${combo}`); return { ...full, ...applyPipelineView(full.rows, { ...params, mentions: params.mentions === 'me' ? full.me : params.mentions }) }; }
+    case 'pipeline': { const full = await pick(`pipeline-${combo}${params.segment === 'str' ? '-str' : ''}`); return { ...full, ...applyPipelineView(full.rows, { ...params, mentions: params.mentions === 'me' ? full.me : params.mentions }) }; }
     case 'unithistory': {
       const full = await pick(`pipeline-${combo}`); const row = full.rows.find((r) => r.key === String(params.unit));
       if (!row) throw Object.assign(new Error(`unit ${params.unit} not in the preview`), { status: 404 });

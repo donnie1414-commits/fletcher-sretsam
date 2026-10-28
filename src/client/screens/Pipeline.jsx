@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRoute } from '../hooks.js';
 import { api, post, invalidate, recordUrl, isPreview } from '../api.js';
 import { DataGrid } from '../components/DataGrid/DataGrid.jsx';
-import { Button, Select, Pill, ErrorBox, Dot, Toggle, Stat, cx } from '../ui.jsx';
+import { Button, Select, Segmented, Pill, ErrorBox, Dot, Toggle, Stat, cx } from '../ui.jsx';
 import { fmtInt, fmtMoney, fmtPct, fmtDate, toCSV, downloadCSV } from '../format.js';
 import { STAGES, stageByKey, STAGE_OWNER, UAS } from '../../shared/constants.js';
 import { pickerStages, funnel } from '../../shared/rules/stages.js';
@@ -26,7 +26,7 @@ const CHUNK = 50;
  * filters, a leasing-history drawer per row, a notes thread with @mentions, and the lease dialog.
  */
 export function Pipeline({ sel, setSel, density, isMobile, bootstrap }) {
-  const [view, setView] = useState({ stage: '', availability: '', unitBeds: '', houseBeds: '', needsAction: '', mentions: '', breach: '', q: sel.q || '', sort: 'property', dir: 'asc', page: 0, pageSize: 100 });
+  const [view, setView] = useState({ segment: '', stage: '', availability: '', unitBeds: '', houseBeds: '', needsAction: '', mentions: '', breach: '', q: sel.q || '', sort: 'property', dir: 'asc', page: 0, pageSize: 100 });
   const [expanded, setExpanded] = useState(() => new Set());
   const toggleExpand = (k) => setExpanded((x) => { const n = new Set(x); n.has(k) ? n.delete(k) : n.add(k); return n; });
   useEffect(() => { setView((v) => ({ ...v, q: sel.q || '', page: 0 })); }, [sel.q]);
@@ -135,6 +135,7 @@ export function Pipeline({ sel, setSel, density, isMobile, bootstrap }) {
       </div>}
       {data && data.missingStatusRows > 0 && <p className="muted small">{fmtInt(data.missingStatusRows)} unit{data.missingStatusRows === 1 ? ' has' : 's have'} no status record for this academic year. Saving an edit creates it.</p>}
       <div className="toolbar wrap">
+        <Segmented ariaLabel="Segment" value={view.segment || ''} onChange={(v) => setView({ ...view, segment: v, page: 0 })} options={[{ value: '', label: 'Student' }, { value: 'str', label: 'Short-term rental' }]} />
         <Select label="Stage" value={view.stage} onChange={(v) => setView({ ...view, stage: v, page: 0 })} options={[{ value: '', label: `All (${fmtInt(data?.total)})` }, ...STAGES.map((s) => ({ value: s.key, label: `${s.label} (${stageCounts[s.key] || 0})` }))]} />
         <Select label="Availability" value={view.availability} onChange={(v) => setView({ ...view, availability: v, page: 0 })} options={[{ value: '', label: 'Any' }, { value: 'free', label: 'Has free beds' }, { value: 'full', label: 'Fully taken' }]} />
         <Select label="Unit beds" value={view.unitBeds} onChange={(v) => setView({ ...view, unitBeds: v, page: 0 })} options={[{ value: '', label: 'Any' }, ...UNIT_BEDS.map(([k]) => ({ value: k, label: k }))]} />

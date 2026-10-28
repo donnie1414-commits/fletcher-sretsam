@@ -23,7 +23,7 @@ Legend: **✓ built** · **≈ built differently** (same information, new placem
 | "Same date last year" pace note | Shown under the tiles with the LY as-of date | ✓ |
 | By Market (Market ▸ Fund) and By Fund (Fund ▸ Market) expandable tables with LY and pace columns | `GroupTable`, same columns, CSV | ✓ |
 | By Lease Type table | ✓ with share, pace, LY, financial occupancy | ✓ |
-| Short-term rentals fold | ✓ (segment currently empty: `SEGMENT_PROPERTY_IDS.STR` is `[]`; v2 hardcoded 89 Spring St = id 39) | 🔒 confirm the STR list |
+| Short-term rentals fold | ✓ 89 Spring St - STR (id 39), confirmed 2026-10-28 | ✓ |
 | Commercial / land / office fold (annual = monthly × 12) | ✓ — and a real fix: v2 and v3 both read these from the property type field, but v3 was excluding every commercial lease as `ZERO_BEDS`; rent-only segments now place on zero-bed units (A-21), so commercial rent shows | ✓ |
 | New Lease Records (last 3 days, all AYs) | ✓ | ✓ |
 | Ties check line | ✓ (people allow for sequential tenancies) | ✓ |

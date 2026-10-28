@@ -176,7 +176,7 @@ export const SEGMENTS = Object.freeze({
  */
 export const SEGMENT_FIELD_ID = 'custrecord_serp_property_type_cr';
 export const SEGMENT_PROPERTY_IDS = Object.freeze({
-  STR: Object.freeze([]),
+  STR: Object.freeze(['39']),          // 89 Spring St - STR, Charleston (confirmed 2026-10-28)
   COMMERCIAL: Object.freeze([]),
   NON_STUDENT: Object.freeze([]),
 });

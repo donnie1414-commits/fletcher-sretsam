@@ -57,6 +57,7 @@ for (const ay of boot.academicYears.map((a) => a.year).filter((y) => y >= 2026 &
   const first = JSON.parse(call({ route: 'pipeline', ay: String(ay), basis, pageSize: '500' }));
   const rows = [...first.rows]; for (let pg = 1; pg * 500 < first.total; pg++) rows.push(...JSON.parse(call({ route: 'pipeline', ay: String(ay), basis, pageSize: '500', page: String(pg) })).rows);
   write(`pipeline-${combo}`, { ...first, rows, page: 0 }); files.push(`pipeline-${combo}`);
+  { const strp = JSON.parse(call({ route: 'pipeline', ay: String(ay), basis, pageSize: '500', segment: 'str' })); write(`pipeline-${combo}-str`, { ...strp, page: 0 }); files.push(`pipeline-${combo}-str`); }
   console.log(`${combo}: pipeline ${rows.length} rows`);
 }
 // tenants: the full active set (the shim filters/pages client-side with the shared helper)

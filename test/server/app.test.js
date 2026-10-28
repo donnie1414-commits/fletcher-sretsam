@@ -47,12 +47,14 @@ test('server path against the snapshot', { skip: fx ? false : 'no snapshot' }, a
   });
   await t.test('summary ties to the golden inventory and pipeline denominator equals summary denominator', () => {
     const s = request(app, { route: 'summary', ay: '2027', basis: 'proforma' }).json();
-    assert.equal(s.student.beds, 5348);
+    assert.equal(s.student.beds, 5329, '89 Spring St - STR (19 beds) is reported as a short-term rental, not student');
+    assert.equal(s.str.total.beds, 19);
     const first = request(app, { route: 'pipeline', ay: '2027', pageSize: '500' }).json();
     assert.ok(first.stageBeds && typeof first.breachCount === 'number' && typeof first.needsActionCount === 'number');
-    assert.equal(first.total, 1445 - 7, 'commercial units (the office + six storefronts) are not leasing rows'); assert.equal(first.totalBeds, s.student.beds, 'pipeline total beds equals Summary total beds exactly');
+    assert.equal(first.total, 1445 - 7 - 1, 'commercial units (the office + six storefronts) and the short-term rental are not on the student board'); assert.equal(first.totalBeds, s.student.beds, 'pipeline total beds equals Summary total beds exactly');
     const rows = [...first.rows]; for (let pg = 1; pg * 500 < first.total; pg++) rows.push(...request(app, { route: 'pipeline', ay: '2027', pageSize: '500', page: String(pg) }).json().rows);
-    assert.equal(rows.length, 1438);
+    assert.equal(rows.length, 1437);
+    const str = request(app, { route: 'pipeline', ay: '2027', segment: 'str', pageSize: '50' }).json(); assert.equal(str.total, 1); assert.equal(str.totalBeds, 19); assert.ok(str.rows.every((r) => r.propertyId === '39'));
     const student = rows.filter((r) => r.segment !== 'COMMERCIAL' && r.segment !== 'STR').reduce((a, r) => a + r.beds, 0);
     assert.equal(student, s.student.beds, 'pipeline denominator equals the KPI denominator');
     assert.ok(rows.every((r) => Object.prototype.hasOwnProperty.call(r, 'stage') && Object.prototype.hasOwnProperty.call(r, 'free')));
