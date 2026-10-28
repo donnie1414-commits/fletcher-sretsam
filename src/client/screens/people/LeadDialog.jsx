@@ -32,7 +32,7 @@ export function LeadDialog({ sel, bootstrap, onClose, onDone, onTourFor }) {
     for (const k of Object.keys(fields)) if (fields[k] === '' || fields[k] == null) delete fields[k];
     const stamp = Date.now();
     const changes = [{ changeId: `lead:new:${stamp}`, recordType: CUSTOMER.TYPE, fields }];
-    if (f.withTour) changes.push({ changeId: `tour:lead:${stamp}`, recordType: TOUR.TYPE, fields: buildTourFields({ ...t, propertyIds: f.propertyIds, unitIds: f.unitIds, ayId: f.ayId }, properties, { customerName: name || f.email, customerId: '$prev' }) });
+    if (f.withTour) changes.push({ changeId: `tour:lead:${stamp}`, recordType: TOUR.TYPE, fields: buildTourFields({ ...t, propertyIds: f.propertyIds, unitIds: f.unitIds, ayIds: f.ayId ? [f.ayId] : [] }, properties, { customerName: name || f.email, customerId: '$prev' }) });
     const res = await post('write', { changes });
     setBusy(false); const results = res.results || []; setOut({ lead: results[0] || { ok: false, code: 'ERROR', message: 'no result' }, tour: results[1] || null });
     if (results[0] && results[0].ok) { for (const k of ['leads', 'tenants', 'today', 'tours']) invalidate(k); onDone && onDone(results[0]); }

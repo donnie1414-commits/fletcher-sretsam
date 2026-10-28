@@ -24,7 +24,7 @@ export function buildTourFields(f, properties, { customerName = '', customerId =
     title: `${TOUR.TITLE_PREFIX} · ${customerName || 'walk-in'}${n > 1 ? ` · ${n} units` : where ? ' · ' + where : ''}`.slice(0, 199),
     startdate: f.date, starttime: f.start || '', endtime: f.start ? addMin(f.start, Number(f.minutes) || TOUR.DEFAULT_MINUTES) : '',
     organizer: f.organizerId ? Number(f.organizerId) : '', location: where.slice(0, 199), message: `${f.notes || ''}${n ? `\n${TOUR.unitsTag(unitIds)}` : ''}`.trim(),
-    [TOUR.UNIT]: unitIds[0] ? Number(unitIds[0]) : '', [TOUR.AY]: f.ayId ? Number(f.ayId) : '',
+    [TOUR.UNIT]: unitIds.length ? unitIds.map(Number) : '', [TOUR.AY]: (f.ayIds && f.ayIds.length ? f.ayIds : f.ayId ? [f.ayId] : []).map(Number),
   };
   if (customerId !== undefined) fields.company = customerId == null || customerId === '' ? '' : (customerId === '$prev' ? '$prev' : Number(customerId));
   return fields;
@@ -77,7 +77,7 @@ export function TourDialog({ lead, unit, tour, sel, bootstrap, onClose, onDone }
     propertyIds: tour ? [...new Set((tour.units || []).map((u) => u.propertyId).filter(Boolean))] : unit ? [unit.propertyId] : [...new Set([...(lead && lead.unitsOfInterest ? lead.unitsOfInterest.map((u) => u.propertyId) : []), ...(lead && lead.properties ? lead.properties.map((p) => p.id) : [])].filter(Boolean))],
     unitIds: tour ? (tour.units || []).map((u) => u.unitId) : unit ? (unit.unitId ? [unit.unitId] : []) : (lead && lead.unitsOfInterest ? lead.unitsOfInterest.map((u) => u.unitId).filter(Boolean) : []),
     date: tour ? tour.date : bootstrap.session.today, start: tour ? (tour.start || '') : nextSlot(), minutes: 30,
-    organizerId: tour ? (tour.organizerId || me) : me, notes: tour ? (tour.notes || '') : '', outcome: tour ? (tour.outcome || 'SCHEDULED') : 'SCHEDULED', ayId: tour && tour.ayId ? tour.ayId : ayDefault,
+    organizerId: tour ? (tour.organizerId || me) : me, notes: tour ? (tour.notes || '') : '', outcome: tour ? (tour.outcome || 'SCHEDULED') : 'SCHEDULED', ayIds: tour && tour.ayIds && tour.ayIds.length ? tour.ayIds : (lead && lead.academicYears && lead.academicYears.length ? lead.academicYears.map((a) => a.id) : ayDefault ? [ayDefault] : []),
   }));
   const [q, setQ] = useState(''); const [hits, setHits] = useState([]);
   useEffect(() => { if (q.trim().length < 2) { setHits([]); return undefined; } let alive = true; const t = setTimeout(() => api('tenants', { view: 'all', q: q.trim(), pageSize: 25 }).then((d) => alive && setHits(d.rows || [])).catch(() => alive && setHits([])), 250); return () => { alive = false; clearTimeout(t); }; }, [q]);
@@ -104,11 +104,11 @@ export function TourDialog({ lead, unit, tour, sel, bootstrap, onClose, onDone }
                 {q.trim().length >= 2 && !hits.length && <p className="muted small">No match. Leave blank for a walk-in, or add the lead first from People › Leads.</p>}
               </div>}
           </div>
-          <Select label="Academic year" value={f.ayId || ''} onChange={(v) => setF({ ...f, ayId: v })} options={[{ value: '', label: '—' }, ...bootstrap.academicYears.map((a) => ({ value: a.id, label: a.label }))]} />
+          <div className="field"><span className="field-label">Academic years</span><div className="form-row wrap">{bootstrap.academicYears.filter((a) => a.year >= Number(bootstrap.currentAy)).map((a) => <button key={a.id} type="button" className={`chip${f.ayIds.includes(a.id) ? ' is-on' : ''}`} onClick={() => setF({ ...f, ayIds: f.ayIds.includes(a.id) ? f.ayIds.filter((x) => x !== a.id) : [...f.ayIds, a.id] })}>AY {a.short}</button>)}</div></div>
         </div>
         <TourFields f={f} setF={setF} properties={properties} organizers={organizers} multi />
         {tour && <div className="form-row"><Select label="Outcome" value={f.outcome} onChange={(v) => setF({ ...f, outcome: v })} options={TOUR_OUTCOMES.map((o) => ({ value: o.key, label: o.label }))} /><span className="muted small">Cancelled also cancels the calendar event. Leased is for a tour that turned into a signed lease.</span></div>}
-        {out && (out.ok ? <div className="okbox small">{tour ? 'Tour updated.' : 'Tour scheduled.'}{out.leadStatus ? <span> Lead moved to <strong>{out.leadStatus === 23 ? 'Tour Scheduled' : out.leadStatus === 22 ? 'Tour Completed' : out.leadStatus}</strong>.</span> : null} {out.dropped && out.dropped.length ? <span className="warn-text">The {out.dropped.map((d) => d.replace('custevent_ad_tour_', '')).join(', ')} field{out.dropped.length === 1 ? ' is' : 's are'} not created yet, so the tour was saved without {out.dropped.length === 1 ? 'it' : 'them'} (property and unit are in the location). See SETUP-CHECKLIST.</span> : null} {!isPreview() && <span> <a className="link" href={recordUrl('event', out.recordId)} target="_blank" rel="noreferrer">Open the event</a> · <a className="link" href={CALENDAR_URL} target="_blank" rel="noreferrer">Open my calendar</a></span>}</div>
+        {out && (out.ok ? <div className="okbox small">{tour ? 'Tour updated.' : 'Tour scheduled.'}{out.leadStatus ? <span> Lead moved to <strong>{out.leadStatus === 23 ? 'Tour Scheduled' : out.leadStatus === 22 ? 'Tour Completed' : out.leadStatus}</strong>.</span> : null} {out.dropped && out.dropped.length ? <span className="warn-text">The {out.dropped.map((d) => d.replace('custevent_ad_tour_', '')).join(', ')} field{out.dropped.length === 1 ? ' is' : 's are'} not created yet, so the tour was saved without {out.dropped.length === 1 ? 'it' : 'them'} (property and unit are in the location). See SETUP-CHECKLIST.</span> : null}{out.singleValued ? <span className="warn-text"> The Event's unit or academic-year field is single-select, so only the first value was stored on it; make both fields Multiple Select (SETUP-CHECKLIST).</span> : null} {!isPreview() && <span> <a className="link" href={recordUrl('event', out.recordId)} target="_blank" rel="noreferrer">Open the event</a> · <a className="link" href={CALENDAR_URL} target="_blank" rel="noreferrer">Open my calendar</a></span>}</div>
           : <div className={`${out.code === 'PREVIEW' ? 'okbox' : 'errorbox'} small`}>{out.code === 'PREVIEW' ? out.message : `${out.code}: ${out.message}`}</div>)}
       </div>
     </Modal>

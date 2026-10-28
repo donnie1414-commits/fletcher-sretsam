@@ -37,13 +37,13 @@ Never put `amicus_leasing_app.js` on the Suitelet script record (§3.3). `npm ru
 | Record | Field id | Type | Notes |
 |---|---|---|---|
 | Unit Leasing Status (`customrecord_ad_unit_ay_status`) | `custrecord_ad_uas_lease_terms` | Long Text | JSON shadow of agreed terms; absent today (A-19) — the app degrades without it |
-| Event (`calendarevent`) | `custevent_ad_tour_unit` | List/Record → Units/Bedrooms | the tour link (§5.6) |
+| Event (`calendarevent`) | `custevent_ad_tour_unit` | **Multiple Select** → Units/Bedrooms | every unit the tour covers, written by the hub's tour scheduler (§5.6) |
 | Event | `custevent_ad_tour_outcome` | List → `customlist_ad_tour_outcome` | values: Scheduled, Completed, No-show, Cancelled, Leased |
-| Event | `custevent_ad_tour_ay` | List/Record → Academic Year | which AY the tour counts toward |
+| Event | `custevent_ad_tour_ay` | **Multiple Select** → Academic Year | every academic year the tour counts toward, written by the scheduler |
 | Customer / Lead (Entity field) | `custentity_ad_lead_units` | Multiple Select → Units/Bedrooms | "units of interest" on a lead (A-22); the tour scheduler starts from the first one. Applies to Customer, Lead, Prospect. Optional: without it the units chosen when adding a lead still prefill a tour scheduled in the same save |
 | Employee | `custentity_lkr_markets` | Multiple Select (city/market names) | existing per the brief; confirm (A-20) |
 
-The three Event fields switch on the full tour feature (unit link on the Pipeline, outcome, AY). Until they exist the app still schedules tours: the Event is created with the property and unit in its Location and the save reports which fields were left out. Create the list `customlist_ad_tour_outcome` first (values exactly as above), then the three fields; tick *Show in list* and give the leasing roles access on each.
+The three Event fields switch on the full tour feature (unit link on the Pipeline, outcome, AY). If either list field was created as a single List/Record, the hub stores the first value on it and says so after the save; the full list still rides in the Event notes, so Pipeline counts stay right. Change the field to Multiple Select to store everything. Until they exist the app still schedules tours: the Event is created with the property and unit in its Location and the save reports which fields were left out. Create the list `customlist_ad_tour_outcome` first (values exactly as above), then the three fields; tick *Show in list* and give the leasing roles access on each.
 
 **Role permissions for tours and leads** (Setup › Users/Roles › Manage Roles › the leasing roles): *Lists › Events* — Full (the tour is an Event organised by the agent, so it must be creatable and editable); *Lists › Customers* — Create (the hub adds leads the way the Lead Form does); *Lists › Employee Record* — View (to pick another agent as the organiser; without it the picker offers only yourself). The CRM feature must be on (it is).
 

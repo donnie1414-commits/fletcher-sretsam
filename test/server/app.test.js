@@ -19,7 +19,7 @@ if (fx) {
   const unit = fx.units.find((u) => u.isinactive !== 'T' && u.property);
   const today = new Date().toISOString().slice(0, 10);
   fx.tours = [
-    { id: 9001, title: 'Tour · lead', startdate: today, starttime: '10:00', endtime: '10:30', organizer: 42, status: 'CONFIRMED', location: 'x', message: '', company: lead.id, company_name: `${lead.firstname} ${lead.lastname}`, lastmodifieddate: '2026-10-27', unit: unit.id, outcome: 1, ay: 2 },
+    { id: 9001, title: 'Tour · lead', startdate: today, starttime: '10:00', endtime: '10:30', organizer: 42, status: 'CONFIRMED', location: 'x', message: '', company: lead.id, company_name: `${lead.firstname} ${lead.lastname}`, lastmodifieddate: '2026-10-27', unit: `${unit.id}`, outcome: 1, ay: '2, 3' },
     { id: 9002, title: 'Tour · cancelled', startdate: today, starttime: '14:00', endtime: '14:30', organizer: 42, status: 'CANCELLED', location: 'x', message: '', company: lead.id, lastmodifieddate: '2026-10-27', unit: unit.id, outcome: 4, ay: 2 },
     { id: 9003, title: 'Tour · other agent', startdate: today, starttime: '09:00', endtime: '09:30', organizer: 43, status: 'CONFIRMED', location: 'x', message: `see both [units:${unit.id},${fx.units.find((u) => u.isinactive !== 'T' && u.property && u.id !== unit.id).id}]`, company: null, lastmodifieddate: '2026-10-27', unit: null, outcome: null, ay: 2 },
   ];
@@ -75,7 +75,7 @@ test('server path against the snapshot', { skip: fx ? false : 'no snapshot' }, a
     const leads = request(app, { route: 'leads', view: 'all', pageSize: '500' }).json(); assert.ok(leads.total >= 30, `leads total ${leads.total}`); assert.ok(leads.rows.every((r) => (r.stage === 'LEAD' || r.statusId === 18) && r.properties !== undefined), 'only LEAD-stage records and inquiring tenants'); assert.ok(leads.rows.some((r) => r.status === 'Tour Scheduled')); const L = leads.rows.find((r) => r.id === String(fx.testLead.id)); assert.ok(L, 'the lead with tours is in the set'); assert.equal(L.tourCount, 1, 'the cancelled tour is not counted'); assert.equal(L.nextTour.id, '9001');
     const noTour = request(app, { route: 'leads', view: 'no-tour', pageSize: '500' }).json(); assert.ok(!noTour.rows.some((r) => r.id === String(fx.testLead.id)));
     assert.equal(today.tours.count, 2, 'today: the two live tours'); assert.ok(today.tours.calendarUrl); assert.ok(today.leads.count > 0 && today.leads.rows.length <= 25);
-    const pl = request(app, { route: 'pipeline', ay: '2027', pageSize: '500', q: fx.testUnit.name }).json(); const row = pl.rows.find((r) => r.unitId === String(fx.testUnit.id)); assert.ok(row, 'unit row found'); assert.equal(row.tours, 2, 'two live tours on the unit this year'); assert.equal(row.nextTour, new Date().toISOString().slice(0, 10));
+    const pl = request(app, { route: 'pipeline', ay: '2027', pageSize: '500', q: fx.testUnit.name }).json(); const row = pl.rows.find((r) => r.unitId === String(fx.testUnit.id)); assert.ok(row, 'unit row found'); assert.equal(row.tours, 2, 'two live tours on the unit this year'); assert.deepEqual(tours.rows.find((r) => r.id === '9001').ayIds, ['2', '3'], 'a multi-select AY reads back as a list'); assert.equal(row.nextTour, new Date().toISOString().slice(0, 10));
   });
   await t.test('calendar events unreadable: tours degrade to off with a reason, nothing else breaks', () => {
     const off = createApp({ ...N, query: fakeQuery({ ...fx, toursUnavailable: true }) });

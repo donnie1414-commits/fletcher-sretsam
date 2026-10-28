@@ -6,11 +6,11 @@ The files are in the hand-back:
 
 | File | What it is | Size (bytes) | SHA-256 (first 12) |
 |---|---|---|---|
-| `amicus_leasing_sl.js` | the Suitelet (server). Starts `/** @NApiVersion 2.1 @NScriptType Suitelet` | 234,747 | `0a502cb76698` |
-| `amicus_leasing_app.js` | the client bundle. One minified line starting `(()=>{` | 218,130 | `0c6d26d82307` |
+| `amicus_leasing_sl.js` | the Suitelet (server). Starts `/** @NApiVersion 2.1 @NScriptType Suitelet` | 235,901 | `25527f4eb58f` |
+| `amicus_leasing_app.js` | the client bundle. One minified line starting `(()=>{` | 218,757 | `002033239042` |
 | `amicus_leasing_app.css` | the stylesheet. Starts `:root{--accent` | 42,332 | `5e5cc41e519f` |
 
-`MANIFEST.json` carries the full hashes and the **build id `7f74eda37c0e`**. Sizes are the quick check after upload: File Cabinet shows the byte size on each file. The build id is the check inside the app: it is printed at the right end of the header (`build 7f74eda37c0e`), and the three files of one hand-back always share it.
+`MANIFEST.json` carries the full hashes and the **build id `29a1d8a7aae6`**. Sizes are the quick check after upload: File Cabinet shows the byte size on each file. The build id is the check inside the app: it is printed at the right end of the header (`build 29a1d8a7aae6`), and the three files of one hand-back always share it.
 
 **Only `amicus_leasing_sl.js` ever goes on a Script record.** The other two are plain files the Suitelet links to by internal id.
 
@@ -66,7 +66,7 @@ If the tab does not appear for a role, its Audience on the Center Tab or the dep
 
 Open the deployment URL.
 
-- A page that reads **Loading Amicus Leasing…** for under a second, then the Today screen with your scope in the header and `build 7f74eda37c0e` at the right end of the header. Done.
+- A page that reads **Loading Amicus Leasing…** for under a second, then the Today screen with your scope in the header and `build 29a1d8a7aae6` at the right end of the header. Done.
 - An orange banner **"The app files NetSuite is serving are from build …, but the Suitelet is build …"**: the `.js`/`.css` in the File Cabinet and the Suitelet come from different hand-backs. Re-upload the two client files from this hand-back (section 6), then reload with Ctrl+Shift+R. This is the usual reason the app looks older or different from the preview.
 - An orange banner **"The stylesheet did not apply"**: the page is running without its styles. The Suitelet normally copies the stylesheet into the page itself, so this only happens when it cannot read the `.css` file; check the `custscript_al_client_css` id and that the file's type in the File Cabinet is *CSS File*.
 - **"Client bundle not configured"**: one or both file-id parameters are empty or point at the wrong file. Check step 3.5.

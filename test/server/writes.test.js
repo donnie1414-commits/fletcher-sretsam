@@ -145,7 +145,7 @@ test('tour create: an Event on the organiser calendar with defaults; times becom
   const { writes, scope, rs } = build();
   const r = writes.apply([
     { changeId: 't0', recordType: CUSTOMER.TYPE, fields: { firstname: 'Walk', lastname: 'In', email: 'walk@example.com' } },
-    { changeId: 't1', recordType: TOUR.TYPE, fields: { title: 'Tour · Walk In', startdate: '2026-11-03', starttime: '10:30', company: '$prev', [TOUR.UNIT]: 55, [TOUR.AY]: 2 } },
+    { changeId: 't1', recordType: TOUR.TYPE, fields: { title: 'Tour · Walk In', startdate: '2026-11-03', starttime: '10:30', company: '$prev', [TOUR.UNIT]: [55, 56], [TOUR.AY]: [2, 3] } },
     { changeId: 't2', recordType: TOUR.TYPE, fields: { starttime: '10:30' } },
   ], scope);
   assert.equal(r.results[1].ok, true); const ev = rs.store[TOUR.TYPE][r.results[1].recordId];
@@ -189,4 +189,12 @@ test('@mentions on a new note notify the mentioned employees (not the author)', 
   const { writes, scope } = build({ notify: (a) => { calls.push(a); return a.mentions.length; } });
   const r = writes.apply([{ changeId: 'n1', recordType: 'customrecord_ad_uas_note', fields: { name: '1 Ashe St Unit - A — 2026-10-27', custrecord_ad_note_status: 11, custrecord_ad_note_text: 'hi @Pat', custrecord_ad_note_date: '2026-10-27', custrecord_ad_note_mentions: [7, 8] } }], scope);
   assert.equal(r.results[0].ok, true); assert.equal(r.results[0].notified, 2); assert.deepEqual(calls[0].mentions, [7, 8]);
+});
+
+test('tour: a single-select unit or AY field refuses the list; the first value is kept and the save reports it', () => {
+  const { writes, scope, rs } = build();
+  const origCreate = rs.record.create;
+  rs.record.create = (o) => { const rec = origCreate(o); if (o.type === TOUR.TYPE) { const vals = {}; const set = rec.setValue; rec.setValue = (a) => { vals[a.fieldId] = a.value; set(a); }; const save = rec.save; rec.save = () => { if (Array.isArray(vals[TOUR.AY])) throw new Error(`You have entered an Invalid Field Value 2,3 for the following field: ${TOUR.AY}`); return save(); }; } return rec; };
+  const r = writes.apply([{ changeId: 's1', recordType: TOUR.TYPE, fields: { startdate: '2026-11-03', [TOUR.UNIT]: [55, 56], [TOUR.AY]: [2, 3] } }], scope);
+  assert.equal(r.results[0].ok, true); assert.equal(r.results[0].singleValued, true); const ev = rs.store[TOUR.TYPE][r.results[0].recordId]; assert.equal(ev[TOUR.AY], 2); assert.deepEqual(ev[TOUR.UNIT], [55, 56], 'only the field NetSuite named is collapsed');
 });

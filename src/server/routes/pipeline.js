@@ -24,9 +24,10 @@ export function buildPipelineRows(ctx, ay, basis) {
   // Tours per unit for this AY: by the AY field when it exists, else by date (a year before AY start through AY end).
   const tourByUnit = new Map();
   try {
-    const ayId = ctx.ayIdFor(ay); const have = ctx.dao.tours.fields();
-    const raw = ctx.dao.tours.list(have.ay && ayId ? { ayId } : { from: addDays(`${ay}-01-01`, -200), to: ayEndDate(ay) });
-    for (const t of tourRows(ctx, raw)) { if (t.outcome === 'CANCELLED') continue; for (const uid of [...new Set((t.units || []).map((u) => u.unitId))]) { const cur = tourByUnit.get(uid) || { n: 0, last: null, next: null }; cur.n += 1; if (t.date < ctx.today && (!cur.last || t.date > cur.last)) cur.last = t.date; if (t.date >= ctx.today && (!cur.next || t.date < cur.next)) cur.next = t.date; tourByUnit.set(uid, cur); } }
+    // Tours dated from the leasing season before the AY through its end; a tour tagged with academic years counts only for those.
+    const ayId = ctx.ayIdFor(ay);
+    const raw = ctx.dao.tours.list({ from: addDays(`${ay}-01-01`, -200), to: ayEndDate(ay) });
+    for (const t of tourRows(ctx, raw)) { if (t.outcome === 'CANCELLED') continue; if (t.ayIds.length && ayId && !t.ayIds.includes(String(ayId))) continue; for (const uid of [...new Set((t.units || []).map((u) => u.unitId))]) { const cur = tourByUnit.get(uid) || { n: 0, last: null, next: null }; cur.n += 1; if (t.date < ctx.today && (!cur.last || t.date > cur.last)) cur.last = t.date; if (t.date >= ctx.today && (!cur.next || t.date < cur.next)) cur.next = t.date; tourByUnit.set(uid, cur); } }
   } catch (e) { ctx.log && ctx.log.error && ctx.log.error({ title: 'pipeline: tours', details: e && e.message }); }
   const segment = ctx.params.segment === 'str' ? 'STR' : 'STUDENT';
   const prior = r.prior ? r.prior.placement : null;

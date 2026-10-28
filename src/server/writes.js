@@ -33,6 +33,12 @@ const CUSTOMER_CREATE_ONLY = new Set(LEAD.CREATE_FIELDS);
 const LEASE_UPDATE_FIELDS = new Set([LEASE.UNIT, LEASE.PROPERTY, 'custrecord_serp_lease_type_test', LEASE.START, LEASE.END, LEASE.AY, LEASE.STATUS, 'isinactive', LEASE.TENANTS]);
 const TENANT_WIPING_FIELDS = new Set([LEASE.AY, LEASE.PROPERTY]);
 
+/** A multi-value write refused by a single-select field: collapse the offending list to its first value. True when something changed. */
+function singleValue(fields, msg) {
+  let changed = false;
+  for (const f of [TOUR.UNIT, TOUR.AY]) if (Array.isArray(fields[f]) && fields[f].length > 0 && msg.includes(f)) { fields[f] = fields[f][0]; changed = true; }
+  return changed;
+}
 export class WriteError extends Error { constructor(code, message, extra = {}) { super(message); this.code = code; Object.assign(this, extra); } }
 
 /**
@@ -217,7 +223,11 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
     if (change.recordType === UAS.TYPE && Object.prototype.hasOwnProperty.call(fields, UAS.STAGE)) {
       rec.setValue({ fieldId: UAS.MANUAL_STAGE, value: nsValue(UAS.MANUAL_STAGE, fields[UAS.STAGE]) }); rec.setValue({ fieldId: UAS.STAGE_SOURCE, value: 1 }); rec.setValue({ fieldId: UAS.STAGE_DATE, value: change.stageKey === 'NONE' ? '' : localDate(clock().slice(0, 10)) });
     }
-    rec.save();
+    try { rec.save(); }
+    catch (e) {
+      if (change.recordType === TOUR.TYPE && singleValue(fields, String((e && e.message) || e))) { const again = record.load({ type: change.recordType, id: change.recordId }); for (const [f, v] of Object.entries(fields)) again.setValue({ fieldId: f, value: nsValue(f, v, change.tourDate || null) }); again.save(); change.singleValued = true; }
+      else throw e;
+    }
     let restored = null;
     if (captured) {
       // NetSuite re-sources the filtered multiselect on save and may drop values: verify and write back (§5.5.1 rule 3)
@@ -232,7 +242,7 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
     }
     const auditMode = [];
     for (const f of Object.keys(fields)) auditMode.push(audit(scope, change, change.recordId, f, before[f], fields[f]));
-    return { ok: true, recordType: change.recordType, recordId: String(change.recordId), before, after: fields, tenants: restored, audit: auditMode[0], ...(change.dropped ? { dropped: change.dropped } : {}) };
+    return { ok: true, recordType: change.recordType, recordId: String(change.recordId), before, after: fields, tenants: restored, audit: auditMode[0], ...(change.dropped ? { dropped: change.dropped } : {}), ...(change.singleValued ? { singleValued: true } : {}) };
   }
   function applyCreate(scope, change, fields) {
     if (change.recordType === LEASE.TYPE && fields[LEASE.TENANTS]) {
@@ -250,12 +260,15 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
     let id;
     try { id = build(fields).save(); }
     catch (e) {
+      const msg = String((e && e.message) || e);
       // The agent is not flagged as a Sales Rep on their employee record: save the lead without the owner rather than fail.
-      if (change.recordType === CUSTOMER.TYPE && fields.salesrep && /sales ?rep/i.test(String((e && e.message) || e))) { delete fields.salesrep; change.dropped = [...(change.dropped || []), 'salesrep']; id = build(fields).save(); }
+      if (change.recordType === CUSTOMER.TYPE && fields.salesrep && /sales ?rep/i.test(msg)) { delete fields.salesrep; change.dropped = [...(change.dropped || []), 'salesrep']; id = build(fields).save(); }
+      // The tour's unit / AY field was created single-select: keep the first value (the full list is still in the notes tag).
+      else if (change.recordType === TOUR.TYPE && singleValue(fields, msg)) { id = build(fields).save(); change.singleValued = true; }
       else throw e;
     }
     audit(scope, change, id, '*create*', null, JSON.stringify(fields));
-    return { ok: true, created: true, recordType: change.recordType, recordId: String(id), after: fields, ...(change.dropped ? { dropped: change.dropped } : {}) };
+    return { ok: true, created: true, recordType: change.recordType, recordId: String(id), after: fields, ...(change.dropped ? { dropped: change.dropped } : {}), ...(change.singleValued ? { singleValued: true } : {}) };
   }
 
   /**

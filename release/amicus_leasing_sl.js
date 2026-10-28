@@ -957,9 +957,6 @@ function createToursDao({ sq, schema, log: log2 }) {
     if (f.from) where.push(`startdate >= TO_DATE('${esc(f.from)}', 'YYYY-MM-DD')`);
     if (f.to) where.push(`startdate <= TO_DATE('${esc(f.to)}', 'YYYY-MM-DD')`);
     if (f.organizerId) where.push(`organizer = ${Number(f.organizerId)}`);
-    const have = fields();
-    if (f.ayId && have.ay) where.push(`${TOUR.AY} = ${Number(f.ayId)}`);
-    if (f.unitIds && have.unit) where.push(`${TOUR.UNIT} IN (${sqlIn(f.unitIds)})`);
     const run = (extra) => sq.few(`SELECT ${select()} FROM ${T} ${[...where, ...extra].length ? `WHERE ${[...where, ...extra].join(" AND ")}` : ""} ORDER BY startdate, starttime, id`);
     try {
       if (f.customerIds) {
@@ -1226,6 +1223,14 @@ var UAS_CREATE_ONLY = /* @__PURE__ */ new Set([UAS.UNIT, UAS.AY, UAS.PROPERTY, "
 var CUSTOMER_CREATE_ONLY = new Set(LEAD.CREATE_FIELDS);
 var LEASE_UPDATE_FIELDS = /* @__PURE__ */ new Set([LEASE.UNIT, LEASE.PROPERTY, "custrecord_serp_lease_type_test", LEASE.START, LEASE.END, LEASE.AY, LEASE.STATUS, "isinactive", LEASE.TENANTS]);
 var TENANT_WIPING_FIELDS = /* @__PURE__ */ new Set([LEASE.AY, LEASE.PROPERTY]);
+function singleValue(fields, msg) {
+  let changed = false;
+  for (const f of [TOUR.UNIT, TOUR.AY]) if (Array.isArray(fields[f]) && fields[f].length > 0 && msg.includes(f)) {
+    fields[f] = fields[f][0];
+    changed = true;
+  }
+  return changed;
+}
 var WriteError = class extends Error {
   constructor(code, message, extra = {}) {
     super(message);
@@ -1476,7 +1481,16 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
       rec.setValue({ fieldId: UAS.STAGE_SOURCE, value: 1 });
       rec.setValue({ fieldId: UAS.STAGE_DATE, value: change.stageKey === "NONE" ? "" : localDate(clock().slice(0, 10)) });
     }
-    rec.save();
+    try {
+      rec.save();
+    } catch (e) {
+      if (change.recordType === TOUR.TYPE && singleValue(fields, String(e && e.message || e))) {
+        const again = record2.load({ type: change.recordType, id: change.recordId });
+        for (const [f, v] of Object.entries(fields)) again.setValue({ fieldId: f, value: nsValue(f, v, change.tourDate || null) });
+        again.save();
+        change.singleValued = true;
+      } else throw e;
+    }
     let restored = null;
     if (captured) {
       const after = currentTenants(change.recordId);
@@ -1491,7 +1505,7 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
     }
     const auditMode = [];
     for (const f of Object.keys(fields)) auditMode.push(audit(scope, change, change.recordId, f, before[f], fields[f]));
-    return { ok: true, recordType: change.recordType, recordId: String(change.recordId), before, after: fields, tenants: restored, audit: auditMode[0], ...change.dropped ? { dropped: change.dropped } : {} };
+    return { ok: true, recordType: change.recordType, recordId: String(change.recordId), before, after: fields, tenants: restored, audit: auditMode[0], ...change.dropped ? { dropped: change.dropped } : {}, ...change.singleValued ? { singleValued: true } : {} };
   }
   function applyCreate(scope, change, fields) {
     if (change.recordType === LEASE.TYPE && fields[LEASE.TENANTS]) {
@@ -1513,14 +1527,18 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
     try {
       id = build(fields).save();
     } catch (e) {
-      if (change.recordType === CUSTOMER.TYPE && fields.salesrep && /sales ?rep/i.test(String(e && e.message || e))) {
+      const msg = String(e && e.message || e);
+      if (change.recordType === CUSTOMER.TYPE && fields.salesrep && /sales ?rep/i.test(msg)) {
         delete fields.salesrep;
         change.dropped = [...change.dropped || [], "salesrep"];
         id = build(fields).save();
+      } else if (change.recordType === TOUR.TYPE && singleValue(fields, msg)) {
+        id = build(fields).save();
+        change.singleValued = true;
       } else throw e;
     }
     audit(scope, change, id, "*create*", null, JSON.stringify(fields));
-    return { ok: true, created: true, recordType: change.recordType, recordId: String(id), after: fields, ...change.dropped ? { dropped: change.dropped } : {} };
+    return { ok: true, created: true, recordType: change.recordType, recordId: String(id), after: fields, ...change.dropped ? { dropped: change.dropped } : {}, ...change.singleValued ? { singleValued: true } : {} };
   }
   function apply(changes, scope) {
     const results = [], deferred = [];
@@ -3464,12 +3482,14 @@ function tourRows(ctx, raw) {
       }
       return { unit: u, bedroom: b };
     };
+    const list = (v) => v == null || v === "" ? [] : String(v).split(/[,\s]+/).filter(Boolean);
     const tag = TOUR.UNITS_TAG.exec(String(t.message || ""));
     const tagged = tag ? tag[1].split(",").filter(Boolean) : [];
-    const firstId = t.unit != null ? String(t.unit) : tagged[0] || null;
+    const fieldUnits = list(t.unit);
+    const firstId = fieldUnits[0] || tagged[0] || null;
     const { unit, bedroom } = firstId ? resolve(firstId) : { unit: null, bedroom: null };
     const prop = unit ? inv.propertiesById.get(unit.propertyId) : null;
-    const units = [.../* @__PURE__ */ new Set([...firstId ? [firstId] : [], ...tagged])].map((id) => {
+    const units = [.../* @__PURE__ */ new Set([...fieldUnits, ...tagged])].map((id) => {
       const r = resolve(id);
       if (!r.unit) return null;
       const p = inv.propertiesById.get(r.unit.propertyId);
@@ -3477,7 +3497,8 @@ function tourRows(ctx, raw) {
     }).filter(Boolean);
     const notes = String(t.message || "").replace(TOUR.UNITS_TAG, "").trim();
     const start = hhmm(t.starttime), end = hhmm(t.endtime);
-    const ay = t.ay != null ? ays.find((a) => a.id === String(t.ay)) : null;
+    const ayList = list(t.ay).map((id) => ays.find((a) => a.id === id)).filter(Boolean);
+    const ay = ayList[0] || null;
     return {
       id: String(t.id),
       title: t.title || "",
@@ -3502,6 +3523,8 @@ function tourRows(ctx, raw) {
       outcome: t.outcome != null ? outcomes[String(t.outcome)] || null : t.status === TOUR.STATUS.CANCELLED ? "CANCELLED" : null,
       ayId: ay ? ay.id : null,
       ay: ay ? ay.year : null,
+      ayIds: ayList.map((a) => a.id),
+      ays: ayList.map((a) => a.year),
       version: String(t.lastmodifieddate || "")
     };
   });
@@ -3519,9 +3542,8 @@ function routeTours(ctx) {
   const filters = { from, to };
   if (view === "mine") filters.organizerId = ctx.scope.userId;
   if (q.customer) filters.customerIds = String(q.customer).split(",").filter(Boolean);
-  if (q.unit) filters.unitIds = String(q.unit).split(",").filter(Boolean);
-  if (q.ayId) filters.ayId = q.ayId;
-  const rows = tourRows(ctx, ctx.dao.tours.list(filters)).filter((r) => visibleTour(ctx, r));
+  const unitIds = q.unit ? String(q.unit).split(",").filter(Boolean) : null, ayId = q.ayId ? String(q.ayId) : null;
+  const rows = tourRows(ctx, ctx.dao.tours.list(filters)).filter((r) => visibleTour(ctx, r) && (!unitIds || r.units.some((u) => unitIds.includes(u.unitId) || unitIds.includes(u.id))) && (!ayId || !r.ayIds.length || r.ayIds.includes(ayId)));
   const have = ctx.dao.tours.fields();
   return {
     rows,
@@ -3640,10 +3662,10 @@ function buildPipelineRows(ctx, ay, basis) {
   const tourByUnit = /* @__PURE__ */ new Map();
   try {
     const ayId2 = ctx.ayIdFor(ay);
-    const have = ctx.dao.tours.fields();
-    const raw = ctx.dao.tours.list(have.ay && ayId2 ? { ayId: ayId2 } : { from: addDays(`${ay}-01-01`, -200), to: ayEndDate(ay) });
+    const raw = ctx.dao.tours.list({ from: addDays(`${ay}-01-01`, -200), to: ayEndDate(ay) });
     for (const t of tourRows(ctx, raw)) {
       if (t.outcome === "CANCELLED") continue;
+      if (t.ayIds.length && ayId2 && !t.ayIds.includes(String(ayId2))) continue;
       for (const uid of [...new Set((t.units || []).map((u) => u.unitId))]) {
         const cur = tourByUnit.get(uid) || { n: 0, last: null, next: null };
         cur.n += 1;
@@ -4237,7 +4259,7 @@ function renderShell(ctx) {
   return `<!doctype html><html lang="en" data-theme="auto"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="al-build" content="${build}"><title>Amicus Leasing</title><style>html,body{margin:0;background:#fff;color:#111;font:14px/1.4 system-ui,sans-serif}@media(prefers-color-scheme:dark){html,body{background:#121417;color:#e6e8eb}}#root{min-height:100vh}.al-boot{padding:24px;max-width:720px}</style>${styleTag}</head><body><div id="root"><div class="al-boot" id="al-boot">Loading Amicus Leasing…</div></div><script type="application/json" id="al-bootstrap">${json}</script><script>window.__AL_SERVER_BUILD=${JSON.stringify(build)};</script>${js ? `<script src="${js}" defer onerror="document.getElementById('al-boot').textContent='The client bundle could not be loaded from ${js.replace(/'/g, "")} — open the browser console (F12) for the reason.'"></script>` : `<script>document.getElementById('al-boot').textContent='Client bundle not configured: set the script parameters custscript_al_client_js / custscript_al_client_css to the File Cabinet ids of amicus_leasing_app.js / .css (see SETUP-CHECKLIST).';</script>`}<script>setTimeout(function(){var b=document.getElementById('al-boot');if(b&&b.textContent.indexOf('Loading')===0)b.textContent='The client bundle loaded but did not start. Open the browser console (F12) and send the first error line.';},8000);</script></body></html>`;
 }
 function buildId() {
-  return true ? String("7f74eda37c0e") : "dev";
+  return true ? String("29a1d8a7aae6") : "dev";
 }
 function inlineCss(ctx) {
   try {

@@ -20,16 +20,14 @@ export function createToursDao({ sq, schema, log }) {
       { field: TOUR.AY, as: 'ay', optional: true, feature: 'tours: academic year' },
     ]).select;
   }
-  /** list({ from, to, organizerId, customerIds, unitIds, ayId }) → raw rows, oldest first. Dates are ISO strings. */
+  /** list({ from, to, organizerId, customerIds }) → raw rows, oldest first. Dates are ISO strings. Unit / AY filtering happens on the rows. */
   function list(f = {}) {
     if (unavailable) return [];
     const where = [];
     if (f.from) where.push(`startdate >= TO_DATE('${esc(f.from)}', 'YYYY-MM-DD')`);
     if (f.to) where.push(`startdate <= TO_DATE('${esc(f.to)}', 'YYYY-MM-DD')`);
     if (f.organizerId) where.push(`organizer = ${Number(f.organizerId)}`);
-    const have = fields();
-    if (f.ayId && have.ay) where.push(`${TOUR.AY} = ${Number(f.ayId)}`);
-    if (f.unitIds && have.unit) where.push(`${TOUR.UNIT} IN (${sqlIn(f.unitIds)})`);
+    // The unit and academic-year fields are multi-selects: never filtered in SQL (a multi-select in a WHERE is unreliable); callers filter the rows.
     const run = (extra) => sq.few(`SELECT ${select()} FROM ${T} ${[...where, ...extra].length ? `WHERE ${[...where, ...extra].join(' AND ')}` : ''} ORDER BY startdate, starttime, id`);
     try {
       if (f.customerIds) { if (!f.customerIds.length) return []; return sq.inChunks(f.customerIds, (c) => run([`company IN (${sqlIn(c)})`])); }
