@@ -351,6 +351,9 @@ export const TOUR = Object.freeze({
   STATUS: Object.freeze({ CONFIRMED: 'CONFIRMED', TENTATIVE: 'TENTATIVE', CANCELLED: 'CANCELLED' }),
   DEFAULT_MINUTES: 30,
   TITLE_PREFIX: 'Tour',
+  /** A tour can cover several units; the Event has one unit field, so the full list rides in the notes as this tag. */
+  UNITS_TAG: /\[units:([0-9,]+)\]/,
+  unitsTag: (ids) => `[units:${ids.join(',')}]`,
 });
 /** NetSuite's own calendar page: the "my calendar" link in the header and on Today. */
 export const CALENDAR_URL = '/app/crm/calendar/calendar.nl';

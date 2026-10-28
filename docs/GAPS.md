@@ -103,7 +103,7 @@ Legend: **✓ built** · **≈ built differently** (same information, new placem
 
 | Feature | Where | Notes |
 |---|---|---|
-| Schedule a tour | Today › Schedule tour; Pipeline › Tours column › Tour…; People › Leads › Tour… | NetSuite Event on the agent's calendar (A-23); update outcome from the same dialog |
+| Schedule a tour | Today › Schedule tour; Pipeline › Tours column › Tour…; People › Leads › Tour… | NetSuite Event on the agent's calendar (A-23); several properties and units per tour (the first unit on the Event's unit field, the full list in the notes as `[units:…]`); update outcome from the same dialog |
 | My calendar | header › Calendar; Today; Leads toolbar | opens NetSuite's calendar page (the tours are its events) |
 | Add a lead | Today › + Add lead; People › Leads › + Add lead | creates the Lead Form's record (A-22); optional first tour in the same save; duplicate email guard |
 | Leads segment | People › Leads | New (14 days) · No tour · No property · All; next/last tour, source, agent, school, asked-for; bulk property/AY; CSV |

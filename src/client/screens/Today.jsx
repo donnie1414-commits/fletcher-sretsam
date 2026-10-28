@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useRoute } from '../hooks.js';
 import { invalidate, isPreview } from '../api.js';
-import { Skeleton, ErrorBox, Button, Empty } from '../ui.jsx';
+import { Skeleton, ErrorBox, Button, Empty, Pill } from '../ui.jsx';
 import { fmtInt, fmtDate } from '../format.js';
 import { StagePill } from './Pipeline.jsx';
 import { TourDialog, TourLine } from './people/TourDialog.jsx';
@@ -31,7 +31,7 @@ export function Today({ sel, go, openExceptions, bootstrap }) {
         <ul className="queue-list">{data.stale.rows.map((r) => <li key={r.key}><button type="button" className="linkish" onClick={() => go('pipeline', { q: r.unit === '(whole property)' ? r.property : r.unit })}>{r.property} · {r.unit}</button> <StagePill stageKey={r.stage} days={r.daysInStage} /></li>)}</ul>
       </Section>}
       <Section title="Leads with no next action" count={data.leads.count} action={<span className="hdr-actions"><Button small kind="primary" onClick={() => setDialog({ kind: 'lead' })}>+ Add lead</Button><Button small onClick={() => go('people', { seg: 'leads' })}>Open leads</Button></span>}>
-        {data.leads.count ? <ul className="queue-list">{data.leads.rows.map((l) => <li key={l.id}><strong>{l.name}</strong> <span className="muted small">{[l.school, l.desiredLocation ? `asked for ${l.desiredLocation}` : null, l.created ? `since ${fmtDate(l.created)}` : null].filter(Boolean).join(' · ')}</span> {tours.available !== false && <button type="button" className="linkish small" onClick={() => setDialog({ kind: 'tour', lead: { id: l.id, name: l.name, properties: [] } })}>schedule tour</button>}</li>)}</ul> : <p className="muted small">Every new inquiry in your markets has a property or a tour.</p>}
+        {data.leads.count ? <ul className="queue-list">{data.leads.rows.map((l) => <li key={l.id}><strong>{l.name}</strong> <Pill tone={l.statusId === 18 ? 'active' : 'info'}>{l.status}</Pill> <span className="muted small">{[l.school, l.desiredLocation ? `asked for ${l.desiredLocation}` : null, l.created ? `since ${fmtDate(l.created)}` : null].filter(Boolean).join(' · ')}</span> {tours.available !== false && <button type="button" className="linkish small" onClick={() => setDialog({ kind: 'tour', lead: l })}>schedule tour</button>}</li>)}</ul> : <p className="muted small">Every new inquiry in your markets has a property or a tour.</p>}
         {data.leads.count > data.leads.rows.length && <p className="muted small">Showing {data.leads.rows.length} of {fmtInt(data.leads.count)}.</p>}
       </Section>
       <Section title="Tenants who cannot be attached to a lease" count={data.blockedTenants.missingProperty + data.blockedTenants.missingAy} action={<Button small onClick={() => go('people', { seg: 'tenants' })}>Open tenants</Button>}>

@@ -20,7 +20,7 @@ function build({ employeeMarkets = 'Bethlehem', usage = 1000, auditMissing = fal
   const auth = createAuth({ runtime, sq, schema, log: fakeLog });
   // audit records written through record.create land in the fake store; expose them to the replay query
   const origCreate = rs.record.create;
-  rs.record.create = (o) => { const r = origCreate(o); if (o.type === AUDIT.TYPE) { const vals = {}; const set = r.setValue; r.setValue = ({ fieldId, value }) => { vals[fieldId] = value; set({ fieldId, value }); }; const save = r.save; r.save = () => { const id = save(); auditRows.push({ changeId: vals[AUDIT.CHANGE_ID], rt: vals[AUDIT.RECORD_TYPE], rid: vals[AUDIT.RECORD_ID], after: vals[AUDIT.AFTER] }); return id; }; } return r; };
+  rs.record.create = (o) => { const r = origCreate(o); if (o.type === AUDIT.TYPE) { const vals = {}; const set = r.setValue; r.setValue = ({ fieldId, value }) => { vals[fieldId] = value; set({ fieldId, value }); }; const save = r.save; r.save = () => { const id = save(); auditRows.push({ changeId: vals[AUDIT.CHANGE_ID], rt: vals[AUDIT.RECORD_TYPE], rid: vals[AUDIT.RECORD_ID], after: vals[AUDIT.AFTER], when: vals[AUDIT.WHEN] }); return id; }; } return r; };
   const writes = createWrites({ record: rs.record, sq, runtime, log: fakeLog, schema, auth, marketOf, clock: () => '2026-10-24T12:00:00.000Z', tourFields, outcomeIdFor, defaultSubsidiaryId: () => 1, findByEmail: (e) => existingEmails[String(e).toLowerCase()] || [], stageOf: (id) => { const c = (rs.store[CUSTOMER.TYPE] || {})[id]; return c ? { stage: c.stage, entitystatus: c.entitystatus } : null; }, notify });
   return { writes, scope: auth.resolve(), rs, auditRows, runtime };
 }
@@ -39,7 +39,7 @@ test('lease-driven stages are rejected server-side; a human stage is written wit
   assert.equal(r.results[1].ok, true);
   const row = rs.store[UAS.TYPE][11];
   assert.equal(row[UAS.STAGE], 'Renewal Offered'); assert.equal(row[UAS.MANUAL_STAGE], 'Renewal Offered'); assert.equal(row[UAS.STAGE_SOURCE], 1); assert.ok(row[UAS.STAGE_DATE] instanceof Date && row[UAS.STAGE_DATE].getDate() === 24 && row[UAS.STAGE_DATE].getMonth() === 9, 'stage date is a Date object (NetSuite rejects date strings)');
-  assert.equal(auditRows.length, 1); assert.equal(auditRows[0].changeId, 'c2');
+  assert.equal(auditRows.length, 1); assert.equal(auditRows[0].changeId, 'c2'); assert.ok(auditRows[0].when instanceof Date, 'the audit timestamp is a Date (a Date/Time field rejects ISO text)');
 });
 test('idempotent replay: the same change id returns the stored result and writes nothing twice', () => {
   const { writes, scope, rs } = build({ store: uasStore() });

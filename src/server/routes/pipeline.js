@@ -26,7 +26,7 @@ export function buildPipelineRows(ctx, ay, basis) {
   try {
     const ayId = ctx.ayIdFor(ay); const have = ctx.dao.tours.fields();
     const raw = ctx.dao.tours.list(have.ay && ayId ? { ayId } : { from: addDays(`${ay}-01-01`, -200), to: ayEndDate(ay) });
-    for (const t of tourRows(ctx, raw)) { if (!t.unitId || t.outcome === 'CANCELLED') continue; const cur = tourByUnit.get(t.unitId) || { n: 0, last: null, next: null }; cur.n += 1; if (t.date < ctx.today && (!cur.last || t.date > cur.last)) cur.last = t.date; if (t.date >= ctx.today && (!cur.next || t.date < cur.next)) cur.next = t.date; tourByUnit.set(t.unitId, cur); }
+    for (const t of tourRows(ctx, raw)) { if (t.outcome === 'CANCELLED') continue; for (const uid of [...new Set((t.units || []).map((u) => u.unitId))]) { const cur = tourByUnit.get(uid) || { n: 0, last: null, next: null }; cur.n += 1; if (t.date < ctx.today && (!cur.last || t.date > cur.last)) cur.last = t.date; if (t.date >= ctx.today && (!cur.next || t.date < cur.next)) cur.next = t.date; tourByUnit.set(uid, cur); } }
   } catch (e) { ctx.log && ctx.log.error && ctx.log.error({ title: 'pipeline: tours', details: e && e.message }); }
   const segment = ctx.params.segment === 'str' ? 'STR' : 'STUDENT';
   const prior = r.prior ? r.prior.placement : null;

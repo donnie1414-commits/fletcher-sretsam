@@ -516,7 +516,10 @@ var TOUR = Object.freeze({
   // native Event fields the app writes (§5.6): a tour is a NetSuite Event organised by the agent, so it is on their calendar
   STATUS: Object.freeze({ CONFIRMED: "CONFIRMED", TENTATIVE: "TENTATIVE", CANCELLED: "CANCELLED" }),
   DEFAULT_MINUTES: 30,
-  TITLE_PREFIX: "Tour"
+  TITLE_PREFIX: "Tour",
+  /** A tour can cover several units; the Event has one unit field, so the full list rides in the notes as this tag. */
+  UNITS_TAG: /\[units:([0-9,]+)\]/,
+  unitsTag: (ids2) => `[units:${ids2.join(",")}]`
 });
 var CALENDAR_URL = "/app/crm/calendar/calendar.nl";
 var LEAD = Object.freeze({
@@ -1279,8 +1282,7 @@ function createWrites({ record: record2, sq, runtime: runtime2, log: log2, schem
     }
     const r = record2.create({ type: AUDIT.TYPE });
     r.setValue({ fieldId: AUDIT.WHO, value: entry.who });
-    r.setValue({ fieldId: AUDIT.WHEN, value: entry.when });
-    r.setValue({ fieldId: AUDIT.RECORD_TYPE, value: entry.recordType });
+    r.setValue({ fieldId: AUDIT.WHEN, value: new Date(entry.when) });
     r.setValue({ fieldId: AUDIT.RECORD_ID, value: entry.recordId });
     r.setValue({ fieldId: AUDIT.FIELD, value: field });
     r.setValue({ fieldId: AUDIT.BEFORE, value: entry.before });
@@ -3454,15 +3456,26 @@ function tourRows(ctx, raw) {
   const outcomes = outcomeKeyFor(ctx.dao.portfolio.lists());
   const ays = ctx.ays();
   return raw.map((t) => {
-    let unit = null, bedroom = null;
-    if (t.unit != null) {
-      unit = inv.unitsById.get(String(t.unit)) || null;
-      if (!unit) {
-        bedroom = inv.bedroomsById.get(String(t.unit)) || null;
-        if (bedroom) unit = inv.unitsById.get(bedroom.unitId) || null;
+    const resolve = (id) => {
+      let u = inv.unitsById.get(String(id)) || null, b = null;
+      if (!u) {
+        b = inv.bedroomsById.get(String(id)) || null;
+        if (b) u = inv.unitsById.get(b.unitId) || null;
       }
-    }
+      return { unit: u, bedroom: b };
+    };
+    const tag = TOUR.UNITS_TAG.exec(String(t.message || ""));
+    const tagged = tag ? tag[1].split(",").filter(Boolean) : [];
+    const firstId = t.unit != null ? String(t.unit) : tagged[0] || null;
+    const { unit, bedroom } = firstId ? resolve(firstId) : { unit: null, bedroom: null };
     const prop = unit ? inv.propertiesById.get(unit.propertyId) : null;
+    const units = [.../* @__PURE__ */ new Set([...firstId ? [firstId] : [], ...tagged])].map((id) => {
+      const r = resolve(id);
+      if (!r.unit) return null;
+      const p = inv.propertiesById.get(r.unit.propertyId);
+      return { id, unitId: r.unit.id, name: r.bedroom ? `${r.unit.name} · ${r.bedroom.name}` : r.unit.name, propertyId: r.unit.propertyId, property: p ? p.name : null, market: p ? p.marketId : null };
+    }).filter(Boolean);
+    const notes = String(t.message || "").replace(TOUR.UNITS_TAG, "").trim();
     const start = hhmm(t.starttime), end = hhmm(t.endtime);
     const ay = t.ay != null ? ays.find((a) => a.id === String(t.ay)) : null;
     return {
@@ -3476,7 +3489,8 @@ function tourRows(ctx, raw) {
       organizer: t.organizer_name || null,
       status: t.status || null,
       location: t.location || null,
-      notes: t.message || null,
+      notes: notes || null,
+      units,
       customerId: t.company != null ? String(t.company) : null,
       customer: t.company_name || null,
       unitId: unit ? unit.id : null,
@@ -3629,12 +3643,14 @@ function buildPipelineRows(ctx, ay, basis) {
     const have = ctx.dao.tours.fields();
     const raw = ctx.dao.tours.list(have.ay && ayId2 ? { ayId: ayId2 } : { from: addDays(`${ay}-01-01`, -200), to: ayEndDate(ay) });
     for (const t of tourRows(ctx, raw)) {
-      if (!t.unitId || t.outcome === "CANCELLED") continue;
-      const cur = tourByUnit.get(t.unitId) || { n: 0, last: null, next: null };
-      cur.n += 1;
-      if (t.date < ctx.today && (!cur.last || t.date > cur.last)) cur.last = t.date;
-      if (t.date >= ctx.today && (!cur.next || t.date < cur.next)) cur.next = t.date;
-      tourByUnit.set(t.unitId, cur);
+      if (t.outcome === "CANCELLED") continue;
+      for (const uid of [...new Set((t.units || []).map((u) => u.unitId))]) {
+        const cur = tourByUnit.get(uid) || { n: 0, last: null, next: null };
+        cur.n += 1;
+        if (t.date < ctx.today && (!cur.last || t.date > cur.last)) cur.last = t.date;
+        if (t.date >= ctx.today && (!cur.next || t.date < cur.next)) cur.next = t.date;
+        tourByUnit.set(uid, cur);
+      }
     }
   } catch (e) {
     ctx.log && ctx.log.error && ctx.log.error({ title: "pipeline: tours", details: e && e.message });
@@ -4110,7 +4126,7 @@ function routeToday(ctx) {
     followups: { count: followups.length, rows: followups.slice(0, 50) },
     tours: { count: soon.length, rows: soon.slice(0, 50), week: mine.length, weekRows: mine.slice(0, 50), available: !ctx.dao.tours.unavailable, note: ctx.dao.tours.unavailable ? "calendar events are not readable by this role" : null, calendarUrl: CALENDAR_URL, me: String(ctx.scope.userId) },
     stale: { count: stale.length, rows: stale.slice(0, 50), thresholdDays: STALE_STAGE_DAYS },
-    leads: { count: leadRows.length, rows: leadRows.slice(0, 25).map((l) => ({ id: l.id, name: l.name, school: l.school, desiredLocation: l.desiredLocation, created: l.created, email: l.email, phone: l.phone })) },
+    leads: { count: leadRows.length, rows: leadRows.slice(0, 25).map((l) => ({ id: l.id, name: l.name, status: l.status, statusId: l.statusId, stage: l.stage, school: l.school, desiredLocation: l.desiredLocation, created: l.created, email: l.email, phone: l.phone, unitsOfInterest: l.unitsOfInterest, properties: l.properties })) },
     blockedTenants: { missingProperty: blocked.total, missingAy: blockedAy.total, sample: blocked.rows.slice(0, 10).map((t) => ({ id: String(t.id), name: [t.firstname, t.lastname].filter(Boolean).join(" "), desiredLocation: t.desired_location })) },
     exceptions: { count: ex.count, byCode: ex.groups.map((g) => ({ code: g.code, label: g.label, severity: g.severity, n: g.rows.length })) }
   };
@@ -4221,7 +4237,7 @@ function renderShell(ctx) {
   return `<!doctype html><html lang="en" data-theme="auto"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="al-build" content="${build}"><title>Amicus Leasing</title><style>html,body{margin:0;background:#fff;color:#111;font:14px/1.4 system-ui,sans-serif}@media(prefers-color-scheme:dark){html,body{background:#121417;color:#e6e8eb}}#root{min-height:100vh}.al-boot{padding:24px;max-width:720px}</style>${styleTag}</head><body><div id="root"><div class="al-boot" id="al-boot">Loading Amicus Leasing…</div></div><script type="application/json" id="al-bootstrap">${json}</script><script>window.__AL_SERVER_BUILD=${JSON.stringify(build)};</script>${js ? `<script src="${js}" defer onerror="document.getElementById('al-boot').textContent='The client bundle could not be loaded from ${js.replace(/'/g, "")} — open the browser console (F12) for the reason.'"></script>` : `<script>document.getElementById('al-boot').textContent='Client bundle not configured: set the script parameters custscript_al_client_js / custscript_al_client_css to the File Cabinet ids of amicus_leasing_app.js / .css (see SETUP-CHECKLIST).';</script>`}<script>setTimeout(function(){var b=document.getElementById('al-boot');if(b&&b.textContent.indexOf('Loading')===0)b.textContent='The client bundle loaded but did not start. Open the browser console (F12) and send the first error line.';},8000);</script></body></html>`;
 }
 function buildId() {
-  return true ? String("e82d45546136") : "dev";
+  return true ? String("7f74eda37c0e") : "dev";
 }
 function inlineCss(ctx) {
   try {

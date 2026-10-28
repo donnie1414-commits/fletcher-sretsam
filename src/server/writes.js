@@ -75,7 +75,7 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
     const entry = { who: scope.userId, when: clock(), recordType: change.recordType, recordId: String(recordId), field, before: ser(before), after: ser(after), changeId: change.changeId };
     if (!auditAvailable()) { log.audit({ title: 'write (audit record missing)', details: JSON.stringify(entry) }); return 'log-only'; }
     const r = record.create({ type: AUDIT.TYPE });
-    r.setValue({ fieldId: AUDIT.WHO, value: entry.who }); r.setValue({ fieldId: AUDIT.WHEN, value: entry.when }); r.setValue({ fieldId: AUDIT.RECORD_TYPE, value: entry.recordType });
+    r.setValue({ fieldId: AUDIT.WHO, value: entry.who }); r.setValue({ fieldId: AUDIT.WHEN, value: new Date(entry.when) }); // Date/Time field: a Date object, never an ISO string r.setValue({ fieldId: AUDIT.RECORD_TYPE, value: entry.recordType });
     r.setValue({ fieldId: AUDIT.RECORD_ID, value: entry.recordId }); r.setValue({ fieldId: AUDIT.FIELD, value: field }); r.setValue({ fieldId: AUDIT.BEFORE, value: entry.before }); r.setValue({ fieldId: AUDIT.AFTER, value: entry.after }); r.setValue({ fieldId: AUDIT.CHANGE_ID, value: entry.changeId });
     r.save(); return 'record';
   }

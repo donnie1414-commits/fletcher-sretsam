@@ -19,14 +19,19 @@ export function tourRows(ctx, raw) {
   const outcomes = outcomeKeyFor(ctx.dao.portfolio.lists());
   const ays = ctx.ays();
   return raw.map((t) => {
-    let unit = null, bedroom = null;
-    if (t.unit != null) { unit = inv.unitsById.get(String(t.unit)) || null; if (!unit) { bedroom = inv.bedroomsById.get(String(t.unit)) || null; if (bedroom) unit = inv.unitsById.get(bedroom.unitId) || null; } }
+    const resolve = (id) => { let u = inv.unitsById.get(String(id)) || null, b = null; if (!u) { b = inv.bedroomsById.get(String(id)) || null; if (b) u = inv.unitsById.get(b.unitId) || null; } return { unit: u, bedroom: b }; };
+    const tag = TOUR.UNITS_TAG.exec(String(t.message || ''));
+    const tagged = tag ? tag[1].split(',').filter(Boolean) : [];
+    const firstId = t.unit != null ? String(t.unit) : tagged[0] || null;
+    const { unit, bedroom } = firstId ? resolve(firstId) : { unit: null, bedroom: null };
     const prop = unit ? inv.propertiesById.get(unit.propertyId) : null;
+    const units = [...new Set([...(firstId ? [firstId] : []), ...tagged])].map((id) => { const r = resolve(id); if (!r.unit) return null; const p = inv.propertiesById.get(r.unit.propertyId); return { id, unitId: r.unit.id, name: r.bedroom ? `${r.unit.name} · ${r.bedroom.name}` : r.unit.name, propertyId: r.unit.propertyId, property: p ? p.name : null, market: p ? p.marketId : null }; }).filter(Boolean);
+    const notes = String(t.message || '').replace(TOUR.UNITS_TAG, '').trim();
     const start = hhmm(t.starttime), end = hhmm(t.endtime);
     const ay = t.ay != null ? ays.find((a) => a.id === String(t.ay)) : null;
     return {
       id: String(t.id), title: t.title || '', date: toISO(t.startdate), start, end, allDay: !start,
-      organizerId: t.organizer != null ? String(t.organizer) : null, organizer: t.organizer_name || null, status: t.status || null, location: t.location || null, notes: t.message || null,
+      organizerId: t.organizer != null ? String(t.organizer) : null, organizer: t.organizer_name || null, status: t.status || null, location: t.location || null, notes: notes || null, units,
       customerId: t.company != null ? String(t.company) : null, customer: t.company_name || null,
       unitId: unit ? unit.id : null, unit: unit ? unit.name : null, bedroom: bedroom ? bedroom.name : null, propertyId: prop ? prop.id : null, property: prop ? prop.name : null, market: prop ? prop.marketId : null,
       outcome: t.outcome != null ? (outcomes[String(t.outcome)] || null) : (t.status === TOUR.STATUS.CANCELLED ? 'CANCELLED' : null), ayId: ay ? ay.id : null, ay: ay ? ay.year : null,

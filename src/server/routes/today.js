@@ -28,7 +28,7 @@ export function routeToday(ctx) {
     followups: { count: followups.length, rows: followups.slice(0, 50) },
     tours: { count: soon.length, rows: soon.slice(0, 50), week: mine.length, weekRows: mine.slice(0, 50), available: !ctx.dao.tours.unavailable, note: ctx.dao.tours.unavailable ? 'calendar events are not readable by this role' : null, calendarUrl: CALENDAR_URL, me: String(ctx.scope.userId) },
     stale: { count: stale.length, rows: stale.slice(0, 50), thresholdDays: STALE_STAGE_DAYS },
-    leads: { count: leadRows.length, rows: leadRows.slice(0, 25).map((l) => ({ id: l.id, name: l.name, school: l.school, desiredLocation: l.desiredLocation, created: l.created, email: l.email, phone: l.phone })) },
+    leads: { count: leadRows.length, rows: leadRows.slice(0, 25).map((l) => ({ id: l.id, name: l.name, status: l.status, statusId: l.statusId, stage: l.stage, school: l.school, desiredLocation: l.desiredLocation, created: l.created, email: l.email, phone: l.phone, unitsOfInterest: l.unitsOfInterest, properties: l.properties })) },
     blockedTenants: { missingProperty: blocked.total, missingAy: blockedAy.total, sample: blocked.rows.slice(0, 10).map((t) => ({ id: String(t.id), name: [t.firstname, t.lastname].filter(Boolean).join(' '), desiredLocation: t.desired_location })) },
     exceptions: { count: ex.count, byCode: ex.groups.map((g) => ({ code: g.code, label: g.label, severity: g.severity, n: g.rows.length })) },
   };
