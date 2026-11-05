@@ -7,11 +7,10 @@
  *     keep(p)  — property-level predicate (scope ∩ selection); also called with { fund, marketId }
  */
 import { LEASE_TYPES, LEASE_STATUSES, SEGMENTS, FUNDS } from '../constants.js';
-import { emptyMetrics, addMetrics, finish, round } from './metrics.js';
+import { emptyMetrics, addMetrics, finish, round, growth, priorThin } from './metrics.js';
 import { ayStartDate, dayNum, addDays, daysBetween } from './dates.js';
 
 const ratio = (a, b) => (b > 0 ? a / b : null);
-const growth = (cur, prev) => (prev > 0 ? cur / prev - 1 : null);
 const r2 = (v) => (v == null ? null : Number(Number(v).toFixed(2)));
 export const fundLabel = (k) => (FUNDS[k] ? FUNDS[k].label : k === 'UNMAPPED' ? 'Unmapped fund' : k);
 const mainSeg = (p) => !!p && (SEGMENTS[p.segment] || SEGMENTS.STUDENT).inOccupancy;
@@ -29,44 +28,68 @@ export function linkedName(run, r) {
 const typeLabel = (k) => (LEASE_TYPES[k] || {}).label || 'Unknown';
 const statusLabel = (k) => (LEASE_STATUSES[k] || {}).label || '–';
 
-/** Prior-year leases counted on or before the same point in last year's leasing cycle. */
+/**
+ * "Same date" comparison, apples to apples: BOTH years count only leases with a basis date (pro-forma: sent, else signed;
+ * executed: signed) on or before the same point of their leasing cycle — the Weekly report's rule. A lease with no date
+ * cannot be placed in time, so it is left out of both sides and reported as undated instead of inflating one side.
+ *   rows     — last year's leases dated on or before lyAsOf
+ *   curRows  — this year's leases dated on or before today
+ *   undated / lyUndated — placed leases with no basis date, this year / last year
+ */
 export function paceCut(run, { today, basis }) {
   if (!run.prior || !today) return null;
   const shift = daysBetween(ayStartDate(run.ay - 1), ayStartDate(run.ay));
   const lyAsOf = addDays(today, -shift);
-  const cut = dayNum(lyAsOf);
-  const rows = [];
+  const cut = dayNum(lyAsOf), now = dayNum(today);
+  const rows = [], lyUndated = [], curRows = [], undated = [];
   for (const r of run.prior.placement.leaseResults.values()) {
     if (r.status !== 'placed') continue;
     const d = leaseDateFor(r.lease, basis);
-    if (d && dayNum(d) <= cut) rows.push(r);
+    if (!d) lyUndated.push(r); else if (dayNum(d) <= cut) rows.push(r);
   }
-  return { asOf: today, lyAsOf, shiftDays: shift, rows };
+  for (const r of run.placement.leaseResults.values()) {
+    if (r.status !== 'placed') continue;
+    const d = leaseDateFor(r.lease, basis);
+    if (!d) undated.push(r); else if (dayNum(d) <= now) curRows.push(r);
+  }
+  return { asOf: today, lyAsOf, shiftDays: shift, rows, curRows, undated, lyUndated };
+}
+function tally(list, run, pred) {
+  let occ = 0, trev = 0, leases = 0;
+  for (const r of list) { const p = propertyOf(run, r); if (!mainSeg(p) || !pred(p, r)) continue; occ += r.coveredBeds; trev += r.year.revenue; leases += 1; }
+  return { occ, trev: r2(trev), leases };
 }
 function paceFor(pace, run, pred) {
   if (!pace) return null;
-  let occ = 0, trev = 0, leases = 0;
-  for (const r of pace.rows) { const p = propertyOf(run.prior ? { inventory: run.inventory } : run, r); if (!mainSeg(p) || !pred(p, r)) continue; occ += r.coveredBeds; trev += r.year.revenue; leases += 1; }
-  return { occ, trev: r2(trev), leases };
+  const ly = tally(pace.rows, run, pred), cur = tally(pace.curRows, run, pred);
+  const und = tally(pace.undated, run, pred), lyUnd = tally(pace.lyUndated, run, pred);
+  return { ...ly, cur, undatedOcc: und.occ, undatedLeases: und.leases, lyUndatedOcc: lyUnd.occ, lyUndatedLeases: lyUnd.leases };
 }
 
 /** A KPI row from a metrics object (+ pace). Field names follow the v2 engine so the tables read the same. */
 export function kpiRow(name, m, pace) {
   const occPct = ratio(m.occupied, m.beds);
+  const thin = priorThin(m.occupied, m.pOccupied, m.beds);
+  if (thin) pace = null; // last year barely exists in NetSuite for this scope: no comparison is meaningful
   const wkOccPct = pace ? ratio(pace.occ, m.beds) : null;
+  const curWkOccPct = pace ? ratio(pace.cur.occ, m.beds) : null;
   return {
     name, beds: m.beds, occ: m.occupied, vacant: m.beds - m.occupied, occPct, vacPct: ratio(m.beds - m.occupied, m.beds),
     finBeds: r2(m.bedMonths / 12), finPct: ratio(m.bedMonths / 12, m.beds),
     occWH: m.byType.WH, occUnit: m.byType.UNIT, occBed: m.byType.BED, people: m.people, leases: m.activeLeases, excluded: m.excludedLeases,
     mrev: r2(m.monthly), trev: r2(m.annual), rentBed: ratio(m.monthly, m.occupied), rentPerson: ratio(m.monthly, m.people),
-    pOcc: m.pOccupied, pVacant: m.beds - m.pOccupied, pOccPct: ratio(m.pOccupied, m.beds), occDelta: occPct != null && m.beds ? occPct - m.pOccupied / m.beds : null,
+    pOcc: m.pOccupied, pVacant: m.beds - m.pOccupied, pOccPct: ratio(m.pOccupied, m.beds), occDelta: !thin && occPct != null && m.beds ? occPct - m.pOccupied / m.beds : null, priorThin: thin,
     pFinPct: ratio(m.pBedMonths / 12, m.beds), pPeople: m.pPeople, pLeases: m.pActiveLeases, pMrev: r2(m.pMonthly), pTrev: r2(m.pAnnual),
     mrevYoY: growth(m.monthly, m.pMonthly), trevYoY: growth(m.annual, m.pAnnual), pRentBed: ratio(m.pMonthly, m.pOccupied),
     rentBedYoY: m.occupied > 0 && m.pOccupied > 0 ? growth(m.monthly / m.occupied, m.pMonthly / m.pOccupied) : null,
     ssBeds: m.ssBeds, ssCur: r2(m.ssCur), ssPrior: r2(m.ssPrior), ssYoY: growth(m.ssCur, m.ssPrior),
     tgt: r2(m.targetMonthly), tgtBeds: m.targetBeds, tgtBed: ratio(m.targetMonthly, m.targetBeds), tgtOcc: r2(m.targetOcc), tgtVacant: r2(m.targetMonthly - m.targetOcc), actVsTgt: m.targetOcc > 0 ? m.monthlyOnTarget / m.targetOcc - 1 : null,
     settle: r2(m.settleMonthly), prevRentBed: ratio(m.prevRentSum, m.prevRentBeds),
-    lyWkOcc: pace ? pace.occ : null, lyWkOccPct: wkOccPct, lyWkDelta: pace && occPct != null && wkOccPct != null ? occPct - wkOccPct : null, lyWkLeases: pace ? pace.leases : null, lyWkTrev: pace ? pace.trev : null, trevPace: pace ? growth(m.annual, pace.trev) : null,
+    lyWkOcc: pace ? pace.occ : null, lyWkOccPct: wkOccPct, lyWkLeases: pace ? pace.leases : null, lyWkTrev: pace ? pace.trev : null,
+    // this year on the same rule (dated leases to today), so "vs same date" subtracts like from like
+    wkOcc: pace ? pace.cur.occ : null, wkOccPct: curWkOccPct, wkTrev: pace ? pace.cur.trev : null,
+    lyWkDelta: pace && curWkOccPct != null && wkOccPct != null ? curWkOccPct - wkOccPct : null, trevPace: pace ? growth(pace.cur.trev, pace.trev) : null,
+    undatedOcc: pace ? pace.undatedOcc : null, undatedLeases: pace ? pace.undatedLeases : null, lyUndatedOcc: pace ? pace.lyUndatedOcc : null, lyUndatedLeases: pace ? pace.lyUndatedLeases : null,
   };
 }
 
@@ -96,7 +119,9 @@ export function summaryExtras(run, { keep = () => true, today = null, basis = ru
   const byFundKeys = [...new Set(cells.map((c) => c.fund))].sort();
   const byMarketKeys = [...new Set(cells.map((c) => c.marketId))].sort((a, b) => a.localeCompare(b));
   const mkName = (id) => (cells.find((c) => c.marketId === id) || {}).market || id;
-  const row = (name, list, pred) => kpiRow(name, sum(list), paceFor(pace, run, pred));
+  // The selection (market / fund / user scope) applies to BOTH years: without keep() here, last year's same-date figures
+  // counted the whole portfolio under a market filter (Lehigh read 187%, its funds 1,000%+).
+  const row = (name, list, pred) => kpiRow(name, sum(list), paceFor(pace, run, (p, r) => keep(p) && pred(p, r)));
   const kpi = {
     total: row('Total', cells, () => true),
     byFund: byFundKeys.map((f) => ({ key: f, row: row(fundLabel(f), cells.filter((c) => c.fund === f), (p) => p.fund === f),
@@ -120,11 +145,11 @@ export function summaryExtras(run, { keep = () => true, today = null, basis = ru
     const trev = list.reduce((s, r) => s + r.year.revenue, 0);
     const plist = priorPlaced.filter((r) => r.lease.typeKey === type);
     const pOcc = plist.reduce((s, r) => s + r.coveredBeds, 0), pMrev = plist.reduce((s, r) => s + r.lease.monthlyRent, 0), pTrev = plist.reduce((s, r) => s + r.year.revenue, 0);
-    const tp = paceFor(pace, run, (p, r) => r.lease.typeKey === type);
+    const tp = priorThin(total.occupied, total.pOccupied, total.beds) ? null : paceFor(pace, run, (p, r) => keep(p) && r.lease.typeKey === type);
     const occPct = ratio(occ, total.beds), pOccPct = run.prior ? ratio(pOcc, total.beds) : null;
     return { key: type, name: typeLabel(type), occ, occShare: ratio(occ, total.occupied), occPct, finBeds: r2(fin), finPct: ratio(fin, total.beds), leases: list.length, people, mrev: r2(mrev), trev: r2(trev), rentBed: ratio(mrev, occ), rentPerson: ratio(mrev, people),
       excluded: excluded.filter((r) => r.lease.typeKey === type).length, pOcc: run.prior ? pOcc : null, pOccPct, occDelta: pOccPct != null && occPct != null ? occPct - pOccPct : null, pLeases: run.prior ? plist.length : null, pMrev: run.prior ? r2(pMrev) : null, mrevYoY: run.prior ? growth(mrev, pMrev) : null, pTrev: run.prior ? r2(pTrev) : null, trevYoY: run.prior ? growth(trev, pTrev) : null,
-      lyWkOcc: tp ? tp.occ : null, lyWkOccPct: tp ? ratio(tp.occ, total.beds) : null, lyWkDelta: tp && occPct != null ? occPct - (ratio(tp.occ, total.beds) || 0) : null, lyWkTrev: tp ? tp.trev : null, trevPace: tp ? growth(trev, tp.trev) : null, pRentBed: run.prior ? ratio(pMrev, pOcc) : null };
+      lyWkOcc: tp ? tp.occ : null, lyWkOccPct: tp ? ratio(tp.occ, total.beds) : null, wkOccPct: tp ? ratio(tp.cur.occ, total.beds) : null, lyWkDelta: tp ? (ratio(tp.cur.occ, total.beds) || 0) - (ratio(tp.occ, total.beds) || 0) : null, lyWkTrev: tp ? tp.trev : null, trevPace: tp ? growth(tp.cur.trev, tp.trev) : null, pRentBed: run.prior ? ratio(pMrev, pOcc) : null };
   });
 
   // ties: the allocated totals must come back to the counted leases (people allow for sequential tenancies: one bed, one person at a time)

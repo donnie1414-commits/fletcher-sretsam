@@ -14,11 +14,13 @@ export function Summary({ sel, presentation }) {
   if (loading || !data) return <Skeleton rows={4} />;
   const p = data.kpi.total, v = data.vacancy;
   const ly = data.prior ? ayShort(data.ay - 1) : null;
-  const hasPace = !!(data.pace && ly && isNum(p.lyWkOccPct));
+  const thin = !!(ly && p.priorThin);
+  const hasPace = !!(data.pace && ly && !thin && isNum(p.lyWkOccPct));
+  const lyCmp = thin ? null : ly; // last year comparable at all
   const basisLabel = sel.basis === 'executed' ? 'Fully Executed' : 'Pro-forma (Executed + In Process)';
   const paceRow = (val, d) => (hasPace ? ['Same date LY', val, d] : null);
-  const finalRow = (val, d) => (ly ? ['LY final', val, d] : null);
-  const cols = summaryColumns({ hasPace, ly, lyAsOf: data.pace ? fmtDate(data.pace.lyAsOf) : '' });
+  const finalRow = (val, d) => (lyCmp ? ['LY final', val, d] : null);
+  const cols = summaryColumns({ hasPace, ly: lyCmp, lyAsOf: data.pace ? fmtDate(data.pace.lyAsOf) : '' });
   const tiesOk = data.ties.people && data.ties.mrev && data.ties.trev;
   const tcols = [
     { label: 'Occupied Beds', value: (r) => fmtInt(r.occ), note: 'Beds under this type' }, { label: 'Share', value: (r) => fmtPct(r.occShare), note: 'Of all occupied beds' }, { label: 'Occ. %', value: (r) => <OccPill r={r.occPct} d={hasPace ? r.lyWkDelta : null} />, note: 'Of total beds' },
@@ -33,13 +35,14 @@ export function Summary({ sel, presentation }) {
     <div className={presentation ? 'present' : ''}>
       <div className="tiles six">
         <Tile label="Total Beds" value={fmtInt(p.beds)} rows={[['Properties', fmtInt(data.propertyCount)], ['Markets', fmtInt(data.marketCount)]]} />
-        <Tile label="Occupied Beds" value={fmtInt(p.occ)} rows={[paceRow(fmtInt(p.lyWkOcc), D(isNum(p.lyWkOcc) ? p.occ - p.lyWkOcc : null, fmtSigned)), finalRow(fmtInt(p.pOcc), D(isNum(p.pOcc) ? p.occ - p.pOcc : null, fmtSigned))]} note={basisLabel} />
-        <Tile label={data.ay > data.currentAy ? 'Pre-leased' : 'Occupancy'} value={fmtPct(p.occPct)} bar={p.occPct} tone={hasPace ? paceTone(p.lyWkDelta) : occTone(p.occPct)} rows={[paceRow(fmtPct(p.lyWkOccPct), D(p.lyWkDelta, fmtPts)), finalRow(fmtPct(p.pOccPct), D(p.occDelta, fmtPts))]} />
+        <Tile label="Occupied Beds" value={fmtInt(p.occ)} rows={[hasPace ? ['Dated to date', fmtInt(p.wkOcc)] : null, paceRow(fmtInt(p.lyWkOcc), D(isNum(p.lyWkOcc) && isNum(p.wkOcc) ? p.wkOcc - p.lyWkOcc : null, fmtSigned)), finalRow(fmtInt(p.pOcc), D(isNum(p.pOcc) ? p.occ - p.pOcc : null, fmtSigned))]} note={basisLabel} />
+        <Tile label={data.ay > data.currentAy ? 'Pre-leased' : 'Occupancy'} value={fmtPct(p.occPct)} bar={p.occPct} tone={hasPace ? paceTone(p.lyWkDelta) : occTone(p.occPct)} rows={[hasPace ? ['Dated to date', fmtPct(p.wkOccPct)] : null, paceRow(fmtPct(p.lyWkOccPct), D(p.lyWkDelta, fmtPts)), finalRow(fmtPct(p.pOccPct), D(p.occDelta, fmtPts))]} />
         <Tile label="Vacant Beds" value={fmtInt(p.vacant)} rows={[['Fully vacant units', fmtInt(v.fullUnits), <span className="muted">{fmtInt(v.fullBeds)} beds</span>], ['Partly vacant units', fmtInt(v.partUnits), <span className="muted">{fmtInt(v.partBeds)} beds</span>]]} />
         <Tile label="Financial Occupancy" value={fmtPct(p.finPct)} bar={p.finPct} tone={occTone(p.finPct)} rows={[finalRow(fmtPct(p.pFinPct), D(isNum(p.pFinPct) ? p.finPct - p.pFinPct : null, fmtPts))]} note="Lease months capped at 12" />
-        <Tile label="Total Revenue" value={fmtMoney(p.trev)} rows={[paceRow(fmtMoneyK(p.lyWkTrev), D(p.trevPace, fmtGrowth)), finalRow(fmtMoneyK(p.pTrev), D(p.trevYoY, fmtGrowth))]} note="Rent actual, full term" />
+        <Tile label="Total Revenue" value={fmtMoney(p.trev)} rows={[hasPace ? ['Dated to date', fmtMoneyK(p.wkTrev)] : null, paceRow(fmtMoneyK(p.lyWkTrev), D(p.trevPace, fmtGrowth)), finalRow(fmtMoneyK(p.pTrev), D(p.trevYoY, fmtGrowth))]} note="Rent actual, full term" />
       </div>
-      {hasPace && <p className="muted small">“Same date” counts {ly} leases {sel.basis === 'executed' ? 'signed' : 'sent'} on or before {fmtDate(data.pace.lyAsOf)}, the same point in the leasing cycle as today. “LY final” is where the prior year finished on the same records.</p>}
+      {hasPace && <p className="muted small">“Same date” compares like with like: this year’s leases {sel.basis === 'executed' ? 'signed' : 'sent'} by today against {ly} leases {sel.basis === 'executed' ? 'signed' : 'sent'} by {fmtDate(data.pace.lyAsOf)}, the same point in the leasing cycle. Leases with no {sel.basis === 'executed' ? 'signed' : 'sent or signed'} date can’t be placed in time, so both sides leave them out{p.undatedLeases || p.lyUndatedLeases ? `: ${fmtInt(p.undatedLeases || 0)} this year (${fmtInt(p.undatedOcc || 0)} beds) and ${fmtInt(p.lyUndatedLeases || 0)} in ${ly}` : ''}. That is why “Dated to date” can sit below the headline. Growth shows “–” when last year’s figure is under a sixth of this year’s. “LY final” is where the prior year finished.</p>}
+      {thin && <p className="warn-note small">{ly} has too few lease records in NetSuite ({fmtInt(p.pOcc || 0)} occupied beds) to compare with this year, so the year-over-year columns are hidden.</p>}
       <div className="toolbar"><Toggle label="Descriptions" checked={desc} onChange={setDesc} /><span className="muted small">{data.ay > data.currentAy ? `A future year: figures are pre-lease to date.` : 'Pro-forma = Executed + In Process.'}</span></div>
       <GroupTable title="By Market" note={`Market = property City. Expand a market for its funds.${ly ? ` LY = ${ly}.` : ''}`} groups={data.kpi.byMarket} total={p} cols={cols} desc={desc} csvName={`summary-by-market-${sel.ay}-${sel.basis}.csv`} />
       <GroupTable title="By Fund" note={`Fund = top-level subsidiary (Amicus I / II / III). Expand a fund for its markets.${ly ? ` LY = ${ly}.` : ''}`} groups={data.kpi.byFund} total={p} cols={cols} desc={desc} csvName={`summary-by-fund-${sel.ay}-${sel.basis}.csv`} />

@@ -15,7 +15,7 @@ import { dayNum, fromDayNum, weekStart, ayStartDate, daysBetween } from './dates
 import { leaseDateFor, propertyOf, linkedName, fundLabel } from './summary.js';
 
 const ratio = (a, b) => (b > 0 ? a / b : null);
-const growth = (cur, prev) => (prev > 0 ? cur / prev - 1 : null);
+import { growth } from './metrics.js';
 const r2 = (v) => (v == null ? null : Number(Number(v).toFixed(2)));
 const mainSeg = (p) => !!p && (SEGMENTS[p.segment] || SEGMENTS.STUDENT).inOccupancy;
 const typeLabel = (k) => (LEASE_TYPES[k] || {}).label || 'Unknown';

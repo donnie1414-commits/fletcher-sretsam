@@ -48,7 +48,15 @@ export function addMetrics(a, b) {
   return a;
 }
 const ratio = (a, b) => (b > 0 ? a / b : null);
-const growth = (cur, prev) => (prev > 0 ? cur / prev - 1 : null);
+/**
+ * Year-over-year growth, or null when the base is too thin to mean anything: no base, or a base under a sixth of the
+ * current figure (growth past +500%). Thin bases come from missing records (AY 25-26 is barely in NetSuite; bulk-imported
+ * leases with no dates), not from real growth, and are what produced 1,000%+ readings. Shared by every report.
+ */
+export const MIN_GROWTH_BASE = 1 / 6;
+export const growth = (cur, prev) => (prev > 0 && prev >= Math.abs(cur || 0) * MIN_GROWTH_BASE ? cur / prev - 1 : null);
+/** Last year is "thin" (too few records to compare) when its occupied beds are under a tenth of this year's and of the beds. */
+export const priorThin = (occ, pOcc, beds) => occ > 0 && (pOcc || 0) < occ * 0.1 && (pOcc || 0) < (beds || 0) * 0.1;
 export function finish(m) {
   m.vacant = m.beds - m.occupied;
   m.occPct = ratio(m.occupied, m.beds);

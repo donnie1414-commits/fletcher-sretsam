@@ -47,9 +47,19 @@ export function buildPipelineRows(ctx, ay, basis) {
     // a statusless lease on this unit: the deal exists but is out of every statistic (v2 "no status" tag)
     const draft = !leases.length ? [...r.placement.leaseResults.values()].find((x) => x.code === 'NO_STATUS' && !x.year.carried && (x.scope.unitId === u.id || (u.propertyOnly && x.scope.propertyId === p.id && !x.scope.unitId))) || null : null;
     const s = stageByUnit.get(u.id) || null;
-    const stageKey = s ? effectiveStage({ stage: s.stage_name || lookups.stageIds[String(s.stage)] || s.stage, manualStage: lookups.stageIds[String(s.manual_stage)] || s.manual_stage, stageSource: String(s.stage_source) === '2' || s.stage_source_name === 'Lease' ? 'lease' : 'manual' }) : (governing ? (governing.lease.statusKey === 'EXECUTED' ? 'FULLY_EXECUTED' : 'LEASE_OUT') : draft ? 'READY_FOR_LEASE' : 'NONE');
-    const stageSource = s ? (String(s.stage_source) === '2' ? 'lease' : 'manual') : (governing ? 'lease' : null);
-    const stageDate = s ? toISO(s.stage_date) : (governing ? (governing.lease.statusKey === 'EXECUTED' ? governing.lease.signedDate : governing.lease.sentDate) : null);
+    const rowStage = s ? effectiveStage({ stage: s.stage_name || lookups.stageIds[String(s.stage)] || s.stage, manualStage: lookups.stageIds[String(s.manual_stage)] || s.manual_stage, stageSource: String(s.stage_source) === '2' || s.stage_source_name === 'Lease' ? 'lease' : 'manual' }) : (governing ? (governing.lease.statusKey === 'EXECUTED' ? 'FULLY_EXECUTED' : 'LEASE_OUT') : draft ? 'READY_FOR_LEASE' : 'NONE');
+    const rowSource = s ? (String(s.stage_source) === '2' ? 'lease' : 'manual') : (governing ? 'lease' : null);
+    const rowDate = s ? toISO(s.stage_date) : (governing ? (governing.lease.statusKey === 'EXECUTED' ? governing.lease.signedDate : governing.lease.sentDate) : null);
+    // A placed lease decides the stage (§5.4): In Process → Lease Out, Fully Executed → Fully Executed. The status row only
+    // learns about a lease for the year the lease starts, so a two-year lease's second year (and any row the sync missed)
+    // would otherwise show a stale or empty stage. Lease Revisions is the one agent stage allowed over an in-process lease.
+    const placedLease = leases.find((l) => l.status === 'placed' && l.lease.statusKey === 'EXECUTED') || leases.find((l) => l.status === 'placed' && l.lease.statusKey === 'IN_PROCESS') || null;
+    const leaseStage = placedLease ? (placedLease.lease.statusKey === 'EXECUTED' ? 'FULLY_EXECUTED' : 'LEASE_OUT') : null;
+    const keepRow = !leaseStage || rowStage === leaseStage || (leaseStage === 'LEASE_OUT' && rowStage === 'LEASE_REVISIONS');
+    const stageKey = keepRow ? rowStage : leaseStage;
+    const stageSource = keepRow ? rowSource : 'lease';
+    const stageDate = keepRow ? rowDate : (placedLease.lease.statusKey === 'EXECUTED' ? (placedLease.lease.signedDate || placedLease.lease.sentDate) : placedLease.lease.sentDate) || rowDate;
+    const stageFromLease = !keepRow; // shown as "set by lease" even where the status row disagrees
     const t = targetByUnit.get(u.id) || null, nt = nextTargetByUnit.get(u.id) || null;
     const targetMonthly = t ? (t.targetMonthly ?? (t.targetPerBed != null ? t.targetPerBed * u.beds : null)) : null;
     const settleMonthly = t ? (t.settleMonthly ?? (t.settlePerBed != null ? t.settlePerBed * u.beds : null)) : null;

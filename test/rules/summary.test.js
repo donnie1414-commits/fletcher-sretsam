@@ -22,6 +22,7 @@ test('KPI rows carry the prior year, the same-date pace and the lease counts', (
   assert.equal(t.pOcc, 5, 'last year both units were leased'); assert.equal(t.pLeases, 2);
   assert.equal(x.pace.lyAsOf, '2025-10-23', 'same date last year = today less the AY-start gap');
   assert.equal(t.lyWkOcc, 3, 'by 10/23 last year only unit A (sent 10/01) was counted on the pro-forma basis');
+  assert.equal(t.wkOcc, 4, 'this year on the same rule: both leases dated by today');
   assert.ok(Math.abs(t.lyWkDelta - (4 / 5 - 3 / 5)) < 1e-12);
   assert.equal(x.kpi.byMarket.length, 1); assert.equal(x.kpi.byMarket[0].row.name, 'Bethlehem'); assert.equal(x.kpi.byMarket[0].children[0].name, 'Amicus II');
   assert.equal(x.kpi.byFund[0].children[0].beds, 5);
@@ -93,4 +94,28 @@ test('quality lists: record gaps, lease dates/status, tenant records', () => {
   const codes = tq.map((r) => r.code).sort();
   assert.deepEqual(codes, ['TENANT_COUNT', 'TENANT_INACTIVE', 'TENANT_MULTI', 'TENANT_NO_EMAIL']);
   assert.equal(tq.find((r) => r.code === 'TENANT_MULTI').dupLeases, 2);
+});
+
+test('same-date pace compares like with like: undated leases leave both sides, the selection applies to last year too, thin bases give no growth', () => {
+  const h = house(); const other = house({ property: { city: 'Troy', name: '9 River St' } });
+  const fx = fixture({ properties: [...h.properties, ...other.properties], units: [...h.units, ...other.units], leases: [
+    lease({ property: h.p.id, unit: h.uA.id, type: 'UNIT', ay: 2027, start: '06/01/2027', end: '05/23/2028', monthly: 3000, sent: '10/15/2026', tenants: ['1'] }),
+    lease({ property: h.p.id, unit: h.uB.id, type: 'UNIT', ay: 2027, start: '06/01/2027', end: '05/23/2028', monthly: 1800, tenants: ['2'] }), // no date: left out of both sides
+    lease({ property: h.p.id, unit: h.uA.id, type: 'UNIT', ay: 2026, start: '06/01/2026', end: '05/23/2027', monthly: 2700, sent: '10/01/2025', tenants: ['3'] }),
+    lease({ property: other.p.id, unit: other.uA.id, type: 'UNIT', ay: 2026, start: '06/01/2026', end: '05/23/2027', monthly: 2400, sent: '09/01/2025', tenants: ['4'] }),
+    lease({ property: other.p.id, unit: other.uB.id, type: 'UNIT', ay: 2026, start: '06/01/2026', end: '05/23/2027', monthly: 1500, sent: '09/02/2025', tenants: ['5'] }),
+  ] });
+  const run = runEngine(fx, { ay: 2027 });
+  const beth = summaryExtras(run, { today: '2026-10-23', keep: (p) => p.marketId === 'lehigh' }).kpi.total;
+  assert.equal(beth.lyWkOcc, 3, 'last year counts only the selected market (Troy leases are out)');
+  assert.equal(beth.wkOcc, 3, 'this year counts only dated leases'); assert.equal(beth.occ, 5, 'the headline still counts every placed lease');
+  assert.equal(beth.undatedLeases, 1); assert.equal(beth.lyWkDelta, 0);
+  const all = summaryExtras(run, { today: '2026-10-23' }).kpi.total;
+  assert.ok(all.lyWkOcc > beth.lyWkOcc && all.lyWkOccPct <= 1);
+});
+test('growth is blank when the base is too thin, and comparisons are hidden when last year barely exists', async () => {
+  const { growth, priorThin } = await import('../../src/shared/rules/metrics.js');
+  assert.ok(Math.abs(growth(120, 100) - 0.2) < 1e-12); assert.equal(growth(100, 0), null); assert.equal(growth(10000, 1000), null, 'base under a sixth of the current figure: +900% is not shown');
+  assert.equal(growth(500, 100), 4); assert.ok(Math.abs(growth(50, 100) + 0.5) < 1e-12);
+  assert.equal(priorThin(4888, 12, 5329), true, 'AY 25-26 with 12 occupied beds against 4,888'); assert.equal(priorThin(2798, 2574, 5329), false);
 });

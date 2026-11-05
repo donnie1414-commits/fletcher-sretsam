@@ -59,6 +59,10 @@ test('server path against the snapshot', { skip: fx ? false : 'no snapshot' }, a
     assert.equal(student, s.student.beds, 'pipeline denominator equals the KPI denominator');
     assert.ok(rows.every((r) => Object.prototype.hasOwnProperty.call(r, 'stage') && Object.prototype.hasOwnProperty.call(r, 'free')));
     assert.equal(first.stageRowCount, 1446);
+    // a placed lease decides the stage, also in the second year of a two-year lease (the status row only learns year one)
+    for (const ay of ['2027', '2028']) { const all = []; let pg = 0, tot = 1; while (pg * 500 < tot) { const r = request(app, { route: 'pipeline', ay, pageSize: '500', page: String(pg) }).json(); tot = r.total; all.push(...r.rows); pg++; }
+      const off = all.filter((r) => { const l = r.leases.find((x) => x.placed); const want = l && l.status === 'EXECUTED' ? 'FULLY_EXECUTED' : l && l.status === 'IN_PROCESS' ? 'LEASE_OUT' : null; return want && r.stage !== want && r.stage !== 'LEASE_REVISIONS'; });
+      assert.equal(off.length, 0, `AY ${ay}: ${off.length} rows with a placed lease show another stage`); if (ay === '2028') assert.ok(all.filter((r) => r.twoYear && r.twoYear.year === 2).length >= 10, 'second-year rows exist in 28-29'); }
   });
   await t.test('portfolio, weekly, exceptions, today and tenants respond', () => {
     const first = request(app, { route: 'pipeline', ay: '2027', pageSize: '25' }).json();
