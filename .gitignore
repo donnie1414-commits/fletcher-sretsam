@@ -4,3 +4,6 @@ test/fixtures/live/
 .env
 *.local.json
 handback/
+
+# Built hub files and copied NetSuite scripts are delivered directly, never committed (owner request 2026-11-05)
+release/
