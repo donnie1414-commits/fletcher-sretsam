@@ -19,17 +19,21 @@ export function applyPipelineView(rows, q = {}) {
   if (q.tours === 'none') out = out.filter((r) => r.tours === 0); else if (q.tours === 'some') out = out.filter((r) => r.tours > 0);
   if (q.needsAction === '1' || q.needsAction === true) out = out.filter((r) => r.needsAction);
   if (q.breach === '1' || q.breach === true) out = out.filter((r) => r.breach);
+  if (q.issues === '1' || q.issues === true) out = out.filter((r) => r.issue || r.draftLease);
+  else if (q.issues === 'excluded') out = out.filter((r) => (r.issue && r.issue.excluded) || r.draftLease);
   if (q.mentions) { const me = String(q.mentions); out = out.filter((r) => (r.mentions || []).includes(me)); }
   if (q.q) { const needle = String(q.q).toLowerCase(); out = out.filter((r) => `${r.property} ${r.unit} ${r.expectedTenants || ''} ${r.notes || ''} ${r.rrUnitId || ''} ${(r.leases || []).map((l) => l.name).join(' ')} ${r.priorTenants || ''}`.toLowerCase().includes(needle)); }
-  const sort = PIPELINE_SORTS.includes(q.sort) ? q.sort : 'property';
+  // known sort keys use the value map; any other row field (a column key) sorts on the row's own value
+  const sort = PIPELINE_SORTS.includes(q.sort) || /^[a-zA-Z]{2,30}$/.test(String(q.sort || '')) ? q.sort : 'property';
   const dir = q.dir === 'desc' ? -1 : 1;
-  const val = (r) => ({ property: r.property, unit: r.unit, beds: r.beds, propertyBeds: r.propertyBeds || 0, stage: r.stage, daysInStage: r.daysInStage ?? -1, tours: r.tours, target: r.targetMonthly ?? -1, lastOffer: r.lastOffer ?? -1, followup: r.followup || '', available: r.free, monthlyRent: r.monthlyRent ?? -1, needsAction: r.needsAction ? 1 : 0, signed: r.signed || '', market: r.market })[sort];
-  out = out.slice().sort((a, b) => { const x = val(a), y = val(b); const c = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), undefined, { numeric: true }); return c * dir || a.property.localeCompare(b.property, undefined, { numeric: true }) || a.unit.localeCompare(b.unit, undefined, { numeric: true }); });
+  const val = (r) => ({ property: r.property, unit: r.unit, beds: r.beds, propertyBeds: r.propertyBeds || 0, stage: r.stage, daysInStage: r.daysInStage ?? -1, tours: r.tours, target: r.targetMonthly ?? -1, lastOffer: r.lastOffer ?? -1, followup: r.followup || '', available: r.free, monthlyRent: r.monthlyRent ?? -1, needsAction: r.needsAction ? 1 : 0, signed: r.signed || '', market: r.market, issue: r.issue ? (r.issue.excluded ? 2 : 1) + r.issue.count / 100 : r.draftLease ? 2 : 0 });
+  const pick = (r) => { const m = val(r); if (Object.prototype.hasOwnProperty.call(m, sort)) return m[sort]; const v = r[sort]; return v == null ? '' : typeof v === 'object' ? (v.count ?? (Array.isArray(v) ? v.length : '')) : v; };
+  out = out.slice().sort((a, b) => { const x = pick(a), y = pick(b); const c = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y), undefined, { numeric: true }); return c * dir || a.property.localeCompare(b.property, undefined, { numeric: true }) || a.unit.localeCompare(b.unit, undefined, { numeric: true }); });
   const total = out.length, totalBeds = out.reduce((s, r) => s + r.beds, 0);
   const pageSize = Math.min(500, Math.max(25, Number(q.pageSize) || 100)), page = Math.max(0, Number(q.page) || 0);
-  const stageCounts = {}, stageBeds = {}; let breachCount = 0, needsActionCount = 0, noStatus = 0;
-  for (const r of out) { stageCounts[r.stage] = (stageCounts[r.stage] || 0) + 1; stageBeds[r.stage] = (stageBeds[r.stage] || 0) + r.beds; if (r.breach) breachCount++; if (r.needsAction) needsActionCount++; if (r.draftLease) noStatus++; }
-  return { total, totalBeds, page, pageSize, rows: out.slice(page * pageSize, (page + 1) * pageSize), stageCounts, stageBeds, breachCount, needsActionCount, noStatus };
+  const stageCounts = {}, stageBeds = {}; let breachCount = 0, needsActionCount = 0, noStatus = 0, issueCount = 0, excludedCount = 0;
+  for (const r of out) { stageCounts[r.stage] = (stageCounts[r.stage] || 0) + 1; stageBeds[r.stage] = (stageBeds[r.stage] || 0) + r.beds; if (r.breach) breachCount++; if (r.needsAction) needsActionCount++; if (r.draftLease) noStatus++; if (r.issue || r.draftLease) issueCount++; if ((r.issue && r.issue.excluded) || r.draftLease) excludedCount++; }
+  return { total, totalBeds, page, pageSize, rows: out.slice(page * pageSize, (page + 1) * pageSize), stageCounts, stageBeds, breachCount, needsActionCount, noStatus, issueCount, excludedCount };
 }
 
 /** Tenant rows as the route shapes them; used by the preview shim only (the server filters in SuiteQL). */

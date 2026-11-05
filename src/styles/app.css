@@ -252,3 +252,12 @@ table.dense th { background:var(--surface); } table.dense tfoot td { background:
 .btn-act:hover { filter:brightness(.96); } .btn-act.done { background:var(--good-soft, var(--accent-soft)); border-color:var(--good, var(--accent)); color:var(--good, var(--accent)); }
 .btn-act.warn { background:var(--warn-soft); border-color:var(--warn); color:var(--warn); }
 .density-compact .act-cell { flex-direction:row; flex-wrap:wrap; }
+
+/* Pipeline issue status */
+.issue-pill { display:inline-flex; flex-direction:column; align-items:flex-start; gap:1px; border-radius:6px; padding:3px 8px; font:inherit; font-size:var(--t1); font-weight:600; cursor:pointer; text-align:left; max-width:100%; border:1px solid; }
+.issue-pill.excl { background:var(--bad-soft, var(--warn-soft)); border-color:var(--bad, var(--warn)); color:var(--bad, var(--warn)); }
+.issue-pill.flag { background:var(--caution-soft, var(--warn-soft)); border-color:var(--caution, var(--warn)); color:var(--caution, var(--warn)); }
+.issue-why { font-weight:400; font-size:11px; opacity:.9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:130px; }
+
+.setup-tbl td, .setup-tbl th { vertical-align:top; } .setup-tbl code { font-size:11px; }
+th.sortable { cursor:pointer; user-select:none; } th.sortable:hover { color:var(--accent); } .sort-arrow { font-size:10px; color:var(--accent); }

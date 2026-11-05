@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useRoute } from '../../hooks.js';
 import { recordUrl } from '../../api.js';
 import { Tile, Disclosure, Skeleton, ErrorBox, Button, Toggle, Table, Pill, Section, OccPill } from '../../ui.jsx';
+import { sortValue, sortRows, nextSort } from '../../sort.js';
 import { fmtInt, fmtMoney, fmtMoney2, fmtMoneyK, fmtPct, fmtPts, fmtGrowth, fmtSigned, fmtDate, ayShort, toCSV, downloadCSV, occTone, paceTone, isNum } from '../../format.js';
 import { summaryColumns, DeltaPts, DeltaGrowth } from './columns.jsx';
 
@@ -68,16 +69,19 @@ export function Summary({ sel, presentation }) {
 }
 
 /** Expandable two-level table (Market ▸ Fund or Fund ▸ Market) with a total row, the v2 groupTable. */
-export function GroupTable({ title, note, groups, total, cols, desc, csvName }) {
+export function GroupTable({ title, note, groups: groupsIn, total, cols, desc, csvName }) {
   const [open, setOpen] = useState(() => new Set());
+  const [sort, setSort] = useState(null);
   const toggle = (k) => { const n = new Set(open); n.has(k) ? n.delete(k) : n.add(k); setOpen(n); };
+  const tcols = [{ label: title.replace('By ', '') + ' ▸', align: 'l', note: 'Expand a row for its breakdown', sortValue: (r) => String(r.name || '').toLowerCase(), value: (r) => (r._group ? <button type="button" className="tree-toggle-text" onClick={() => toggle(r._key)} aria-expanded={r._open}>{r._open ? '▾' : '▸'} {r.name}</button> : <span className="child-name">{r.name}</span>), foot: () => 'Total' }, ...cols.map((c) => ({ ...c, foot: () => c.value(total) }))];
+  const valOf = (i, r) => { const c = tcols[i]; return c.sortValue ? c.sortValue(r) : sortValue(c.value(r)); };
+  const groups = !sort ? groupsIn : sortRows(groupsIn, sort, (g) => valOf(sort.key, g.row)).map((g) => ({ ...g, children: sortRows(g.children, sort, (c) => valOf(sort.key, c)) }));
   const rows = [];
   for (const g of groups) { rows.push({ ...g.row, _key: g.key, _group: true, _open: open.has(g.key), _n: g.children.length }); if (open.has(g.key)) for (const c of g.children) rows.push({ ...c, _key: `${g.key}:${c.name}`, _child: true }); }
   const allOpen = groups.length && groups.every((g) => open.has(g.key));
-  const tcols = [{ label: title.replace('By ', '') + ' ▸', align: 'l', note: 'Expand a row for its breakdown', value: (r) => (r._group ? <button type="button" className="tree-toggle-text" onClick={() => toggle(r._key)} aria-expanded={r._open}>{r._open ? '▾' : '▸'} {r.name}</button> : <span className="child-name">{r.name}</span>), foot: () => 'Total' }, ...cols.map((c) => ({ ...c, foot: () => c.value(total) }))];
   return (
     <Section title={title} note={note} actions={<><Button small onClick={() => setOpen(allOpen ? new Set() : new Set(groups.map((g) => g.key)))}>{allOpen ? 'Collapse' : 'Expand all'}</Button><Button small onClick={() => downloadCSV(csvName, toCSV(groups.flatMap((g) => [g.row, ...g.children.map((c) => ({ ...c, name: `  ${c.name}` }))]).concat([{ ...total, name: 'Total' }]), [{ key: 'name', label: 'Name' }, ...cols.map((c) => ({ label: c.label, value: (r) => { const v = c.value(r); return typeof v === 'string' ? v : (v && v.props && v.props.v != null ? v.props.v : ''); } }))]))}>CSV</Button></>}>
-      <Table cols={tcols} rows={rows} keyOf={(r) => r._key} foot={total} notes={desc} rowClass={(r) => (r._child ? 'child' : 'group')} />
+      <Table cols={tcols} rows={rows} keyOf={(r) => r._key} foot={total} notes={desc} rowClass={(r) => (r._child ? 'child' : 'group')} sort={sort} onSort={(i) => setSort((x) => nextSort(x, i))} />
     </Section>
   );
 }

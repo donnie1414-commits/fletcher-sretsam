@@ -1,6 +1,7 @@
 import { useState, useId, useEffect } from 'react';
 import { fmtDelta, isNum, sign } from './format.js';
 import { Dropdown } from './components/Dropdown.jsx';
+import { sortValue, sortRows, nextSort } from './sort.js';
 
 export const cx = (...a) => a.filter(Boolean).join(' ');
 export function Button({ kind = 'default', small, children, ...rest }) { return <button type="button" className={cx('btn', kind !== 'default' && `btn-${kind}`, small && 'btn-sm')} {...rest}>{children}</button>; }
@@ -47,13 +48,22 @@ export function Section({ title, count, note, children, strip, fold = false, def
   );
 }
 /** Dense table for small lists: cols = [{ label, value(r), align:'l'|'r', title }]. Keeps the markup in one place. */
-export function Table({ cols, rows, keyOf = (r, i) => r.id ?? i, foot, empty = 'Nothing here', rowClass, notes, maxHeight }) {
+/**
+ * Every table sorts: click a header to sort by that column, again to reverse. Values come from the column's sortValue,
+ * else from what the cell renders. Controlled when `sort` + `onSort` are given (grouped tables keep children under parents).
+ */
+export function Table({ cols, rows, keyOf = (r, i) => r.id ?? i, foot, empty = 'Nothing here', rowClass, notes, maxHeight, sort: sortIn, onSort, sortable = true }) {
+  const [own, setOwn] = useState(null);
+  const sort = onSort ? sortIn : own;
+  const click = (i) => { if (!sortable || cols[i].sortable === false) return; if (onSort) onSort(i); else setOwn((s) => nextSort(s, i)); };
+  const shown = onSort || !sort ? rows : sortRows(rows, sort, (r) => { const c = cols[sort.key]; return c.sortValue ? c.sortValue(r) : sortValue(c.value(r)); });
+  const arrow = (i) => (sort && sort.key === i ? (sort.dir === 'desc' ? ' ▼' : ' ▲') : '');
   return (
     <div className="wrap" style={maxHeight ? { maxHeight, overflow: 'auto' } : undefined}>
       <table className="dense">
-        <thead><tr>{cols.map((c, i) => <th key={i} className={c.align === 'l' ? 'l' : ''} title={c.title}>{c.label}</th>)}</tr>{notes && <tr className="notes">{cols.map((c, i) => <td key={i} className="l muted small">{c.note || ''}</td>)}</tr>}</thead>
-        <tbody>{rows.length ? rows.map((r, i) => <tr key={keyOf(r, i)} className={rowClass ? rowClass(r) : undefined}>{cols.map((c, j) => <td key={j} className={c.align === 'l' ? 'l' : ''}>{c.value(r)}</td>)}</tr>) : <tr><td colSpan={cols.length} className="l muted empty-cell">{empty}</td></tr>}</tbody>
-        {foot && rows.length > 0 && <tfoot><tr>{cols.map((c, i) => <td key={i} className={c.align === 'l' ? 'l' : ''}>{c.foot ? c.foot(foot) : ''}</td>)}</tr></tfoot>}
+        <thead><tr>{cols.map((c, i) => <th key={i} className={cx(c.align === 'l' ? 'l' : '', sortable && c.sortable !== false && 'sortable')} title={c.title || (sortable && c.sortable !== false ? 'Click to sort' : undefined)} aria-sort={sort && sort.key === i ? (sort.dir === 'desc' ? 'descending' : 'ascending') : undefined} onClick={() => click(i)}>{c.label}<span className="sort-arrow">{arrow(i)}</span></th>)}</tr>{notes && <tr className="notes">{cols.map((c, i) => <td key={i} className="l muted small">{c.note || ''}</td>)}</tr>}</thead>
+        <tbody>{shown.length ? shown.map((r, i) => <tr key={keyOf(r, i)} className={rowClass ? rowClass(r) : undefined}>{cols.map((c, j) => <td key={j} className={c.align === 'l' ? 'l' : ''}>{c.value(r)}</td>)}</tr>) : <tr><td colSpan={cols.length} className="l muted empty-cell">{empty}</td></tr>}</tbody>
+        {foot && shown.length > 0 && <tfoot><tr>{cols.map((c, i) => <td key={i} className={c.align === 'l' ? 'l' : ''}>{c.foot ? c.foot(foot) : ''}</td>)}</tr></tfoot>}
       </table>
     </div>
   );

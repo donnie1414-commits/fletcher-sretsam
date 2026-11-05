@@ -23,6 +23,7 @@ import { routeTeam } from './routes/team.js';
 import { routePipeline } from './routes/pipeline.js';
 import { routeTenants, routeLeads } from './routes/people.js';
 import { routeTours, outcomeIdFor } from './routes/tours.js';
+import { routeSetup } from './routes/setup.js';
 import { routeExceptions } from './routes/exceptions.js';
 import { routeToday } from './routes/today.js';
 import { routeSavedViews } from './routes/savedViews.js';
@@ -84,7 +85,7 @@ export function createApp(N) {
     return ctx;
   }
 
-  const routes = { bootstrap: routeBootstrap, lists: routeLists, summary: routeSummary, portfolio: routePortfolio, weekly: routeWeekly, velocity: routeVelocity, pipeline: routePipeline, unithistory: routeUnitHistory, team: routeTeam, tenants: routeTenants, leads: routeLeads, tours: routeTours, reprobe: routeReprobe, exceptions: routeExceptions, today: routeToday, savedviews: routeSavedViews, write: routeWrite, leasedialog: routeLeaseDialog, notes: routeNotes };
+  const routes = { bootstrap: routeBootstrap, lists: routeLists, summary: routeSummary, portfolio: routePortfolio, weekly: routeWeekly, velocity: routeVelocity, pipeline: routePipeline, unithistory: routeUnitHistory, team: routeTeam, tenants: routeTenants, leads: routeLeads, tours: routeTours, reprobe: routeReprobe, setup: routeSetup, exceptions: routeExceptions, today: routeToday, savedviews: routeSavedViews, write: routeWrite, leasedialog: routeLeaseDialog, notes: routeNotes };
 
   function handle(context) {
     const route = String((context.request.parameters || {}).route || '').toLowerCase();

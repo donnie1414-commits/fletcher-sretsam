@@ -28,11 +28,11 @@ export function routeTenants(ctx) {
   const pageSize = Math.min(500, Math.max(25, Number(q.pageSize) || 100)), page = Math.max(0, Number(q.page) || 0);
   let result;
   if (filters.needsAttention) {
-    const a = ctx.dao.people.tenants({ filters: { ...filters, missingProperty: true }, sort: q.sort, page: 0, pageSize: 1000 });
-    const b = ctx.dao.people.tenants({ filters: { ...filters, missingAy: true }, sort: q.sort, page: 0, pageSize: 1000 });
+    const a = ctx.dao.people.tenants({ filters: { ...filters, missingProperty: true }, sort: q.sort, dir: q.dir, page: 0, pageSize: 1000 });
+    const b = ctx.dao.people.tenants({ filters: { ...filters, missingAy: true }, sort: q.sort, dir: q.dir, page: 0, pageSize: 1000 });
     const seen = new Set(); const rows = []; for (const r of a.rows.concat(b.rows)) if (!seen.has(r.id)) { seen.add(r.id); rows.push(r); }
     result = { rows: rows.slice(page * pageSize, (page + 1) * pageSize), total: rows.length, page, pageSize };
-  } else result = ctx.dao.people.tenants({ filters, sort: q.sort, page, pageSize });
+  } else result = ctx.dao.people.tenants({ filters, sort: q.sort, dir: q.dir, page, pageSize });
   const custIds = result.rows.map((r) => r.id);
   const leaseLinks = custIds.length ? ctx.dao.people.leaseLinks(custIds) : [];
   const leasesByCust = new Map(); for (const l of leaseLinks) { if (!leasesByCust.has(String(l.customer))) leasesByCust.set(String(l.customer), []); leasesByCust.get(String(l.customer)).push(String(l.lease)); }

@@ -32,6 +32,7 @@ export function ExceptionsDrawer({ open, onClose, sel, bootstrap }) {
           ))}
           {!data.groups.length && <p>No lease exceptions in your markets for this year.</p>}
           <FixSection kind="lease" title="Lease dates & status" note={`Date and status gaps the weekly report depends on. ${ayLabel}, every status.`} rows={data.leaseQuality || []} recordLabel="Lease" linkType="lease" />
+          <FixSection kind="rent" title="Rent review" note={`Counted leases in ${ayLabel} whose money does not hold together: no monthly rent, Total Rent not equal to monthly × term, rent per bed outside $200–$4,000, or more than 40% below or 60% above the unit's target. Advisory: the statistics use the monthly rent as entered.`} rows={data.rentQuality || []} recordLabel="Lease" linkType="lease" />
           <FixSection kind="tenant" title="Tenant records" note="Tenants linked to this academic year's counted leases (lease Tenants field). People counts use Number of Tenants, so mismatches change headcount." rows={data.tenantQuality || []} recordLabel="Record" linkType={(r) => (r.kind === 'tenant' ? 'customer' : 'lease')} />
           <FixSection kind="records" title="Property & unit records" note="Inventory gaps the report works around; they do not exclude leases." rows={data.records || []} recordLabel="Record" linkType={(r) => (r.kind === 'property' ? 'property' : r.kind === 'unit' ? 'unit' : null)} collapsed />
         </div>

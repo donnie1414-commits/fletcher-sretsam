@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { sortRows, nextSort } from '../../sort.js';
 import { useRoute } from '../../hooks.js';
 import { DataGrid } from '../../components/DataGrid/DataGrid.jsx';
 import { Button, Toggle, Select, ErrorBox, Tile } from '../../ui.jsx';
@@ -17,7 +18,19 @@ export function Portfolio({ sel, density, rt, setRt }) {
   const nodes = data ? data.nodes : [];
   const cur = ayShort(sel.ay), ly = data && data.priorAy ? ayShort(data.priorAy) : 'Prior AY';
   const groups = useMemo(() => columnGroups(cur, ly), [cur, ly]);
+  // Sorting the tree: siblings are ordered under their parent (funds, then markets within a fund, and so on), so the
+  // hierarchy survives any sort. Values come from the node's metrics, else the node itself.
+  const [tsort, setTsort] = useState(null);
+  const ordered = useMemo(() => {
+    if (!tsort || !nodes.length) return nodes;
+    const kids = new Map(); const roots = [];
+    for (const n of nodes) { if (n.parent && nodes.some((x) => x.key === n.parent)) { if (!kids.has(n.parent)) kids.set(n.parent, []); kids.get(n.parent).push(n); } else roots.push(n); }
+    const v = (n) => { const m = n.metrics || {}; const raw = tsort.key === 'name' ? String(n.name || '').toLowerCase() : m[tsort.key] !== undefined ? m[tsort.key] : n[tsort.key]; return raw == null || raw === '' ? null : raw; };
+    const out = []; const walk = (list) => { for (const n of sortRows(list, tsort, v)) { out.push(n); if (kids.has(n.key)) walk(kids.get(n.key)); } };
+    walk(roots); return out;
+  }, [nodes, tsort]);
   const visible = useMemo(() => {
+    const nodes = ordered;
     if (!nodes.length) return [];
     const byKey = new Map(nodes.map((n) => [n.key, n]));
     const needle = q.trim().toLowerCase();
@@ -33,7 +46,7 @@ export function Portfolio({ sel, density, rt, setRt }) {
       if (!o) closed.add(n.key);
     }
     return out;
-  }, [nodes, open, level, vacancyOnly, q]);
+  }, [ordered, open, level, vacancyOnly, q]);
   const toggle = (n) => { const next = new Set(open); const isOpenNow = next.has('+' + n.key) ? true : next.has('-' + n.key) ? false : n.depth < level; next.delete('+' + n.key); next.delete('-' + n.key); next.add((isOpenNow ? '-' : '+') + n.key); setOpen(next); };
   const dataCols = useMemo(() => [...BASE_COLS, ...report.groups.flatMap((g) => groups[g])], [report, groups]);
   const cols = useMemo(() => [
@@ -65,7 +78,7 @@ export function Portfolio({ sel, density, rt, setRt }) {
         <Tile label="Vacant Target Rent" value={fmtMoney(t.tgtVacant)} note="Monthly target on vacant beds" />
       </div>}
       {report.key === 'rent' && data && data.sameStore && <p className="muted small">Same-store: {fmtInt(data.sameStore.grains)} grains · {fmtInt(data.sameStore.beds)} beds. Dropped: {fmtInt(data.sameStore.dropped.excluded)} with an excluded lease, {fmtInt(data.sameStore.dropped.vacantCur)} not 100% leased this year, {fmtInt(data.sameStore.dropped.vacantPrior)} not 100% leased last year.</p>}
-      <DataGrid className="fill" height={null} columns={cols} rows={rows} rowKey="key" loading={loading} density={density} empty={{ title: 'No rows match', body: vacancyOnly ? 'Nothing in scope has a vacant bed.' : 'Clear the filter.' }} />
+      <DataGrid className="fill" height={null} columns={cols} rows={rows} rowKey="key" sort={tsort} onSort={(key) => setTsort((x) => nextSort(x, key))} loading={loading} density={density} empty={{ title: 'No rows match', body: vacancyOnly ? 'Nothing in scope has a vacant bed.' : 'Clear the filter.' }} />
     </div>
   );
 }

@@ -33,7 +33,7 @@ export function createPeopleDao({ sq, schema }) {
    * filters: { q, statusIds[], missingProperty, missingAy, propertyIds[], ayIds[], stage: 'CUSTOMER'|'LEAD'|null, includeInactive }
    * Returns { rows, total, page, pageSize }.
    */
-  function tenants({ filters = {}, sort = 'name', page = 0, pageSize = 100 } = {}) {
+  function tenants({ filters = {}, sort = 'name', dir = 'asc', page = 0, pageSize = 100 } = {}) {
     const where = [];
     if (!filters.includeInactive) where.push("c.isinactive = 'F'");
     if (filters.leadSet) where.push(`(c.stage = '${LEAD.STAGE}' OR c.entitystatus IN (${LEAD.TENANT_INQUIRING}))`);
@@ -48,7 +48,9 @@ export function createPeopleDao({ sq, schema }) {
     if (filters.scopePropertyIds) where.push(`(NOT EXISTS (SELECT 1 FROM ${CUSTOMER.PROPERTY_MAP} m WHERE m.mapone = c.id) OR EXISTS (SELECT 1 FROM ${CUSTOMER.PROPERTY_MAP} m WHERE m.mapone = c.id AND m.maptwo IN (${sqlIn(filters.scopePropertyIds)})))`);
     const w = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const total = sq.one(`SELECT COUNT(*) AS n FROM ${C} c ${w}`).n;
-    const order = TENANT_SORTS[sort] || TENANT_SORTS.name;
+    // dir flips every part of the ORDER BY (created is newest-first by default)
+    const base = TENANT_SORTS[sort] || TENANT_SORTS.name;
+    const order = dir === 'desc' ? base.split(',').map((x) => (/ DESC$/i.test(x.trim()) ? x.trim().replace(/ DESC$/i, ' ASC') : `${x.trim()} DESC`)).join(', ') : base;
     const sql = `SELECT * FROM (SELECT ROWNUM rn, x.* FROM (SELECT ${select()} FROM ${C} c ${w} ORDER BY ${order}, c.id) x) WHERE rn > ${page * pageSize} AND rn <= ${(page + 1) * pageSize}`;
     return { rows: sq.few(sql), total: Number(total), page, pageSize };
   }

@@ -9,6 +9,7 @@ import { Pipeline } from './screens/Pipeline.jsx';
 import { People } from './screens/People.jsx';
 import { Reporting } from './screens/Reporting.jsx';
 import { ExceptionsDrawer, useExceptionCount } from './screens/ExceptionsDrawer.jsx';
+import { SetupStatus } from './screens/SetupStatus.jsx';
 import { MARKETS, FUNDS, FUND_ORDER, BASES, CALENDAR_URL } from '../shared/constants.js';
 import { ayShort } from './format.js';
 
@@ -18,6 +19,7 @@ function App({ boot }) {
   const [density, setDensity] = usePref('density', 'comfortable');
   const [present, setPresent] = useState(false);
   const [drawer, setDrawer] = useState(false);
+  const [setupOpen, setSetupOpen] = useState(false);
   const isMobile = useMedia('(max-width: 720px)');
   const [styled, setStyled] = useState(true);
   useEffect(() => { setStyled(stylesApplied()); }, []);
@@ -32,7 +34,7 @@ function App({ boot }) {
   return (
     <div className={cx('app', present && 'is-present', `density-${density}`)}>
       <header className="top">
-        <div className="brand">{!isPreview() && <a className="ns-back" href="/app/center/card.nl" title="Back to NetSuite">← NetSuite</a>}<span className="brand-mark" aria-hidden="true" /> Amicus Leasing {isPreview() && <span className="pill pill-muted">preview · snapshot {boot.snapshotDate || ''}</span>}</div>
+        <div className="brand">{!isPreview() && <a className="ns-back" href="/app/center/card.nl" title="Back to NetSuite">← NetSuite</a>}<span className="brand-mark" aria-hidden="true" /> Leasing Hub {isPreview() && <span className="pill pill-muted">preview · snapshot {boot.snapshotDate || ''}</span>}</div>
         {!present && <nav className="nav" aria-label="Primary"><Segmented ariaLabel="Screen" value={url.view} onChange={(v) => go(v)} options={[{ value: 'today', label: 'Today' }, { value: 'pipeline', label: 'Pipeline' }, { value: 'people', label: 'People' }, { value: 'reporting', label: 'Reporting' }]} /></nav>}
         <div className="controls">
           <Select label="Year" value={url.ay} onChange={(v) => setUrl({ ay: v })} options={ays} />
@@ -42,6 +44,7 @@ function App({ boot }) {
           {!present && <input className="search" type="search" placeholder="Search units, properties, tenants" aria-label="Search" defaultValue={url.q} onKeyDown={(e) => { if (e.key === 'Enter') setUrl({ q: e.target.value, view: url.view === 'people' ? 'people' : 'pipeline' }); }} onBlur={(e) => e.target.value !== url.q && setUrl({ q: e.target.value })} />}
           <button type="button" className={cx('badge-btn', excCount > 0 && 'has')} onClick={() => setDrawer(true)} aria-label={`Exceptions: ${excCount ?? '…'}`} title="Exceptions">⚠ {excCount == null ? '…' : excCount}</button>
           {isPreview() ? <Button small title="Preview: NetSuite's calendar opens here in NetSuite" disabled>Calendar</Button> : <a className="btn btn-sm" href={CALENDAR_URL} target="_blank" rel="noreferrer" title="My NetSuite calendar (tours are events on it)">Calendar</a>}
+          <Button small onClick={() => setSetupOpen(true)} title="Which NetSuite fields, lists and records the hub needs, and whether they exist">Setup</Button>
           {!isPreview() && boot.links && boot.links.auditLog && <a className="btn btn-sm" href={boot.links.auditLog} target="_blank" rel="noreferrer" title="Every change the hub has made: who, when, old and new value">Change log</a>}
           <Button small onClick={() => setTheme(theme === 'dark' ? 'light' : theme === 'light' ? 'auto' : 'dark')} title={`Theme: ${theme}`} aria-label="Toggle theme">{theme === 'dark' ? '☾' : theme === 'light' ? '☀' : '◐'}</Button>
           <Button small onClick={() => setDensity(density === 'compact' ? 'comfortable' : 'compact')} title="Density" aria-label="Toggle density">{density === 'compact' ? '≡' : '☰'}</Button>
@@ -52,10 +55,11 @@ function App({ boot }) {
       {staleFiles && <div className="banner warn">The app files NetSuite is serving are from build <code>{BUILD}</code>, but the Suitelet is build <code>{sb}</code>. Re-upload <code>amicus_leasing_app.js</code> and <code>amicus_leasing_app.css</code> from the same hand-back as the Suitelet (DEPLOY.md, section 6), then reload with Ctrl+Shift+R.</div>}
       {!styled && <div className="banner warn">The stylesheet did not apply, so this page is unstyled. In the File Cabinet open <code>amicus_leasing_app.css</code>, check its type is CSS File (not Plain Text) and that it starts with <code>:root{'{'}--accent</code>, then reload with Ctrl+Shift+R.</div>}
       {!boot.scope.all && boot.scope.marketIds.length === 0 && <div className="banner warn">You have no market access: {boot.scope.reason}. Ask an administrator to set your markets.</div>}
-      {boot.degraded && boot.degraded.length > 0 && url.view !== 'reporting' && <div className="banner">Some fields are not created yet, so these features are off: {boot.degraded.map((d) => d.feature || d.field).filter((v, i, a) => a.indexOf(v) === i).join(' · ')}. {!isPreview() && <button type="button" className="linkish" onClick={async () => { await post('reprobe', {}); window.location.reload(); }}>Re-check now</button>}</div>}
+      {boot.degraded && boot.degraded.length > 0 && url.view !== 'reporting' && <div className="banner">Some fields are not created yet, so these features are off: {boot.degraded.map((d) => d.feature || d.field).filter((v, i, a) => a.indexOf(v) === i).join(' · ')}. {!isPreview() && <button type="button" className="linkish" onClick={async () => { await post('reprobe', {}); window.location.reload(); }}>Re-check now</button>} <button type="button" className="linkish" onClick={() => setSetupOpen(true)}>Setup status</button></div>}
+      {setupOpen && <SetupStatus onClose={() => setSetupOpen(false)} />}
       <main className="main">
         {url.view === 'today' && <Today sel={sel} go={go} openExceptions={() => setDrawer(true)} bootstrap={boot} />}
-        {url.view === 'pipeline' && <Pipeline sel={sel} setSel={setUrl} density={density} isMobile={isMobile} bootstrap={boot} />}
+        {url.view === 'pipeline' && <Pipeline sel={sel} setSel={setUrl} density={density} isMobile={isMobile} bootstrap={boot} openExceptions={() => setDrawer(true)} />}
         {url.view === 'people' && <People sel={sel} seg={url.seg} setSeg={(v) => setUrl({ seg: v })} density={density} isMobile={isMobile} bootstrap={boot} />}
         {url.view === 'reporting' && <Reporting sel={sel} sub={url.sub} setSub={(v) => setUrl({ sub: v })} rt={url.rt} setRt={(v) => setUrl({ rt: v })} density={density} presentation={present} boot={boot} />}
       </main>

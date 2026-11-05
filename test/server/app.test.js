@@ -84,6 +84,18 @@ test('server path against the snapshot', { skip: fx ? false : 'no snapshot' }, a
     assert.equal(today.tours.count, 2, 'today: the two live tours'); assert.ok(today.tours.calendarUrl); assert.ok(today.leads.count > 0 && today.leads.rows.length <= 25);
     const pl = request(app, { route: 'pipeline', ay: '2027', pageSize: '500', q: fx.testUnit.name }).json(); const row = pl.rows.find((r) => r.unitId === String(fx.testUnit.id)); assert.ok(row, 'unit row found'); assert.equal(row.tours, 2, 'two live tours on the unit this year'); assert.deepEqual(tours.rows.find((r) => r.id === '9001').ayIds, ['2', '3'], 'a multi-select AY reads back as a list'); assert.equal(row.nextTour, new Date().toISOString().slice(0, 10));
   });
+  await t.test('setup status, rent review, pipeline issues and sorting', () => {
+    const st = request(app, { route: 'setup' }).json(); assert.ok(st.items.length >= 10);
+    const terms = st.items.find((x) => x.id === 'custrecord_ad_uas_lease_terms'); assert.equal(terms.status, 'missing', 'the snapshot lacks the lease terms field');
+    assert.ok(st.items.every((x) => ['ok', 'missing', 'unknown'].includes(x.status)));
+    const ex = request(app, { route: 'exceptions', ay: '2027' }).json(); assert.ok(Array.isArray(ex.rentQuality) && ex.rentQuality.length > 0);
+    assert.ok(ex.rentQuality.some((r) => r.code === 'RENT_TOTAL_OFF' && /two-year/.test(r.detail)), 'a two-year lease carrying one year of Total Rent is flagged');
+    assert.ok(ex.rentQuality.some((r) => r.code === 'RENT_BED_OUTLIER'));
+    const all = request(app, { route: 'pipeline', ay: '2027', pageSize: '500' }).json(); assert.ok(all.issueCount > 0 && all.excludedCount <= all.issueCount);
+    const iss = request(app, { route: 'pipeline', ay: '2027', pageSize: '500', issues: '1' }).json(); assert.equal(iss.total, all.issueCount); assert.ok(iss.rows.every((r) => r.issue || r.draftLease));
+    const byIssue = request(app, { route: 'pipeline', ay: '2027', pageSize: '50', sort: 'issue', dir: 'desc' }).json(); assert.ok(byIssue.rows[0].issue || byIssue.rows[0].draftLease, 'sorting by issue puts flagged rows first');
+    const byRent = request(app, { route: 'pipeline', ay: '2027', pageSize: '500', sort: 'monthlyRent', dir: 'desc' }).json(); const rents = byRent.rows.map((r) => r.monthlyRent ?? -1); assert.ok(rents.every((v, i) => i === 0 || rents[i - 1] >= v), 'server sort descending');
+  });
   await t.test('calendar events unreadable: tours degrade to off with a reason, nothing else breaks', () => {
     const off = createApp({ ...N, query: fakeQuery({ ...fx, toursUnavailable: true }) });
     const tours = request(off, { route: 'tours' }).json(); assert.equal(tours.available, false); assert.deepEqual(tours.rows, []); assert.ok(tours.degraded.some((d) => d.feature === 'tours'));

@@ -29,6 +29,15 @@ export function buildPipelineRows(ctx, ay, basis) {
     const raw = ctx.dao.tours.list({ from: addDays(`${ay}-01-01`, -200), to: ayEndDate(ay) });
     for (const t of tourRows(ctx, raw)) { if (t.outcome === 'CANCELLED') continue; if (t.ayIds.length && ayId && !t.ayIds.includes(String(ayId))) continue; for (const uid of [...new Set((t.units || []).map((u) => u.unitId))]) { const cur = tourByUnit.get(uid) || { n: 0, last: null, next: null }; cur.n += 1; if (t.date < ctx.today && (!cur.last || t.date > cur.last)) cur.last = t.date; if (t.date >= ctx.today && (!cur.next || t.date < cur.next)) cur.next = t.date; tourByUnit.set(uid, cur); } }
   } catch (e) { ctx.log && ctx.log.error && ctx.log.error({ title: 'pipeline: tours', details: e && e.message }); }
+  // Exceptions per unit row (§5.7): unit- and bedroom-level ones on their unit, property-level ones (whole-house) on every
+  // row of the property, so the board shows which units carry an excluded lease or a data problem.
+  const excByUnit = new Map(), excByProp = new Map();
+  for (const e of r.exceptions || []) {
+    const unitId = e.unitId || (e.bedroomId && inv.bedroomsById.get(String(e.bedroomId)) ? inv.bedroomsById.get(String(e.bedroomId)).unitId : null);
+    const item = { code: e.code, label: e.label, excludes: !!e.excludes, severity: e.severity, leaseId: e.leaseId, leaseName: e.leaseName };
+    if (unitId) { if (!excByUnit.has(String(unitId))) excByUnit.set(String(unitId), []); excByUnit.get(String(unitId)).push(item); }
+    else if (e.propertyId) { if (!excByProp.has(String(e.propertyId))) excByProp.set(String(e.propertyId), []); excByProp.get(String(e.propertyId)).push(item); }
+  }
   const segment = ctx.params.segment === 'str' ? 'STR' : 'STUDENT';
   const prior = r.prior ? r.prior.placement : null;
   for (const u of inv.unitNodes) {
@@ -71,6 +80,8 @@ export function buildPipelineRows(ctx, ay, basis) {
     const notes = s ? notesByRow.get(String(s.id)) || [] : [];
     const followup = s ? toISO(s.followup) : null;
     const editable = !!u.id && !u.propertyOnly && stageSource !== 'lease';
+    const issues = [...(excByUnit.get(String(u.id)) || []), ...(excByProp.get(String(p.id)) || [])].filter((x, i, a) => a.findIndex((y) => y.code === x.code && y.leaseId === x.leaseId) === i).sort((a, b) => a.severity - b.severity);
+    const issue = issues.length ? { excluded: issues.filter((x) => x.excludes).length, count: issues.length, top: issues[0].label, codes: [...new Set(issues.map((x) => x.code))], list: issues.slice(0, 6) } : null;
     const twoYear = governing && governing.lease.isTwoYear ? { year: governing.year.carried ? 2 : 1, of: governing.lease.years.length } : null;
     out.push({
       key: u.id, unitId: u.propertyOnly ? null : u.id, propertyId: p.id, property: p.name, unit: u.propertyOnly ? '(whole property)' : u.name, market: p.marketId, marketLabel: p.marketLabel, fund: p.fund, segment: p.segment,
@@ -89,7 +100,7 @@ export function buildPipelineRows(ctx, ay, basis) {
       needsAction: editable && (stageKey === 'NONE' || (!!followup && followup <= ctx.today)),
       leases: leases.map((l) => ({ id: l.lease.id, name: l.lease.name, type: l.lease.typeKey, typeLabel: typeLabel(l.lease.typeKey), status: l.lease.statusKey, start: l.lease.start, end: l.lease.end, monthly: l.lease.monthlyRent, sent: l.lease.sentDate, signed: l.lease.signedDate, tenants: l.lease.tenantCount, placed: l.status === 'placed', code: l.code })),
       draftLease: draft ? { id: draft.lease.id, name: draft.lease.name, type: draft.lease.typeKey, monthly: draft.lease.monthlyRent } : null,
-      rrUnitId: u.rrUnitId,
+      rrUnitId: u.rrUnitId, issue,
     });
   }
   return { rows: out, missing, stageRowCount: stageRows.length, priorAy: r.prior ? r.prior.ay : null };

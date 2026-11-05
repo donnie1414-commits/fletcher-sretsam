@@ -66,6 +66,53 @@ export function leaseQuality(run, { keep = () => true, today, ayEnd } = {}) {
 }
 
 /**
+ * Rent review on this year's counted leases: does the money on the record hold together? Flags, in order of weight:
+ *   RENT_MISSING        monthly rent blank or zero on a counted lease
+ *   RENT_TOTAL_MISSING  monthly rent set but Total Rent blank
+ *   RENT_TOTAL_OFF      Total Rent differs from monthly x term months (beyond $50 or 2%)
+ *   RENT_BED_OUTLIER    rent per bed under $200 or over $4,000 (usually a typo: a total in the monthly field, a missing digit)
+ *   RENT_VS_TARGET      rent per bed under 60% or over 160% of the unit's target for the year
+ * Advisory: nothing here changes the statistics. targets: the run's normalized AY targets.
+ */
+export const RENT_RULES = Object.freeze({ totalTolerance: 0.02, totalFloor: 50, bedLow: 200, bedHigh: 4000, targetLow: 0.6, targetHigh: 1.6 });
+export function rentQuality(run, { keep = () => true, targets = run.targets || [] } = {}) {
+  const out = [];
+  const inv = run.inventory;
+  const tgtByUnit = new Map(); for (const t of targets) if (t.ay === run.ay && t.unitId) tgtByUnit.set(t.unitId, t);
+  const perBedTarget = (unitIds) => { let m = 0, b = 0; for (const id of unitIds) { const u = inv.unitsById.get(id); const t = tgtByUnit.get(id); if (!u || !t) continue; const tm = t.targetMonthly ?? (t.targetPerBed != null ? t.targetPerBed * u.beds : null); if (tm == null || !u.beds) continue; m += tm; b += u.beds; } return b ? m / b : null; };
+  const money = (v) => `$${Math.round(v).toLocaleString('en-US')}`;
+  for (const r of run.placement.leaseResults.values()) {
+    if (r.year.carried || r.status === 'skipped') continue;
+    const l = r.lease; if (l.statusKey !== 'EXECUTED' && l.statusKey !== 'IN_PROCESS') continue;
+    const p = propertyOf(run, r); if (!p || !mainSeg(p) || !keep(p)) continue;
+    const base = { kind: 'lease', recordId: l.id, record: l.name, property: p.name, propertyId: p.id, market: p.marketLabel, linked: linkedName(run, r), mrev: l.monthlyRent, total: l.totalRent, term: l.termMonths };
+    const push = (code, issue, sev, detail, fix) => out.push({ ...base, code, issue, sev, detail, fix });
+    const monthly = l.monthlyRent || 0;
+    if (monthly <= 0) { push('RENT_MISSING', 'Monthly rent is blank or zero', 2, `${l.statusKey === 'EXECUTED' ? 'Fully Executed' : 'In Process'} · ${r.coveredBeds || 0} beds`, 'Enter the monthly rent on the lease.'); continue; }
+    if (l.totalRent == null || l.totalRent <= 0) push('RENT_TOTAL_MISSING', 'Total Rent is blank', 1, `Monthly ${money(monthly)}${l.termMonths ? ` × ${l.termMonths} months = ${money(monthly * l.termMonths)}` : ''}`, 'Enter Total Rent (monthly × term).');
+    else if (l.termMonths) {
+      const expected = monthly * l.termMonths, diff = l.totalRent - expected;
+      if (Math.abs(diff) > Math.max(RENT_RULES.totalFloor, expected * RENT_RULES.totalTolerance)) {
+        const oneYearOfTwo = l.isTwoYear && Math.abs(l.totalRent - monthly * 12) <= Math.max(RENT_RULES.totalFloor, monthly * 12 * RENT_RULES.totalTolerance);
+        push('RENT_TOTAL_OFF', 'Total Rent does not equal monthly × term', 1, `${money(monthly)} × ${l.termMonths} months = ${money(expected)}; Total Rent ${money(l.totalRent)} (${diff > 0 ? '+' : '−'}${money(Math.abs(diff))})${oneYearOfTwo ? ' · Total Rent covers one year of a two-year lease' : ''}`, oneYearOfTwo ? 'Set Total Rent to the full two-year amount.' : 'Correct Total Rent, the monthly rent or the lease dates.');
+      }
+    }
+    const beds = l.typeKey === 'BED' ? Math.max(1, r.coveredBeds || 1) : r.coveredBeds || 0;
+    if (beds > 0) {
+      const perBed = monthly / beds;
+      if (perBed < RENT_RULES.bedLow || perBed > RENT_RULES.bedHigh) push('RENT_BED_OUTLIER', 'Rent per bed looks way off', 2, `${money(perBed)} per bed (${money(monthly)} ÷ ${beds} beds)`, 'Check the monthly rent: a total or a missing digit in the monthly field is the usual cause.');
+      else {
+        const scope = r.scope || {};
+        const unitIds = scope.level === 'property' ? (inv.propertiesById.get(scope.propertyId) || { units: [] }).units : scope.unitId ? [scope.unitId] : [];
+        const tgt = perBedTarget(unitIds);
+        if (tgt != null && tgt > 0) { const ratio = perBed / tgt; if (ratio < RENT_RULES.targetLow || ratio > RENT_RULES.targetHigh) push('RENT_VS_TARGET', 'Rent per bed is far from target', 1, `${money(perBed)} per bed vs ${money(tgt)} target (${ratio > 1 ? '+' : '−'}${Math.round(Math.abs(ratio - 1) * 100)}%)`, 'Confirm the rent, or the Academic Year Details target for this unit.'); }
+      }
+    }
+  }
+  return out;
+}
+
+/**
  * Tenant-record checks on the leases counted this year: no tenant records linked, Number of Tenants
  * mismatch, same tenant on more than one lease (double-booked), inactive tenant on an active lease, no email.
  *   customersById: Map(id → { id, name, email, isinactive })  (the DAO supplies it for the linked ids only)

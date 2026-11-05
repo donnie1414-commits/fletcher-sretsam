@@ -860,7 +860,7 @@ function createPeopleDao({ sq, schema }) {
       { field: CUSTOMER.RR_UPLOAD_STATUS, as: "rr_upload_status", optional: true }
     ]).select.replace(/(^|, )(?!NULL|BUILTIN)([a-z_0-9]+)/g, "$1c.$2");
   }
-  function tenants({ filters = {}, sort = "name", page = 0, pageSize = 100 } = {}) {
+  function tenants({ filters = {}, sort = "name", dir = "asc", page = 0, pageSize = 100 } = {}) {
     const where = [];
     if (!filters.includeInactive) where.push("c.isinactive = 'F'");
     if (filters.leadSet) where.push(`(c.stage = '${LEAD.STAGE}' OR c.entitystatus IN (${LEAD.TENANT_INQUIRING}))`);
@@ -877,7 +877,8 @@ function createPeopleDao({ sq, schema }) {
     if (filters.scopePropertyIds) where.push(`(NOT EXISTS (SELECT 1 FROM ${CUSTOMER.PROPERTY_MAP} m WHERE m.mapone = c.id) OR EXISTS (SELECT 1 FROM ${CUSTOMER.PROPERTY_MAP} m WHERE m.mapone = c.id AND m.maptwo IN (${sqlIn(filters.scopePropertyIds)})))`);
     const w = where.length ? `WHERE ${where.join(" AND ")}` : "";
     const total = sq.one(`SELECT COUNT(*) AS n FROM ${C} c ${w}`).n;
-    const order = TENANT_SORTS[sort] || TENANT_SORTS.name;
+    const base = TENANT_SORTS[sort] || TENANT_SORTS.name;
+    const order = dir === "desc" ? base.split(",").map((x) => / DESC$/i.test(x.trim()) ? x.trim().replace(/ DESC$/i, " ASC") : `${x.trim()} DESC`).join(", ") : base;
     const sql = `SELECT * FROM (SELECT ROWNUM rn, x.* FROM (SELECT ${select()} FROM ${C} c ${w} ORDER BY ${order}, c.id) x) WHERE rn > ${page * pageSize} AND rn <= ${(page + 1) * pageSize}`;
     return { rows: sq.few(sql), total: Number(total), page, pageSize };
   }
@@ -2197,7 +2198,9 @@ function addMetrics(a, b) {
   return a;
 }
 var ratio = (a, b) => b > 0 ? a / b : null;
-var growth = (cur, prev) => prev > 0 ? cur / prev - 1 : null;
+var MIN_GROWTH_BASE = 1 / 6;
+var growth = (cur, prev) => prev > 0 && prev >= Math.abs(cur || 0) * MIN_GROWTH_BASE ? cur / prev - 1 : null;
+var priorThin = (occ, pOcc, beds) => occ > 0 && (pOcc || 0) < occ * 0.1 && (pOcc || 0) < (beds || 0) * 0.1;
 function finish(m) {
   m.vacant = m.beds - m.occupied;
   m.occPct = ratio(m.occupied, m.beds);
@@ -2430,12 +2433,12 @@ function compareMetrics(cur, prior) {
 
 // src/shared/rules/samestore.js
 function markSameStore(inventory, cur, prior) {
-  const tally = { grains: 0, beds: 0, dropped: { excluded: 0, vacantCur: 0, vacantPrior: 0 }, droppedBeds: { excluded: 0, vacantCur: 0, vacantPrior: 0 } };
+  const tally2 = { grains: 0, beds: 0, dropped: { excluded: 0, vacantCur: 0, vacantPrior: 0 }, droppedBeds: { excluded: 0, vacantCur: 0, vacantPrior: 0 } };
   for (const lr of cur.leafResults.values()) {
     lr.sameStore = false;
     lr.ssWhy = prior ? null : "noPrior";
   }
-  if (!prior) return tally;
+  if (!prior) return tally2;
   const index = (placement) => {
     const ex = { byProp: /* @__PURE__ */ new Set(), byUnit: /* @__PURE__ */ new Set(), byBed: /* @__PURE__ */ new Set(), unattributed: /* @__PURE__ */ new Set(), whProp: /* @__PURE__ */ new Set() };
     for (const r of placement.leaseResults.values()) {
@@ -2470,20 +2473,19 @@ function markSameStore(inventory, cur, prior) {
         lr.ssWhy = why;
       }
       if (why) {
-        tally.dropped[why] += 1;
-        tally.droppedBeds[why] += beds;
+        tally2.dropped[why] += 1;
+        tally2.droppedBeds[why] += beds;
       } else {
-        tally.grains += 1;
-        tally.beds += beds;
+        tally2.grains += 1;
+        tally2.beds += beds;
       }
     }
   }
-  return tally;
+  return tally2;
 }
 
 // src/shared/rules/summary.js
 var ratio2 = (a, b) => b > 0 ? a / b : null;
-var growth2 = (cur, prev) => prev > 0 ? cur / prev - 1 : null;
 var r2 = (v) => v == null ? null : Number(Number(v).toFixed(2));
 var fundLabel = (k) => FUNDS[k] ? FUNDS[k].label : k === "UNMAPPED" ? "Unmapped fund" : k;
 var mainSeg = (p) => !!p && (SEGMENTS[p.segment] || SEGMENTS.STUDENT).inOccupancy;
@@ -2516,20 +2518,26 @@ function paceCut(run, { today, basis }) {
   if (!run.prior || !today) return null;
   const shift = daysBetween(ayStartDate(run.ay - 1), ayStartDate(run.ay));
   const lyAsOf = addDays(today, -shift);
-  const cut = dayNum(lyAsOf);
-  const rows = [];
+  const cut = dayNum(lyAsOf), now = dayNum(today);
+  const rows = [], lyUndated = [], curRows = [], undated = [];
   for (const r of run.prior.placement.leaseResults.values()) {
     if (r.status !== "placed") continue;
     const d = leaseDateFor(r.lease, basis);
-    if (d && dayNum(d) <= cut) rows.push(r);
+    if (!d) lyUndated.push(r);
+    else if (dayNum(d) <= cut) rows.push(r);
   }
-  return { asOf: today, lyAsOf, shiftDays: shift, rows };
+  for (const r of run.placement.leaseResults.values()) {
+    if (r.status !== "placed") continue;
+    const d = leaseDateFor(r.lease, basis);
+    if (!d) undated.push(r);
+    else if (dayNum(d) <= now) curRows.push(r);
+  }
+  return { asOf: today, lyAsOf, shiftDays: shift, rows, curRows, undated, lyUndated };
 }
-function paceFor(pace, run, pred) {
-  if (!pace) return null;
+function tally(list, run, pred) {
   let occ = 0, trev = 0, leases = 0;
-  for (const r of pace.rows) {
-    const p = propertyOf(run.prior ? { inventory: run.inventory } : run, r);
+  for (const r of list) {
+    const p = propertyOf(run, r);
     if (!mainSeg(p) || !pred(p, r)) continue;
     occ += r.coveredBeds;
     trev += r.year.revenue;
@@ -2537,9 +2545,18 @@ function paceFor(pace, run, pred) {
   }
   return { occ, trev: r2(trev), leases };
 }
+function paceFor(pace, run, pred) {
+  if (!pace) return null;
+  const ly = tally(pace.rows, run, pred), cur = tally(pace.curRows, run, pred);
+  const und = tally(pace.undated, run, pred), lyUnd = tally(pace.lyUndated, run, pred);
+  return { ...ly, cur, undatedOcc: und.occ, undatedLeases: und.leases, lyUndatedOcc: lyUnd.occ, lyUndatedLeases: lyUnd.leases };
+}
 function kpiRow(name, m, pace) {
   const occPct = ratio2(m.occupied, m.beds);
+  const thin = priorThin(m.occupied, m.pOccupied, m.beds);
+  if (thin) pace = null;
   const wkOccPct = pace ? ratio2(pace.occ, m.beds) : null;
+  const curWkOccPct = pace ? ratio2(pace.cur.occ, m.beds) : null;
   return {
     name,
     beds: m.beds,
@@ -2562,20 +2579,21 @@ function kpiRow(name, m, pace) {
     pOcc: m.pOccupied,
     pVacant: m.beds - m.pOccupied,
     pOccPct: ratio2(m.pOccupied, m.beds),
-    occDelta: occPct != null && m.beds ? occPct - m.pOccupied / m.beds : null,
+    occDelta: !thin && occPct != null && m.beds ? occPct - m.pOccupied / m.beds : null,
+    priorThin: thin,
     pFinPct: ratio2(m.pBedMonths / 12, m.beds),
     pPeople: m.pPeople,
     pLeases: m.pActiveLeases,
     pMrev: r2(m.pMonthly),
     pTrev: r2(m.pAnnual),
-    mrevYoY: growth2(m.monthly, m.pMonthly),
-    trevYoY: growth2(m.annual, m.pAnnual),
+    mrevYoY: growth(m.monthly, m.pMonthly),
+    trevYoY: growth(m.annual, m.pAnnual),
     pRentBed: ratio2(m.pMonthly, m.pOccupied),
-    rentBedYoY: m.occupied > 0 && m.pOccupied > 0 ? growth2(m.monthly / m.occupied, m.pMonthly / m.pOccupied) : null,
+    rentBedYoY: m.occupied > 0 && m.pOccupied > 0 ? growth(m.monthly / m.occupied, m.pMonthly / m.pOccupied) : null,
     ssBeds: m.ssBeds,
     ssCur: r2(m.ssCur),
     ssPrior: r2(m.ssPrior),
-    ssYoY: growth2(m.ssCur, m.ssPrior),
+    ssYoY: growth(m.ssCur, m.ssPrior),
     tgt: r2(m.targetMonthly),
     tgtBeds: m.targetBeds,
     tgtBed: ratio2(m.targetMonthly, m.targetBeds),
@@ -2586,10 +2604,18 @@ function kpiRow(name, m, pace) {
     prevRentBed: ratio2(m.prevRentSum, m.prevRentBeds),
     lyWkOcc: pace ? pace.occ : null,
     lyWkOccPct: wkOccPct,
-    lyWkDelta: pace && occPct != null && wkOccPct != null ? occPct - wkOccPct : null,
     lyWkLeases: pace ? pace.leases : null,
     lyWkTrev: pace ? pace.trev : null,
-    trevPace: pace ? growth2(m.annual, pace.trev) : null
+    // this year on the same rule (dated leases to today), so "vs same date" subtracts like from like
+    wkOcc: pace ? pace.cur.occ : null,
+    wkOccPct: curWkOccPct,
+    wkTrev: pace ? pace.cur.trev : null,
+    lyWkDelta: pace && curWkOccPct != null && wkOccPct != null ? curWkOccPct - wkOccPct : null,
+    trevPace: pace ? growth(pace.cur.trev, pace.trev) : null,
+    undatedOcc: pace ? pace.undatedOcc : null,
+    undatedLeases: pace ? pace.undatedLeases : null,
+    lyUndatedOcc: pace ? pace.lyUndatedOcc : null,
+    lyUndatedLeases: pace ? pace.lyUndatedLeases : null
   };
 }
 function blockingByReason(run, { keep = () => true } = {}) {
@@ -2621,7 +2647,7 @@ function summaryExtras(run, { keep = () => true, today = null, basis = run.basis
   const byFundKeys = [...new Set(cells.map((c) => c.fund))].sort();
   const byMarketKeys = [...new Set(cells.map((c) => c.marketId))].sort((a, b) => a.localeCompare(b));
   const mkName = (id) => (cells.find((c) => c.marketId === id) || {}).market || id;
-  const row = (name, list, pred) => kpiRow(name, sum(list), paceFor(pace, run, pred));
+  const row = (name, list, pred) => kpiRow(name, sum(list), paceFor(pace, run, (p, r) => keep(p) && pred(p, r)));
   const kpi = {
     total: row("Total", cells, () => true),
     byFund: byFundKeys.map((f) => ({
@@ -2654,7 +2680,7 @@ function summaryExtras(run, { keep = () => true, today = null, basis = run.basis
     const trev = list.reduce((s, r) => s + r.year.revenue, 0);
     const plist = priorPlaced.filter((r) => r.lease.typeKey === type);
     const pOcc = plist.reduce((s, r) => s + r.coveredBeds, 0), pMrev = plist.reduce((s, r) => s + r.lease.monthlyRent, 0), pTrev = plist.reduce((s, r) => s + r.year.revenue, 0);
-    const tp = paceFor(pace, run, (p, r) => r.lease.typeKey === type);
+    const tp = priorThin(total.occupied, total.pOccupied, total.beds) ? null : paceFor(pace, run, (p, r) => keep(p) && r.lease.typeKey === type);
     const occPct = ratio2(occ, total.beds), pOccPct = run.prior ? ratio2(pOcc, total.beds) : null;
     return {
       key: type,
@@ -2676,14 +2702,15 @@ function summaryExtras(run, { keep = () => true, today = null, basis = run.basis
       occDelta: pOccPct != null && occPct != null ? occPct - pOccPct : null,
       pLeases: run.prior ? plist.length : null,
       pMrev: run.prior ? r2(pMrev) : null,
-      mrevYoY: run.prior ? growth2(mrev, pMrev) : null,
+      mrevYoY: run.prior ? growth(mrev, pMrev) : null,
       pTrev: run.prior ? r2(pTrev) : null,
-      trevYoY: run.prior ? growth2(trev, pTrev) : null,
+      trevYoY: run.prior ? growth(trev, pTrev) : null,
       lyWkOcc: tp ? tp.occ : null,
       lyWkOccPct: tp ? ratio2(tp.occ, total.beds) : null,
-      lyWkDelta: tp && occPct != null ? occPct - (ratio2(tp.occ, total.beds) || 0) : null,
+      wkOccPct: tp ? ratio2(tp.cur.occ, total.beds) : null,
+      lyWkDelta: tp ? (ratio2(tp.cur.occ, total.beds) || 0) - (ratio2(tp.occ, total.beds) || 0) : null,
       lyWkTrev: tp ? tp.trev : null,
-      trevPace: tp ? growth2(trev, tp.trev) : null,
+      trevPace: tp ? growth(tp.cur.trev, tp.trev) : null,
       pRentBed: run.prior ? ratio2(pMrev, pOcc) : null
     };
   });
@@ -2792,7 +2819,6 @@ function velocity(runsByAy, { ays, keep = () => true }) {
 
 // src/shared/rules/weekly.js
 var ratio3 = (a, b) => b > 0 ? a / b : null;
-var growth3 = (cur, prev) => prev > 0 ? cur / prev - 1 : null;
 var r22 = (v) => v == null ? null : Number(Number(v).toFixed(2));
 var mainSeg2 = (p) => !!p && (SEGMENTS[p.segment] || SEGMENTS.STUDENT).inOccupancy;
 var typeLabel2 = (k) => (LEASE_TYPES[k] || {}).label || "Unknown";
@@ -3077,7 +3103,7 @@ function weeklyReport({ ay, basis = "proforma", today, weekOf = null, cur, prior
     lyNewBeds: hasLy ? g.lyNewBeds : null,
     dOccPct: g.beds > 0 ? (g.occ - g.prevOcc) / g.beds : null,
     vsLyPct: hasLy && g.beds > 0 ? (g.occ - g.lyOcc) / g.beds : null,
-    trevPace: hasLy ? growth3(g.trev, g.lyTrev) : null
+    trevPace: hasLy ? growth(g.trev, g.lyTrev) : null
   })).sort((a, b) => a.name.localeCompare(b.name));
   const inactivated = (inactivations || []).filter((e) => inWeek(D(String(e.changed || "").slice(0, 10)))).map((e) => {
     const p = inv.propertiesById.get(String(e.property_id));
@@ -3122,7 +3148,7 @@ function weeklyReport({ ay, basis = "proforma", today, weekOf = null, cur, prior
       ty,
       ly,
       d: ly ? { beds: ty.beds - ly.beds, leases: ty.leases - ly.leases, trev: r22(ty.trev - ly.trev), occPts: ty.occPct != null && ly.occPct != null ? ty.occPct - ly.occPct : null } : null,
-      pct: ly ? { beds: growth3(ty.beds, ly.beds), leases: growth3(ty.leases, ly.leases), trev: growth3(ty.trev, ly.trev) } : null
+      pct: ly ? { beds: growth(ty.beds, ly.beds), leases: growth(ty.leases, ly.leases), trev: growth(ty.trev, ly.trev) } : null
     };
   };
   const cmp = {
@@ -3675,6 +3701,8 @@ function applyPipelineView(rows, q = {}) {
   else if (q.tours === "some") out = out.filter((r) => r.tours > 0);
   if (q.needsAction === "1" || q.needsAction === true) out = out.filter((r) => r.needsAction);
   if (q.breach === "1" || q.breach === true) out = out.filter((r) => r.breach);
+  if (q.issues === "1" || q.issues === true) out = out.filter((r) => r.issue || r.draftLease);
+  else if (q.issues === "excluded") out = out.filter((r) => r.issue && r.issue.excluded || r.draftLease);
   if (q.mentions) {
     const me = String(q.mentions);
     out = out.filter((r) => (r.mentions || []).includes(me));
@@ -3683,26 +3711,34 @@ function applyPipelineView(rows, q = {}) {
     const needle = String(q.q).toLowerCase();
     out = out.filter((r) => `${r.property} ${r.unit} ${r.expectedTenants || ""} ${r.notes || ""} ${r.rrUnitId || ""} ${(r.leases || []).map((l) => l.name).join(" ")} ${r.priorTenants || ""}`.toLowerCase().includes(needle));
   }
-  const sort = PIPELINE_SORTS.includes(q.sort) ? q.sort : "property";
+  const sort = PIPELINE_SORTS.includes(q.sort) || /^[a-zA-Z]{2,30}$/.test(String(q.sort || "")) ? q.sort : "property";
   const dir = q.dir === "desc" ? -1 : 1;
-  const val = (r) => ({ property: r.property, unit: r.unit, beds: r.beds, propertyBeds: r.propertyBeds || 0, stage: r.stage, daysInStage: r.daysInStage ?? -1, tours: r.tours, target: r.targetMonthly ?? -1, lastOffer: r.lastOffer ?? -1, followup: r.followup || "", available: r.free, monthlyRent: r.monthlyRent ?? -1, needsAction: r.needsAction ? 1 : 0, signed: r.signed || "", market: r.market })[sort];
+  const val = (r) => ({ property: r.property, unit: r.unit, beds: r.beds, propertyBeds: r.propertyBeds || 0, stage: r.stage, daysInStage: r.daysInStage ?? -1, tours: r.tours, target: r.targetMonthly ?? -1, lastOffer: r.lastOffer ?? -1, followup: r.followup || "", available: r.free, monthlyRent: r.monthlyRent ?? -1, needsAction: r.needsAction ? 1 : 0, signed: r.signed || "", market: r.market, issue: r.issue ? (r.issue.excluded ? 2 : 1) + r.issue.count / 100 : r.draftLease ? 2 : 0 });
+  const pick2 = (r) => {
+    const m = val(r);
+    if (Object.prototype.hasOwnProperty.call(m, sort)) return m[sort];
+    const v = r[sort];
+    return v == null ? "" : typeof v === "object" ? v.count ?? (Array.isArray(v) ? v.length : "") : v;
+  };
   out = out.slice().sort((a, b) => {
-    const x = val(a), y = val(b);
+    const x = pick2(a), y = pick2(b);
     const c = typeof x === "number" && typeof y === "number" ? x - y : String(x).localeCompare(String(y), void 0, { numeric: true });
     return c * dir || a.property.localeCompare(b.property, void 0, { numeric: true }) || a.unit.localeCompare(b.unit, void 0, { numeric: true });
   });
   const total = out.length, totalBeds = out.reduce((s, r) => s + r.beds, 0);
   const pageSize = Math.min(500, Math.max(25, Number(q.pageSize) || 100)), page = Math.max(0, Number(q.page) || 0);
   const stageCounts = {}, stageBeds = {};
-  let breachCount = 0, needsActionCount = 0, noStatus = 0;
+  let breachCount = 0, needsActionCount = 0, noStatus = 0, issueCount = 0, excludedCount = 0;
   for (const r of out) {
     stageCounts[r.stage] = (stageCounts[r.stage] || 0) + 1;
     stageBeds[r.stage] = (stageBeds[r.stage] || 0) + r.beds;
     if (r.breach) breachCount++;
     if (r.needsAction) needsActionCount++;
     if (r.draftLease) noStatus++;
+    if (r.issue || r.draftLease) issueCount++;
+    if (r.issue && r.issue.excluded || r.draftLease) excludedCount++;
   }
-  return { total, totalBeds, page, pageSize, rows: out.slice(page * pageSize, (page + 1) * pageSize), stageCounts, stageBeds, breachCount, needsActionCount, noStatus };
+  return { total, totalBeds, page, pageSize, rows: out.slice(page * pageSize, (page + 1) * pageSize), stageCounts, stageBeds, breachCount, needsActionCount, noStatus, issueCount, excludedCount };
 }
 function applyLeadView(all, params = {}) {
   const view = params.view || "new";
@@ -3766,6 +3802,18 @@ function buildPipelineRows(ctx, ay, basis) {
   } catch (e) {
     ctx.log && ctx.log.error && ctx.log.error({ title: "pipeline: tours", details: e && e.message });
   }
+  const excByUnit = /* @__PURE__ */ new Map(), excByProp = /* @__PURE__ */ new Map();
+  for (const e of r.exceptions || []) {
+    const unitId = e.unitId || (e.bedroomId && inv.bedroomsById.get(String(e.bedroomId)) ? inv.bedroomsById.get(String(e.bedroomId)).unitId : null);
+    const item = { code: e.code, label: e.label, excludes: !!e.excludes, severity: e.severity, leaseId: e.leaseId, leaseName: e.leaseName };
+    if (unitId) {
+      if (!excByUnit.has(String(unitId))) excByUnit.set(String(unitId), []);
+      excByUnit.get(String(unitId)).push(item);
+    } else if (e.propertyId) {
+      if (!excByProp.has(String(e.propertyId))) excByProp.set(String(e.propertyId), []);
+      excByProp.get(String(e.propertyId)).push(item);
+    }
+  }
   const segment = ctx.params.segment === "str" ? "STR" : "STUDENT";
   const prior = r.prior ? r.prior.placement : null;
   for (const u of inv.unitNodes) {
@@ -3780,9 +3828,16 @@ function buildPipelineRows(ctx, ay, basis) {
     const governing = leases.find((l) => l.lease.statusKey === "EXECUTED") || leases.find((l) => l.lease.statusKey === "IN_PROCESS") || leases[0] || null;
     const draft = !leases.length ? [...r.placement.leaseResults.values()].find((x) => x.code === "NO_STATUS" && !x.year.carried && (x.scope.unitId === u.id || u.propertyOnly && x.scope.propertyId === p.id && !x.scope.unitId)) || null : null;
     const s = stageByUnit.get(u.id) || null;
-    const stageKey = s ? effectiveStage({ stage: s.stage_name || lookups.stageIds[String(s.stage)] || s.stage, manualStage: lookups.stageIds[String(s.manual_stage)] || s.manual_stage, stageSource: String(s.stage_source) === "2" || s.stage_source_name === "Lease" ? "lease" : "manual" }) : governing ? governing.lease.statusKey === "EXECUTED" ? "FULLY_EXECUTED" : "LEASE_OUT" : draft ? "READY_FOR_LEASE" : "NONE";
-    const stageSource = s ? String(s.stage_source) === "2" ? "lease" : "manual" : governing ? "lease" : null;
-    const stageDate = s ? toISO(s.stage_date) : governing ? governing.lease.statusKey === "EXECUTED" ? governing.lease.signedDate : governing.lease.sentDate : null;
+    const rowStage = s ? effectiveStage({ stage: s.stage_name || lookups.stageIds[String(s.stage)] || s.stage, manualStage: lookups.stageIds[String(s.manual_stage)] || s.manual_stage, stageSource: String(s.stage_source) === "2" || s.stage_source_name === "Lease" ? "lease" : "manual" }) : governing ? governing.lease.statusKey === "EXECUTED" ? "FULLY_EXECUTED" : "LEASE_OUT" : draft ? "READY_FOR_LEASE" : "NONE";
+    const rowSource = s ? String(s.stage_source) === "2" ? "lease" : "manual" : governing ? "lease" : null;
+    const rowDate = s ? toISO(s.stage_date) : governing ? governing.lease.statusKey === "EXECUTED" ? governing.lease.signedDate : governing.lease.sentDate : null;
+    const placedLease = leases.find((l) => l.status === "placed" && l.lease.statusKey === "EXECUTED") || leases.find((l) => l.status === "placed" && l.lease.statusKey === "IN_PROCESS") || null;
+    const leaseStage = placedLease ? placedLease.lease.statusKey === "EXECUTED" ? "FULLY_EXECUTED" : "LEASE_OUT" : null;
+    const keepRow = !leaseStage || rowStage === leaseStage || leaseStage === "LEASE_OUT" && rowStage === "LEASE_REVISIONS";
+    const stageKey = keepRow ? rowStage : leaseStage;
+    const stageSource = keepRow ? rowSource : "lease";
+    const stageDate = keepRow ? rowDate : (placedLease.lease.statusKey === "EXECUTED" ? placedLease.lease.signedDate || placedLease.lease.sentDate : placedLease.lease.sentDate) || rowDate;
+    const stageFromLease = !keepRow;
     const t = targetByUnit.get(u.id) || null, nt = nextTargetByUnit.get(u.id) || null;
     const targetMonthly = t ? t.targetMonthly ?? (t.targetPerBed != null ? t.targetPerBed * u.beds : null) : null;
     const settleMonthly = t ? t.settleMonthly ?? (t.settlePerBed != null ? t.settlePerBed * u.beds : null) : null;
@@ -3806,6 +3861,8 @@ function buildPipelineRows(ctx, ay, basis) {
     const notes = s ? notesByRow.get(String(s.id)) || [] : [];
     const followup = s ? toISO(s.followup) : null;
     const editable = !!u.id && !u.propertyOnly && stageSource !== "lease";
+    const issues = [...excByUnit.get(String(u.id)) || [], ...excByProp.get(String(p.id)) || []].filter((x, i, a) => a.findIndex((y) => y.code === x.code && y.leaseId === x.leaseId) === i).sort((a, b) => a.severity - b.severity);
+    const issue = issues.length ? { excluded: issues.filter((x) => x.excludes).length, count: issues.length, top: issues[0].label, codes: [...new Set(issues.map((x) => x.code))], list: issues.slice(0, 6) } : null;
     const twoYear = governing && governing.lease.isTwoYear ? { year: governing.year.carried ? 2 : 1, of: governing.lease.years.length } : null;
     out.push({
       key: u.id,
@@ -3870,7 +3927,8 @@ function buildPipelineRows(ctx, ay, basis) {
       needsAction: editable && (stageKey === "NONE" || !!followup && followup <= ctx.today),
       leases: leases.map((l) => ({ id: l.lease.id, name: l.lease.name, type: l.lease.typeKey, typeLabel: typeLabel3(l.lease.typeKey), status: l.lease.statusKey, start: l.lease.start, end: l.lease.end, monthly: l.lease.monthlyRent, sent: l.lease.sentDate, signed: l.lease.signedDate, tenants: l.lease.tenantCount, placed: l.status === "placed", code: l.code })),
       draftLease: draft ? { id: draft.lease.id, name: draft.lease.name, type: draft.lease.typeKey, monthly: draft.lease.monthlyRent } : null,
-      rrUnitId: u.rrUnitId
+      rrUnitId: u.rrUnitId,
+      issue
     });
   }
   return { rows: out, missing, stageRowCount: stageRows.length, priorAy: r.prior ? r.prior.ay : null };
@@ -3978,8 +4036,8 @@ function routeTenants(ctx) {
   const pageSize = Math.min(500, Math.max(25, Number(q.pageSize) || 100)), page = Math.max(0, Number(q.page) || 0);
   let result;
   if (filters.needsAttention) {
-    const a = ctx.dao.people.tenants({ filters: { ...filters, missingProperty: true }, sort: q.sort, page: 0, pageSize: 1e3 });
-    const b = ctx.dao.people.tenants({ filters: { ...filters, missingAy: true }, sort: q.sort, page: 0, pageSize: 1e3 });
+    const a = ctx.dao.people.tenants({ filters: { ...filters, missingProperty: true }, sort: q.sort, dir: q.dir, page: 0, pageSize: 1e3 });
+    const b = ctx.dao.people.tenants({ filters: { ...filters, missingAy: true }, sort: q.sort, dir: q.dir, page: 0, pageSize: 1e3 });
     const seen = /* @__PURE__ */ new Set();
     const rows2 = [];
     for (const r of a.rows.concat(b.rows)) if (!seen.has(r.id)) {
@@ -3987,7 +4045,7 @@ function routeTenants(ctx) {
       rows2.push(r);
     }
     result = { rows: rows2.slice(page * pageSize, (page + 1) * pageSize), total: rows2.length, page, pageSize };
-  } else result = ctx.dao.people.tenants({ filters, sort: q.sort, page, pageSize });
+  } else result = ctx.dao.people.tenants({ filters, sort: q.sort, dir: q.dir, page, pageSize });
   const custIds = result.rows.map((r) => r.id);
   const leaseLinks = custIds.length ? ctx.dao.people.leaseLinks(custIds) : [];
   const leasesByCust = /* @__PURE__ */ new Map();
@@ -4088,6 +4146,64 @@ function routeLeads(ctx) {
   return { ...applyLeadView(loadLeads(ctx), q), toursAvailable: !ctx.dao.tours.unavailable, calendarUrl: CALENDAR_URL, me: String(ctx.scope.userId), degraded: ctx.schema.degraded };
 }
 
+// src/server/routes/setup.js
+var ITEMS = [
+  { area: "Leads", table: CUSTOMER.TYPE, field: LEAD.UNITS, label: "Units of interest on a lead (Multiple Select → Units/Bedrooms)", need: "optional", effect: "Units ticked when adding a lead are kept on the lead for later tours." },
+  { area: "Tours", table: TOUR.TYPE, field: TOUR.UNIT, label: "Event › Units toured (Multiple Select → Units/Bedrooms)", need: "recommended", effect: "Tours count on the Pipeline per unit." },
+  { area: "Tours", table: TOUR.TYPE, field: TOUR.AY, label: "Event › Academic years (Multiple Select → Academic Year)", need: "recommended", effect: "Tours count toward the right academic year." },
+  { area: "Tours", table: TOUR.TYPE, field: TOUR.OUTCOME, label: "Event › Tour outcome (List → Tour Outcome)", need: "recommended", effect: "Completed / No-show / Cancelled / Leased are recorded." },
+  { area: "Tours", list: TOUR.OUTCOME_LIST, label: "List: Tour Outcome (Scheduled, Completed, No-show, Cancelled, Leased)", need: "recommended", effect: "Needed by the outcome field." },
+  { area: "Pipeline", table: UAS.TYPE, field: UAS.LEASE_TERMS, label: "Unit Leasing Status › Lease terms (Long Text)", need: "optional", effect: "Lease terms captured before a lease exists are remembered." },
+  { area: "Pipeline", stage: "IN_NEGOTIATIONS", label: "Leasing Stage value: In Negotiations", need: "required", effect: "The stage can be saved from the board." },
+  { area: "Pipeline", stage: "LEASE_REVISIONS", label: "Leasing Stage value: Lease Revisions", need: "required", effect: "The Revisions button can set the stage." },
+  { area: "Records", table: AUDIT.TYPE, field: AUDIT.CHANGE_ID, label: "Record: AD Write Audit (with its 8 fields)", need: "recommended", effect: "Change log, and protection against a change being saved twice.", fields: Object.values(AUDIT).filter((f) => f !== AUDIT.TYPE) },
+  { area: "Records", table: SAVED_VIEW.TYPE, field: SAVED_VIEW.JSON, label: "Record: AD Saved View (with its 6 fields)", need: "optional", effect: "Saved views stored in NetSuite and shareable.", fields: Object.values(SAVED_VIEW).filter((f) => f !== SAVED_VIEW.TYPE) },
+  { area: "Access", table: "employee", field: MARKET_LOCK.EMPLOYEE_FIELD, label: "Employee › Lease KPI Markets", need: "required", effect: "Market lock: who sees which markets." }
+];
+function routeSetup(ctx) {
+  ctx.schema.reset();
+  const lookups = lookupsFromLists(ctx.dao.portfolio.lists());
+  const stageKeys = new Set(Object.values(lookups.stageIds));
+  const items = ITEMS.map((it) => {
+    let status = "unknown", detail = null;
+    try {
+      if (it.stage) status = stageKeys.has(it.stage) ? "ok" : "missing";
+      else if (it.list) {
+        try {
+          ctx.sq.few(`SELECT id FROM ${it.list} WHERE ROWNUM <= 1`);
+          status = "ok";
+        } catch (e) {
+          status = "missing";
+        }
+      } else {
+        let readable = true;
+        try {
+          ctx.sq.few(`SELECT id FROM ${it.table} WHERE ROWNUM <= 1`);
+        } catch (e) {
+          readable = false;
+        }
+        if (!readable && it.table !== AUDIT.TYPE && it.table !== SAVED_VIEW.TYPE) {
+          status = "unknown";
+          detail = "your role cannot read this record type";
+        } else if (!readable) status = "missing";
+        else {
+          const fields = it.fields || [it.field];
+          const have = ctx.schema.probe(it.table, fields);
+          const absent = fields.filter((f) => have.get(f) === false);
+          status = absent.length ? "missing" : "ok";
+          if (absent.length && it.fields) detail = `missing fields: ${absent.join(", ")}`;
+        }
+      }
+    } catch (e) {
+      status = "unknown";
+      detail = e && e.message;
+    }
+    return { area: it.area, label: it.label, id: it.field || it.list || it.stage, need: it.need, effect: it.effect, status, detail };
+  });
+  items.push({ area: "Pipeline", label: "Deployment parameter: Overlap rule (§5.7.1)", id: "custscript_al_overlap_rule", need: "recommended", effect: "Back-to-back leases on one unit in the same year are both counted.", status: ctx.flags.requireOverlapForCollision ? "ok" : "missing", detail: ctx.flags.requireOverlapForCollision ? null : "not ticked on the deployment" });
+  return { items, missing: items.filter((x) => x.status === "missing").length, checkedAt: (/* @__PURE__ */ new Date()).toISOString() };
+}
+
 // src/shared/rules/quality.js
 var mainSeg3 = (p) => !!p && (SEGMENTS[p.segment] || SEGMENTS.STUDENT).inOccupancy;
 var RECORD_ISSUES = {
@@ -4140,6 +4256,64 @@ function leaseQuality(run, { keep = () => true, today, ayEnd } = {}) {
     if (signed != null && t != null && signed > t) push("SIGNED_FUTURE", "Lease Signed Date is in the future", "Weekly history uses it as entered", "Correct the Lease Signed Date.", `Signed ${l.signedDate}`);
     else if (signed != null && end != null && signed > end) push("SIGNED_AFTER_AY", "Lease Signed Date is after the academic year ends", "Weekly history uses it as entered", "Correct the Lease Signed Date or the Academic Year.", `Signed ${l.signedDate}`);
     if (l.statusKey === "OTHER") push("UNKNOWN_STATUS", "Lease Status is not Fully Executed or In Process", "Skipped on both bases", "Set a recognised Lease Status.", `Status value ${l.statusRaw}`);
+  }
+  return out;
+}
+var RENT_RULES = Object.freeze({ totalTolerance: 0.02, totalFloor: 50, bedLow: 200, bedHigh: 4e3, targetLow: 0.6, targetHigh: 1.6 });
+function rentQuality(run, { keep = () => true, targets = run.targets || [] } = {}) {
+  const out = [];
+  const inv = run.inventory;
+  const tgtByUnit = /* @__PURE__ */ new Map();
+  for (const t of targets) if (t.ay === run.ay && t.unitId) tgtByUnit.set(t.unitId, t);
+  const perBedTarget = (unitIds) => {
+    let m = 0, b = 0;
+    for (const id of unitIds) {
+      const u = inv.unitsById.get(id);
+      const t = tgtByUnit.get(id);
+      if (!u || !t) continue;
+      const tm = t.targetMonthly ?? (t.targetPerBed != null ? t.targetPerBed * u.beds : null);
+      if (tm == null || !u.beds) continue;
+      m += tm;
+      b += u.beds;
+    }
+    return b ? m / b : null;
+  };
+  const money = (v) => `$${Math.round(v).toLocaleString("en-US")}`;
+  for (const r of run.placement.leaseResults.values()) {
+    if (r.year.carried || r.status === "skipped") continue;
+    const l = r.lease;
+    if (l.statusKey !== "EXECUTED" && l.statusKey !== "IN_PROCESS") continue;
+    const p = propertyOf(run, r);
+    if (!p || !mainSeg3(p) || !keep(p)) continue;
+    const base = { kind: "lease", recordId: l.id, record: l.name, property: p.name, propertyId: p.id, market: p.marketLabel, linked: linkedName(run, r), mrev: l.monthlyRent, total: l.totalRent, term: l.termMonths };
+    const push = (code, issue, sev, detail, fix) => out.push({ ...base, code, issue, sev, detail, fix });
+    const monthly = l.monthlyRent || 0;
+    if (monthly <= 0) {
+      push("RENT_MISSING", "Monthly rent is blank or zero", 2, `${l.statusKey === "EXECUTED" ? "Fully Executed" : "In Process"} · ${r.coveredBeds || 0} beds`, "Enter the monthly rent on the lease.");
+      continue;
+    }
+    if (l.totalRent == null || l.totalRent <= 0) push("RENT_TOTAL_MISSING", "Total Rent is blank", 1, `Monthly ${money(monthly)}${l.termMonths ? ` × ${l.termMonths} months = ${money(monthly * l.termMonths)}` : ""}`, "Enter Total Rent (monthly × term).");
+    else if (l.termMonths) {
+      const expected = monthly * l.termMonths, diff = l.totalRent - expected;
+      if (Math.abs(diff) > Math.max(RENT_RULES.totalFloor, expected * RENT_RULES.totalTolerance)) {
+        const oneYearOfTwo = l.isTwoYear && Math.abs(l.totalRent - monthly * 12) <= Math.max(RENT_RULES.totalFloor, monthly * 12 * RENT_RULES.totalTolerance);
+        push("RENT_TOTAL_OFF", "Total Rent does not equal monthly × term", 1, `${money(monthly)} × ${l.termMonths} months = ${money(expected)}; Total Rent ${money(l.totalRent)} (${diff > 0 ? "+" : "−"}${money(Math.abs(diff))})${oneYearOfTwo ? " · Total Rent covers one year of a two-year lease" : ""}`, oneYearOfTwo ? "Set Total Rent to the full two-year amount." : "Correct Total Rent, the monthly rent or the lease dates.");
+      }
+    }
+    const beds = l.typeKey === "BED" ? Math.max(1, r.coveredBeds || 1) : r.coveredBeds || 0;
+    if (beds > 0) {
+      const perBed = monthly / beds;
+      if (perBed < RENT_RULES.bedLow || perBed > RENT_RULES.bedHigh) push("RENT_BED_OUTLIER", "Rent per bed looks way off", 2, `${money(perBed)} per bed (${money(monthly)} ÷ ${beds} beds)`, "Check the monthly rent: a total or a missing digit in the monthly field is the usual cause.");
+      else {
+        const scope = r.scope || {};
+        const unitIds = scope.level === "property" ? (inv.propertiesById.get(scope.propertyId) || { units: [] }).units : scope.unitId ? [scope.unitId] : [];
+        const tgt = perBedTarget(unitIds);
+        if (tgt != null && tgt > 0) {
+          const ratio4 = perBed / tgt;
+          if (ratio4 < RENT_RULES.targetLow || ratio4 > RENT_RULES.targetHigh) push("RENT_VS_TARGET", "Rent per bed is far from target", 1, `${money(perBed)} per bed vs ${money(tgt)} target (${ratio4 > 1 ? "+" : "−"}${Math.round(Math.abs(ratio4 - 1) * 100)}%)`, "Confirm the rent, or the Academic Year Details target for this unit.");
+        }
+      }
+    }
   }
   return out;
 }
@@ -4208,7 +4382,8 @@ function routeExceptions(ctx, _body, { full = true } = {}) {
   const customersById = /* @__PURE__ */ new Map();
   if (tenantIds.size) for (const c of ctx.dao.people.byIds([...tenantIds])) customersById.set(String(c.id), { id: String(c.id), name: [c.firstname, c.lastname].filter(Boolean).join(" ") || c.entityid, email: c.email || null, isinactive: c.isinactive });
   const tenants = tenantQuality(r, { keep, customersById });
-  return { ...out, blocking: blocking.map((g) => ({ ...g, label: EXCEPTION_CODES[g.code].label, meaning: EXCEPTION_CODES[g.code].meaning, fix: EXCEPTION_CODES[g.code].action })), blockingTotal, records, leaseQuality: leases, tenantQuality: tenants, advisoryCount: records.length + leases.length + tenants.length };
+  const rents = rentQuality(r, { keep });
+  return { ...out, blocking: blocking.map((g) => ({ ...g, label: EXCEPTION_CODES[g.code].label, meaning: EXCEPTION_CODES[g.code].meaning, fix: EXCEPTION_CODES[g.code].action })), blockingTotal, records, leaseQuality: leases, tenantQuality: tenants, rentQuality: rents, advisoryCount: rents.length + records.length + leases.length + tenants.length };
 }
 
 // src/server/routes/today.js
@@ -4295,10 +4470,10 @@ function renderShell(ctx) {
   const build = buildId();
   const inline = css ? inlineCss(ctx) : null;
   const styleTag = inline != null ? `<style id="al-css" data-build="${build}">${inline}</style>` : css ? `<link rel="stylesheet" href="${css}">` : "";
-  return `<!doctype html><html lang="en" data-theme="auto"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="al-build" content="${build}"><title>Amicus Leasing</title><style>html,body{margin:0;background:#fff;color:#111;font:14px/1.4 system-ui,sans-serif}@media(prefers-color-scheme:dark){html,body{background:#121417;color:#e6e8eb}}#root{min-height:100vh}.al-boot{padding:24px;max-width:720px}</style>${styleTag}</head><body><div id="root"><div class="al-boot" id="al-boot">Loading Amicus Leasing…</div></div><script type="application/json" id="al-bootstrap">${json}</script><script>window.__AL_SERVER_BUILD=${JSON.stringify(build)};</script>${js ? `<script src="${js}" defer onerror="document.getElementById('al-boot').textContent='The client bundle could not be loaded from ${js.replace(/'/g, "")} — open the browser console (F12) for the reason.'"></script>` : `<script>document.getElementById('al-boot').textContent='Client bundle not configured: set the script parameters custscript_al_client_js / custscript_al_client_css to the File Cabinet ids of amicus_leasing_app.js / .css (see SETUP-CHECKLIST).';</script>`}<script>setTimeout(function(){var b=document.getElementById('al-boot');if(b&&b.textContent.indexOf('Loading')===0)b.textContent='The client bundle loaded but did not start. Open the browser console (F12) and send the first error line.';},8000);</script></body></html>`;
+  return `<!doctype html><html lang="en" data-theme="auto"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="al-build" content="${build}"><title>Leasing Hub</title><style>html,body{margin:0;background:#fff;color:#111;font:14px/1.4 system-ui,sans-serif}@media(prefers-color-scheme:dark){html,body{background:#121417;color:#e6e8eb}}#root{min-height:100vh}.al-boot{padding:24px;max-width:720px}</style>${styleTag}</head><body><div id="root"><div class="al-boot" id="al-boot">Loading the Leasing Hub…</div></div><script type="application/json" id="al-bootstrap">${json}</script><script>window.__AL_SERVER_BUILD=${JSON.stringify(build)};</script>${js ? `<script src="${js}" defer onerror="document.getElementById('al-boot').textContent='The client bundle could not be loaded from ${js.replace(/'/g, "")} — open the browser console (F12) for the reason.'"></script>` : `<script>document.getElementById('al-boot').textContent='Client bundle not configured: set the script parameters custscript_al_client_js / custscript_al_client_css to the File Cabinet ids of amicus_leasing_app.js / .css (see SETUP-CHECKLIST).';</script>`}<script>setTimeout(function(){var b=document.getElementById('al-boot');if(b&&b.textContent.indexOf('Loading')===0)b.textContent='The client bundle loaded but did not start. Open the browser console (F12) and send the first error line.';},8000);</script></body></html>`;
 }
 function buildId() {
-  return true ? String("aa52b1204190") : "dev";
+  return true ? String("54824ca88887") : "dev";
 }
 function inlineCss(ctx) {
   try {
@@ -4476,7 +4651,7 @@ function createApp(N) {
     });
     return ctx;
   }
-  const routes = { bootstrap: routeBootstrap, lists: routeLists, summary: routeSummary, portfolio: routePortfolio, weekly: routeWeekly, velocity: routeVelocity, pipeline: routePipeline, unithistory: routeUnitHistory, team: routeTeam, tenants: routeTenants, leads: routeLeads, tours: routeTours, reprobe: routeReprobe, exceptions: routeExceptions, today: routeToday, savedviews: routeSavedViews, write: routeWrite, leasedialog: routeLeaseDialog, notes: routeNotes };
+  const routes = { bootstrap: routeBootstrap, lists: routeLists, summary: routeSummary, portfolio: routePortfolio, weekly: routeWeekly, velocity: routeVelocity, pipeline: routePipeline, unithistory: routeUnitHistory, team: routeTeam, tenants: routeTenants, leads: routeLeads, tours: routeTours, reprobe: routeReprobe, setup: routeSetup, exceptions: routeExceptions, today: routeToday, savedviews: routeSavedViews, write: routeWrite, leasedialog: routeLeaseDialog, notes: routeNotes };
   function handle(context) {
     const route = String((context.request.parameters || {}).route || "").toLowerCase();
     const method = context.request.method;

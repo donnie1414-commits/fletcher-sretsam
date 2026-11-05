@@ -1,7 +1,7 @@
 /** §6.6 — issue groups sorted by severity, scoped to the user's markets, plus the v2 advisory lists (lease dates, tenant records, property/unit records) and the blocking-exclusions card. */
 import { EXCEPTION_CODES, EXCEPTION_ORDER } from '../../shared/constants.js';
 import { blockingByReason } from '../../shared/rules/summary.js';
-import { recordQuality, leaseQuality, tenantQuality } from '../../shared/rules/quality.js';
+import { recordQuality, leaseQuality, tenantQuality, rentQuality } from '../../shared/rules/quality.js';
 import { ayEndDate } from '../../shared/rules/dates.js';
 export function routeExceptions(ctx, _body, { full = true } = {}) {
   const r = ctx.run();
@@ -23,5 +23,6 @@ export function routeExceptions(ctx, _body, { full = true } = {}) {
   const customersById = new Map();
   if (tenantIds.size) for (const c of ctx.dao.people.byIds([...tenantIds])) customersById.set(String(c.id), { id: String(c.id), name: [c.firstname, c.lastname].filter(Boolean).join(' ') || c.entityid, email: c.email || null, isinactive: c.isinactive });
   const tenants = tenantQuality(r, { keep, customersById });
-  return { ...out, blocking: blocking.map((g) => ({ ...g, label: EXCEPTION_CODES[g.code].label, meaning: EXCEPTION_CODES[g.code].meaning, fix: EXCEPTION_CODES[g.code].action })), blockingTotal, records, leaseQuality: leases, tenantQuality: tenants, advisoryCount: records.length + leases.length + tenants.length };
+  const rents = rentQuality(r, { keep });
+  return { ...out, blocking: blocking.map((g) => ({ ...g, label: EXCEPTION_CODES[g.code].label, meaning: EXCEPTION_CODES[g.code].meaning, fix: EXCEPTION_CODES[g.code].action })), blockingTotal, records, leaseQuality: leases, tenantQuality: tenants, rentQuality: rents, advisoryCount: rents.length + records.length + leases.length + tenants.length };
 }

@@ -4,6 +4,7 @@ import { recordUrl, isPreview, post, invalidate } from '../api.js';
 import { DataGrid } from '../components/DataGrid/DataGrid.jsx';
 import { Segmented, Select, Button, Pill, ErrorBox, Empty, Modal } from '../ui.jsx';
 import { fmtInt, fmtDate, toCSV, downloadCSV } from '../format.js';
+import { sortRows, sortValue, nextSort } from '../sort.js';
 import { CUSTOMER } from '../../shared/constants.js';
 import { SavedViews } from './SavedViews.jsx';
 import { TourDialog, TourLine, fmtTime } from './people/TourDialog.jsx';
@@ -36,6 +37,12 @@ export function Tenants({ sel, density, isMobile, bootstrap }) {
     { key: 'created', label: 'Created', type: 'date', width: 100 },
   ], []);
   const statuses = data?.statuses || [];
+  // Name, created, status and email sort across every tenant on the server; the other columns sort the page in view.
+  const SERVER = { name: 'name', created: 'created', status: 'status', contact: 'email' };
+  const [localSort, setLocalSort] = useState(null);
+  const tSort = localSort || (view.sort ? { key: Object.keys(SERVER).find((k) => SERVER[k] === view.sort) || view.sort, dir: view.dir || 'asc' } : null);
+  const onTenantSort = (key) => { if (SERVER[key]) { setLocalSort(null); setView((v) => ({ ...v, sort: SERVER[key], dir: v.sort === SERVER[key] && v.dir !== 'desc' ? 'desc' : 'asc', page: 0 })); } else setLocalSort((x) => nextSort(x, key)); };
+  const sortedTenants = localSort ? sortRows(rows, localSort, (r) => { const c = columns.find((x) => x.key === localSort.key); return c ? (c.value ? sortValue(c.value(r)) : sortValue(r[c.key])) : null; }) : rows;
   return (
     <div className="fill-col">
       <div className="toolbar wrap">
@@ -48,7 +55,7 @@ export function Tenants({ sel, density, isMobile, bootstrap }) {
       </div>
       {selection.size > 0 && <div className="bulkbar"><span>{selection.size} selected</span><span className="muted small">Property and academic year append to the existing values; status replaces it.</span><Button small onClick={() => setAssign('property')}>Assign property…</Button><Button small onClick={() => setAssign('ay')}>Assign academic year…</Button><Button small onClick={() => setAssign('status')}>Set status…</Button><Button small onClick={() => setSelection(new Set())}>Clear</Button></div>}
       {error ? <ErrorBox error={error} /> : (
-        <DataGrid className="fill" height={null} columns={columns} rows={rows} rowKey="id" selection={selection} onSelectionChange={setSelection} loading={loading} density={density} isMobile={isMobile}
+        <DataGrid className="fill" height={null} columns={columns} rows={sortedTenants} rowKey="id" selection={selection} onSelectionChange={setSelection} loading={loading} density={density} isMobile={isMobile} sort={tSort} onSort={onTenantSort}
           cardRenderer={(r) => <div className="card-body"><div className="card-top"><strong>{r.name}</strong>{r.ready.ready ? <Pill tone="done">ready</Pill> : <Pill tone="warn">blocked</Pill>}</div><div className="card-row muted">{r.status} · {r.properties.map((p) => p.name).join(', ') || 'no property'} · {r.academicYears.map((a) => a.label.replace('AY ', '')).join(', ') || 'no AY'}</div>{!r.ready.ready && <div className="card-row warn-text">{r.ready.reasons.join('; ')}</div>}{r.desiredLocation && <div className="card-row muted">asked for {r.desiredLocation}</div>}</div>}
           empty={{ title: view.view === 'needs-attention' ? 'Nobody is blocked' : 'No tenants match', body: view.view === 'needs-attention' ? 'Every tenant in your markets has a Property and an Academic Year.' : 'Try another status or clear the search.' }}
           footer={data && data.total > view.pageSize && <div className="pager"><Button small disabled={view.page === 0} onClick={() => setView({ ...view, page: view.page - 1 })}>‹ Prev</Button><span>{view.page * view.pageSize + 1}–{Math.min(data.total, (view.page + 1) * view.pageSize)} of {fmtInt(data.total)}</span><Button small disabled={(view.page + 1) * view.pageSize >= data.total} onClick={() => setView({ ...view, page: view.page + 1 })}>Next ›</Button></div>} />
@@ -87,7 +94,7 @@ function AssignDialog({ kind, rows, bootstrap, statuses = [], onClose, onDone })
  * assign property / academic year in bulk. "Add lead" creates the record the way the Lead Form does.
  */
 export function Leads({ sel, density, isMobile, bootstrap }) {
-  const [view, setView] = useState({ view: 'new', q: sel.q || '', sort: 'created', page: 0, pageSize: 100 });
+  const [view, setView] = useState({ view: 'new', q: sel.q || '', sort: 'created', page: 0, pageSize: 500 });
   useEffect(() => { setView((v) => ({ ...v, q: sel.q || '', page: 0 })); }, [sel.q]);
   const { data, error, loading } = useRoute('leads', { ...view, market: sel.market });
   const [selection, setSelection] = useState(new Set());

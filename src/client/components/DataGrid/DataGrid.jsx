@@ -7,6 +7,7 @@
  *  - multi-select with "apply to selected", keyboard-first navigation, paste-a-column
  *  - per-row save result rendered inline
  */
+import { sortValue, sortRows, nextSort } from '../../sort.js';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { fmtInt, fmtMoney, fmtPct, fmtDate } from '../../format.js';
 import { cx } from '../../ui.jsx';
@@ -63,8 +64,13 @@ const Row = memo(function Row({ row, rowKey, cols, edits, result, selected, onSe
   );
 });
 
-export function DataGrid({ columns, rows, rowKey = 'key', edits = {}, onEdit, results = {}, selection, onSelectionChange, sort, onSort, loading, empty, density = 'comfortable', rowHeight, height = 'calc(100vh - 220px)', cardRenderer, isMobile, footer, expanded, renderExpanded, expandedHeight = 320, className }) {
+export function DataGrid({ columns, rows: rowsIn, rowKey = 'key', edits = {}, onEdit, results = {}, selection, onSelectionChange, sort, onSort, loading, empty, density = 'comfortable', rowHeight, height = 'calc(100vh - 220px)', cardRenderer, isMobile, footer, expanded, renderExpanded, expandedHeight = 320, className }) {
   const cols = useMemo(() => columns.map((c, i) => ({ sticky: i === 0, align: ['number', 'money', 'pct'].includes(c.type) ? 'right' : 'left', ...c })), [columns]);
+  // Every grid sorts: the caller's onSort (server-side sort) when given, else in the browser on the column's value.
+  const [ownSort, setOwnSort] = useState(null);
+  const effSort = onSort ? sort : ownSort;
+  const doSort = onSort || ((key) => setOwnSort((s) => nextSort(s, key)));
+  const rows = useMemo(() => { if (onSort || !ownSort) return rowsIn; const c = cols.find((x) => x.key === ownSort.key); if (!c) return rowsIn; return sortRows(rowsIn, ownSort, (r) => (c.sortValue ? c.sortValue(r) : c.value ? sortValue(c.value(r)) : sortValue(r[c.key]))); }, [rowsIn, ownSort, onSort, cols]);
   const rowH = (rowHeight && rowHeight[density]) || ROW_H[density] || ROW_H.comfortable;
   const scroller = useRef(null);
   const [scrollTop, setScrollTop] = useState(0);
@@ -136,7 +142,7 @@ export function DataGrid({ columns, rows, rowKey = 'key', edits = {}, onEdit, re
         <div className="grid-inner" style={{ minWidth: widthTotal }}>
           <div className="head" role="row">
             {onSelectionChange && <div className="cell sel sticky-col" role="columnheader"><input type="checkbox" aria-label="Select all" checked={!!allSelected} onChange={(e) => onSelectionChange(e.target.checked ? new Set(rows.map(keyOf)) : new Set())} /></div>}
-            {cols.map((col) => <div key={col.key} role="columnheader" aria-sort={sort && sort.key === col.key ? (sort.dir === 'desc' ? 'descending' : 'ascending') : 'none'} className={cx('cell', 'th', col.align === 'right' && 'num', col.sticky && 'sticky-col', col.sortable !== false && onSort && 'sortable')} style={{ width: col.width }} onClick={() => col.sortable !== false && onSort && onSort(col.key)}>{col.label}{col.unit && <span className="unit"> {col.unit}</span>}{sort && sort.key === col.key && <span className="sort-ind">{sort.dir === 'desc' ? ' ↓' : ' ↑'}</span>}</div>)}
+            {cols.map((col) => <div key={col.key} role="columnheader" aria-sort={effSort && effSort.key === col.key ? (effSort.dir === 'desc' ? 'descending' : 'ascending') : 'none'} className={cx('cell', 'th', col.align === 'right' && 'num', col.sticky && 'sticky-col', col.sortable !== false && 'sortable')} style={{ width: col.width }} onClick={() => col.sortable !== false && doSort(col.key)}>{col.label}{col.unit && <span className="unit"> {col.unit}</span>}{effSort && effSort.key === col.key && <span className="sort-ind">{sort.dir === 'desc' ? ' ↓' : ' ↑'}</span>}</div>)}
           </div>
           {loading ? <div className="grid-loading">{Array.from({ length: 12 }).map((_, i) => <div key={i} className="row sk" style={{ height: rowH }}>{cols.map((c) => <span key={c.key} className="sk-cell" style={{ width: c.width }} />)}</div>)}</div>
             : !rows.length ? <div className="empty"><div className="empty-title">{empty?.title || 'Nothing here'}</div>{empty?.body && <p className="muted">{empty.body}</p>}{empty?.action}</div>

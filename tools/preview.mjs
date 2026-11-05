@@ -66,7 +66,7 @@ const trows = [...t0.rows]; for (let pg = 1; pg * 500 < t0.total; pg++) trows.pu
 write('tenants', { ...t0, rows: trows, page: 0 }); files.push('tenants'); console.log(`tenants ${trows.length} rows`);
 fs.copyFileSync('dist/amicus_leasing_app.js', path.join(out, 'app.js')); fs.copyFileSync('dist/amicus_leasing_app.css', path.join(out, 'app.css'));
 const bootJson = JSON.stringify(boot).replace(/<\/(script)/gi, '<\\/$1');
-const html = `<title>Amicus Leasing</title>
+const html = `<title>Leasing Hub</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="app.css">
 <style>.pv-note{position:fixed;left:0;right:0;bottom:0;z-index:30;font:12px system-ui,sans-serif;padding:6px max(16px, env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(16px, env(safe-area-inset-left,0px));background:var(--bg-sunken);color:var(--fg-muted);border-top:1px solid var(--rule)}</style>
