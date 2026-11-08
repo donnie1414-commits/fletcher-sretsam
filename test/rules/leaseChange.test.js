@@ -89,3 +89,20 @@ test('helpers: totals pro rata, list labels to keys, apply gate', () => {
   assert.equal(keyFromLabel('sent for signature', AMEND_STATUSES), 'SENT');
   assert.equal(canApply('SIGNED'), true); assert.equal(canApply('APPROVED'), false); assert.equal(canApply('APPROVED', { applyOnApproval: true }), true);
 });
+
+test('tick-all-that-apply routes to one workflow', async () => {
+  const { routeConditions } = await import('../../src/shared/rules/leaseChangeMeta.js');
+  const r = (k, o) => routeConditions(k, o);
+  assert.equal(r(['RENT']).scenario, 'RENEGOTIATE');
+  assert.equal(r(['RENT', 'DATES', 'PROVISIONS']).scenario, 'RENEGOTIATE');
+  assert.equal(r(['LEAVE']).scenario, 'RELEASE_ONE');
+  assert.equal(r(['LEAVE', 'RENT']).scenario, 'RELEASE_ONE');
+  assert.equal(r(['LEAVE', 'JOIN']).scenario, 'REPLACE_TENANT');
+  assert.equal(r(['JOIN', 'PROVISIONS', 'RENT']).scenario, 'ADD_TENANTS');
+  assert.equal(r(['LEAVE'], { otherLeaseId: '9' }).scenario, 'MOVE_TENANT');
+  assert.equal(r(['MOVE', 'LEAVE', 'RENT']).scenario, 'MOVE_GROUP');
+  assert.equal(r(['END']).scenario, 'RELEASE_ALL');
+  assert.equal(r(['END', 'RENT']).errors.length, 1);
+  assert.equal(r(['LEAVE', 'JOIN'], { otherLeaseId: '9' }).errors.length, 1);
+  assert.equal(r([]).errors.length, 1);
+});

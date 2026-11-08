@@ -3,7 +3,7 @@ import { useRoute } from '../../hooks.js';
 import { api, post, invalidate, isPreview, recordUrl } from '../../api.js';
 import { Modal, Button, Select, Skeleton, ErrorBox, Pill, cx } from '../../ui.jsx';
 import { fmtMoney, fmtDate } from '../../format.js';
-import { CHANGE_SCENARIOS, canApply } from '../../../shared/rules/leaseChangeMeta.js';
+import { CHANGE_SCENARIOS, CHANGE_CONDITIONS, routeConditions, canApply } from '../../../shared/rules/leaseChangeMeta.js';
 
 const PATH_TEXT = {
   EDIT: { tone: 'muted', label: 'Not sent', note: 'Nothing has gone to the tenants: the lease is changed directly.' },
@@ -14,12 +14,14 @@ const STEP_TEXT = { updateLease: 'Update lease', createLease: 'Create lease', te
 const MECH_TEXT = { REVISE: 'Revise in place', SUPERSEDE: 'Supersede (end + new linked lease)', TERMINATE: 'Terminate early', CANCEL: 'Cancel (inactivate)', TRANSFER: 'Transfer to another house', ASSIGN: 'Assignment on the same lease' };
 
 /**
- * "Change lease" (docs/LEASE-CHANGES-BUILD.md): pick what happened, fill in what it needs, preview exactly what will be
- * written, then submit. The lease's state decides the path; the server re-plans and re-checks everything on submit.
+ * "Change lease" (docs/LEASE-CHANGES-BUILD.md): tick everything that applies, fill in what each needs, preview exactly what
+ * will be written, then submit. The ticks route to one of the nine workflows (routeConditions) and the lease's state
+ * decides the path; the server re-routes, re-plans and re-checks everything on submit.
  */
 export function ChangeLeaseDialog({ leaseId, title, onClose }) {
   const { data, error, loading } = useRoute('leasechange', { lease: leaseId }, !!leaseId);
-  const [scenario, setScenario] = useState(null);
+  const [conds, setConds] = useState([]);
+  const [moving, setMoving] = useState(false); // a leaver is moving to another lease
   const [inp, setInp] = useState({ tenantsAdded: [], tenantsRemoved: [] });
   const [target, setTarget] = useState({ propertyId: '', unitId: '' });
   const [otherLeaseId, setOther] = useState('');
@@ -27,12 +29,18 @@ export function ChangeLeaseDialog({ leaseId, title, onClose }) {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null);
   const [added, setAdded] = useState([]); // [{id,name}] picked through search
-  useEffect(() => { setPreview(null); }, [scenario, inp, target, otherLeaseId]);
+  useEffect(() => { setPreview(null); }, [conds, inp, target, otherLeaseId, moving, added]);
   if (!leaseId) return null;
-  const sc = CHANGE_SCENARIOS.find((s) => s.key === scenario) || null;
-  const wants = (k) => !!sc && sc.inputs.some((x) => x.replace('?', '') === k);
+  const on = (k) => conds.includes(k);
+  const toggle = (k) => setConds((c) => (c.includes(k) ? c.filter((x) => x !== k) : k === 'END' ? ['END'] : [...c.filter((x) => x !== 'END'), k]));
+  const other = on('LEAVE') && moving && otherLeaseId ? otherLeaseId : null;
+  const route = !conds.length ? null : on('LEAVE') && moving && !on('MOVE') && !otherLeaseId ? { scenario: null, errors: ['pick the lease they are moving to'] } : routeConditions(conds, { otherLeaseId: other });
+  const sc = route && route.scenario ? CHANGE_SCENARIOS.find((s) => s.key === route.scenario) : null;
+  const scenario = route ? route.scenario : null;
   const set = (k, v) => setInp((s) => ({ ...s, [k]: v }));
-  const body = (action) => ({ action, leaseId, scenario, input: { ...inp, tenantsAdded: added.map((a) => a.id) }, otherLeaseId: otherLeaseId || null, targetUnitId: target.unitId || null, targetPropertyId: !target.unitId && target.propertyId ? target.propertyId : null });
+  // only what the ticked boxes ask for travels: an unticked box's leftovers never reach the plan
+  const input = () => ({ effective: inp.effective, reason: inp.reason, ...(on('LEAVE') ? { tenantsRemoved: inp.tenantsRemoved } : {}), ...(on('JOIN') ? { tenantsAdded: added.map((a) => a.id) } : {}), ...(on('RENT') ? { newRent: inp.newRent, otherNewRent: inp.otherNewRent } : {}), ...(on('DATES') ? { newStart: inp.newStart, newEnd: inp.newEnd } : {}), ...(on('PROVISIONS') ? { provisions: inp.provisions } : {}), ...(on('END') ? { fee: inp.fee } : {}) });
+  const body = (action) => ({ action, leaseId, conditions: conds, input: input(), otherLeaseId: other, targetUnitId: on('MOVE') ? target.unitId || null : null, targetPropertyId: on('MOVE') && !target.unitId && target.propertyId ? target.propertyId : null });
 
   const doPreview = async () => {
     setBusy(true);
@@ -52,7 +60,7 @@ export function ChangeLeaseDialog({ leaseId, title, onClose }) {
   const foot = <div className="toolbar">
     <span className="muted small">{isPreview() ? 'Preview: nothing is written.' : plan && plan.ok ? (plan.path === 'AMEND' ? 'Files an amendment for approval; the lease is unchanged until it is applied.' : 'Changes the lease now and logs the change.') : 'Preview first: it shows every record that will change.'}</span>
     <span className="spacer" /><Button small onClick={onClose}>{done && done.ok ? 'Close' : 'Cancel'}</Button>
-    {!done && <Button small disabled={busy || !scenario} onClick={doPreview}>{busy && !plan ? 'Checking…' : 'Preview'}</Button>}
+    {!done && <Button small disabled={busy || !conds.length || (route && route.errors.length > 0)} onClick={doPreview}>{busy && !plan ? 'Checking…' : 'Preview'}</Button>}
     {!done && <Button kind="primary" small disabled={busy || !plan || !plan.ok} onClick={submit}>{busy && plan ? 'Saving…' : plan && plan.path === 'AMEND' ? 'File amendment' : 'Make the change'}</Button>}
   </div>;
 
@@ -68,22 +76,24 @@ export function ChangeLeaseDialog({ leaseId, title, onClose }) {
           {data.state === 'CLOSED' ? <p className="muted">This lease is inactive. Nothing can be changed on it.</p> : <>
             <p className="muted small">{PATH_TEXT[data.path] && PATH_TEXT[data.path].note}</p>
             {data.path === 'AMEND' && !data.ready.amendments && <div className="banner warn small">The Lease Amendment record is not set up in NetSuite yet, so signed leases cannot be changed from here. See Setup.</div>}
-            <fieldset className="lc-types"><legend>What happened?</legend>
-              {CHANGE_SCENARIOS.map((s) => <label key={s.key} className={cx('lc-type', scenario === s.key && 'on')}><input type="radio" name="lc-scenario" checked={scenario === s.key} onChange={() => setScenario(s.key)} /><span><b>{s.n}.</b> {s.label}<span className="muted small"> · {s.doc}</span></span></label>)}
+            <fieldset className="lc-types"><legend>What is changing? Tick all that apply</legend>
+              {CHANGE_CONDITIONS.map((c) => <label key={c.key} className={cx('lc-type', on(c.key) && 'on')}><input type="checkbox" checked={on(c.key)} onChange={() => toggle(c.key)} /><span>{c.label}<span className="muted small"> · {c.hint}</span></span></label>)}
             </fieldset>
-            {sc && <div className="lc-inputs form-grid">
-              {wants('effective') && <label>Effective date<input type="date" value={inp.effective || ''} onChange={(e) => set('effective', e.target.value)} /><span className="muted small">First day of the new arrangement; anything that ends, ends the day before.</span></label>}
-              {wants('tenantsRemoved') && <div className="lc-field"><span>Leaving the lease</span>{data.lease.tenants.map((t) => <label key={t.id} className="check"><input type="checkbox" checked={inp.tenantsRemoved.includes(t.id)} onChange={(e) => set('tenantsRemoved', e.target.checked ? [...inp.tenantsRemoved, t.id] : inp.tenantsRemoved.filter((x) => x !== t.id))} /> {t.name}</label>)}</div>}
-              {wants('tenantsAdded') && <TenantPicker picked={added} onChange={setAdded} exclude={data.lease.tenants.map((t) => t.id)} />}
-              {wants('newRent') && <label>New monthly rent<input type="number" min="0" step="1" value={inp.newRent ?? ''} placeholder={String(data.lease.monthly || '')} onChange={(e) => set('newRent', e.target.value === '' ? null : Number(e.target.value))} /><span className="muted small">For the whole lease. Leave blank to keep {fmtMoney(data.lease.monthly)}.</span></label>}
-              {wants('newStart') && <label>New start<input type="date" value={inp.newStart || ''} onChange={(e) => set('newStart', e.target.value)} /></label>}
-              {wants('newEnd') && <label>New end<input type="date" value={inp.newEnd || ''} onChange={(e) => set('newEnd', e.target.value)} /></label>}
-              {wants('fee') && <label>Termination fee<input type="number" min="0" step="1" value={inp.fee ?? ''} onChange={(e) => set('fee', e.target.value === '' ? null : Number(e.target.value))} /></label>}
-              {wants('target') && <><label>Moving to (house)<Select ariaLabel="Target house" value={target.propertyId} onChange={(v) => setTarget({ propertyId: v, unitId: '' })} options={[{ value: '', label: 'Pick a house…' }, ...data.properties.map((p) => ({ value: p.id, label: p.name }))]} /></label>
+            {route && <div className={cx('lc-route small', route.errors.length && 'bad-text')}>{route.errors.length ? route.errors.join('; ') : <span>Routes to <b>{sc ? sc.label : scenario}</b>{sc ? <span className="muted"> · {sc.doc}</span> : null}</span>}</div>}
+            {conds.length > 0 && <div className="lc-inputs form-grid">
+              <label>Effective date<input type="date" value={inp.effective || ''} onChange={(e) => set('effective', e.target.value)} /><span className="muted small">{data.path === 'AMEND' ? 'Required: the first day of the new arrangement; anything that ends, ends the day before.' : 'Optional before signing; dates provisions.'}</span></label>
+              {on('LEAVE') && <div className="lc-field"><span>Leaving the lease</span>{data.lease.tenants.map((t) => <label key={t.id} className="check"><input type="checkbox" checked={(inp.tenantsRemoved || []).includes(t.id)} onChange={(e) => set('tenantsRemoved', e.target.checked ? [...(inp.tenantsRemoved || []), t.id] : (inp.tenantsRemoved || []).filter((x) => x !== t.id))} /> {t.name}</label>)}
+                {!on('MOVE') && <label className="check"><input type="checkbox" checked={moving} onChange={(e) => setMoving(e.target.checked)} /> They are moving to another of our leases</label>}</div>}
+              {on('LEAVE') && moving && !on('MOVE') && <label>Moving to (lease)<Select ariaLabel="Other lease" value={otherLeaseId} onChange={setOther} options={[{ value: '', label: 'Pick a lease…' }, ...data.siblings.filter((l) => l.state !== 'CLOSED').map((l) => ({ value: l.id, label: `${l.name}${l.propertyName ? ` · ${l.propertyName}` : ''}` }))]} /></label>}
+              {on('JOIN') && <TenantPicker picked={added} onChange={setAdded} exclude={data.lease.tenants.map((t) => t.id)} />}
+              {on('RENT') && <label>New monthly rent<input type="number" min="0" step="1" value={inp.newRent ?? ''} placeholder={String(data.lease.monthly || '')} onChange={(e) => set('newRent', e.target.value === '' ? null : Number(e.target.value))} /><span className="muted small">For the whole lease (now {fmtMoney(data.lease.monthly)}).</span></label>}
+              {on('RENT') && other && <label>New rent on the lease they join<input type="number" min="0" step="1" value={inp.otherNewRent ?? ''} onChange={(e) => set('otherNewRent', e.target.value === '' ? null : Number(e.target.value))} /></label>}
+              {on('DATES') && <label>New start<input type="date" value={inp.newStart || ''} onChange={(e) => set('newStart', e.target.value)} /></label>}
+              {on('DATES') && <label>New end<input type="date" value={inp.newEnd || ''} onChange={(e) => set('newEnd', e.target.value)} /></label>}
+              {on('END') && <label>Termination fee<input type="number" min="0" step="1" value={inp.fee ?? ''} onChange={(e) => set('fee', e.target.value === '' ? null : Number(e.target.value))} /></label>}
+              {on('MOVE') && <><label>Moving to (house)<Select ariaLabel="Target house" value={target.propertyId} onChange={(v) => setTarget({ propertyId: v, unitId: '' })} options={[{ value: '', label: 'Pick a house…' }, ...data.properties.map((p) => ({ value: p.id, label: p.name }))]} /></label>
                 {target.propertyId && <label>Unit<Select ariaLabel="Target unit" value={target.unitId} onChange={(v) => setTarget({ ...target, unitId: v })} options={[{ value: '', label: 'Whole house' }, ...((data.properties.find((p) => p.id === target.propertyId) || { units: [] }).units.map((u) => ({ value: u.id, label: u.name })))]} /></label>}</>}
-              {wants('otherLease') && <label>Moving to (lease)<Select ariaLabel="Other lease" value={otherLeaseId} onChange={setOther} options={[{ value: '', label: 'Pick a lease…' }, ...data.siblings.filter((l) => l.state !== 'CLOSED').map((l) => ({ value: l.id, label: `${l.name}${l.propertyName ? ` · ${l.propertyName}` : ''}` }))]} /></label>}
-              {wants('otherNewRent') && otherLeaseId && <label>New rent on that lease<input type="number" min="0" step="1" value={inp.otherNewRent ?? ''} onChange={(e) => set('otherNewRent', e.target.value === '' ? null : Number(e.target.value))} /></label>}
-              {wants('provisions') && <label className="wide">Provisions<textarea rows="2" value={inp.provisions || ''} onChange={(e) => set('provisions', e.target.value)} placeholder="e.g. per-person utility cap $75; pet addendum" /></label>}
+              {on('PROVISIONS') && <label className="wide">Provisions<textarea rows="2" value={inp.provisions || ''} onChange={(e) => set('provisions', e.target.value)} placeholder="e.g. per-person utility cap $75; pet addendum" /></label>}
               <label className="wide">Reason<textarea rows="2" value={inp.reason || ''} onChange={(e) => set('reason', e.target.value)} placeholder="Why, and who asked for it" /></label>
             </div>}
             {preview && <div className="lc-plan">

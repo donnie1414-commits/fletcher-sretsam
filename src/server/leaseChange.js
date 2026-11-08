@@ -8,7 +8,7 @@
  * Degrades: a list value or chain field that does not exist yet is left out and reported, never guessed.
  */
 import { LEASE, LEASE_CHAIN, AMEND, CUSTOMER, UAS } from '../shared/constants.js';
-import { AMEND_TYPES, AMEND_STATUSES, END_REASONS, keyFromLabel, canApply, planChange, scenarioByKey } from '../shared/rules/leaseChange.js';
+import { AMEND_TYPES, AMEND_STATUSES, END_REASONS, keyFromLabel, canApply, planChange, scenarioByKey, routeConditions } from '../shared/rules/leaseChange.js';
 import { normalizeLease } from '../shared/rules/lease.js';
 
 const GROUP_KEYS = [{ key: 'NEW', label: 'New Group' }, { key: 'TRANSFER', label: 'Transfers' }, { key: 'RENEWAL', label: 'Renewal' }, { key: 'AMENDMENT', label: 'Amendment' }];
@@ -116,7 +116,7 @@ export function createLeaseChange({ sq, writes, log, clock = () => new Date().to
     if (a.fee != null) f[AMEND.FEE] = a.fee;
     if (a.provisions) f[AMEND.PROVISIONS] = a.provisions;
     f[AMEND.BEFORE] = JSON.stringify(a.before);
-    f[AMEND.PLAN] = JSON.stringify({ v: 1, scenario: plan.scenario, mechanism: plan.mechanism, path: plan.path, steps: plan.steps });
+    f[AMEND.PLAN] = JSON.stringify({ v: 1, scenario: plan.scenario, conditions: plan.conditions || null, mechanism: plan.mechanism, path: plan.path, steps: plan.steps });
     if (a.otherLeaseId) f[AMEND.OTHER_LEASE] = Number(a.otherLeaseId);
     if (a.targetUnitId) f[AMEND.TARGET_UNIT] = Number(a.targetUnitId);
     if (scope && scope.userId) f[AMEND.REQUESTED_BY] = Number(scope.userId);
@@ -138,7 +138,11 @@ export function createLeaseChange({ sq, writes, log, clock = () => new Date().to
     lease = lease || loadLease(req.leaseId);
     if (!lease) return { ok: false, error: `lease ${req.leaseId} not found` };
     if (req.otherLeaseId && !other) other = loadLease(req.otherLeaseId);
-    const plan = planChange({ scenario: req.scenario, lease, input: req.input || {}, other, target: req.target || null });
+    // "Select all that apply": the ticked conditions decide the workflow (the old single-scenario request still works).
+    let scenario = req.scenario; const conditions = Array.isArray(req.conditions) ? req.conditions.map(String) : null;
+    if (conditions) { const r = routeConditions(conditions, { otherLeaseId: req.otherLeaseId }); if (r.errors.length) return { ok: false, plan: { ok: false, errors: r.errors, warnings: [], steps: [], scenario: r.scenario } }; scenario = r.scenario; }
+    const plan = planChange({ scenario, lease, input: req.input || {}, other, target: req.target || null });
+    plan.conditions = conditions;
     if (!plan.ok) return { ok: false, plan };
     if (req.dryRun) return { ok: true, plan, ready: amendReady() };
     const base = `lc:${String(req.changeId || '').slice(0, 60)}`;

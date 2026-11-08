@@ -1,7 +1,7 @@
 /**
  * ?route=leasechange — the hub's "Change lease" (docs/LEASE-CHANGES-BUILD.md).
  *   GET  &lease=ID                         → the lease, its state and path, the nine change types, tenants, amendments, setup readiness
- *   POST { action: 'plan',   leaseId, scenario, input, otherLeaseId?, targetUnitId?|targetPropertyId? }  → preview, nothing written
+ *   POST { action: 'plan',   leaseId, conditions[] (or scenario), input, otherLeaseId?, targetUnitId?|targetPropertyId? }  → preview, nothing written
  *   POST { action: 'submit', changeId, …same }                                                          → change now, or file an amendment
  *   POST { action: 'apply',  amendmentId }                                                               → apply a Signed amendment
  * Every lease involved must be in the user's markets; writes go through the allowlisted write module.
@@ -45,7 +45,7 @@ export function routeLeaseChange(ctx, body) {
   const target = resolveTarget(ctx, inv, body);
   if (target && !ctx.inScope(ctx.marketOfProperty(target.propertyId))) return { error: 'the target house is outside your markets', meta: { status: 403 } };
   if (action === 'submit' && !body.changeId) return { error: 'changeId is required', meta: { status: 400 } };
-  return lc.submit(ctx.scope, { changeId: body.changeId, leaseId: lease.id, scenario: body.scenario, input: body.input || {}, otherLeaseId: other ? other.id : null, target, dryRun: action === 'plan' }, { lease, other });
+  return lc.submit(ctx.scope, { changeId: body.changeId, leaseId: lease.id, scenario: body.scenario, conditions: body.conditions || null, input: body.input || {}, otherLeaseId: other ? other.id : null, target, dryRun: action === 'plan' }, { lease, other });
 }
 /** Scenario 1's destination: a unit (or bedroom) id, or a whole property. */
 function resolveTarget(ctx, inv, body) {

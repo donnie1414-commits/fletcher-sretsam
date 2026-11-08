@@ -40,5 +40,35 @@ export const CHANGE_SCENARIOS = Object.freeze([
 ]);
 export const scenarioByKey = (k) => CHANGE_SCENARIOS.find((s) => s.key === k) || null;
 
+/**
+ * What the agent ticks: "select all that apply". The hub routes the combination to one of the nine workflows above
+ * (routeConditions), so the agent never has to know which one it is.
+ */
+export const CHANGE_CONDITIONS = Object.freeze([
+  { key: 'LEAVE', label: 'Tenant(s) leaving the lease', hint: 'released, replaced, or moving to another lease' },
+  { key: 'JOIN', label: 'Tenant(s) joining the lease', hint: 'added or replacing someone' },
+  { key: 'RENT', label: 'Rent changes', hint: 'new monthly rent for the whole lease' },
+  { key: 'DATES', label: 'Dates change', hint: 'new start or end date' },
+  { key: 'PROVISIONS', label: 'Provisions added', hint: 'utility caps, pets, other terms' },
+  { key: 'MOVE', label: 'Group moves to a different house or unit', hint: 'the lease moves with them' },
+  { key: 'END', label: 'Lease ends early / whole group released', hint: 'termination, or cancellation before the start' },
+]);
+/**
+ * routeConditions(keys, { otherLeaseId }) → { scenario, errors[] }
+ * END stands alone; MOVE takes the whole group (with any leaving/joining and new rent); a leaver with a destination lease
+ * is a move between leases; leaving + joining is a replacement; leaving alone is a release; joining is an addition;
+ * rent / dates / provisions alone are a renegotiation.
+ */
+export function routeConditions(keys, { otherLeaseId = null } = {}) {
+  const k = new Set(keys || []); const errors = [];
+  if (!k.size) return { scenario: null, errors: ['tick at least one change'] };
+  if (k.has('END')) { if (k.size > 1) errors.push('"Lease ends early" cannot be combined with other changes; end the lease, then make a new one'); return { scenario: 'RELEASE_ALL', errors }; }
+  if (k.has('MOVE')) return { scenario: 'MOVE_GROUP', errors };
+  if (k.has('LEAVE') && otherLeaseId) { if (k.has('JOIN')) errors.push('a tenant moving to another lease and a new tenant joining are two changes; do them one at a time'); return { scenario: 'MOVE_TENANT', errors }; }
+  if (k.has('LEAVE') && k.has('JOIN')) return { scenario: 'REPLACE_TENANT', errors };
+  if (k.has('LEAVE')) return { scenario: 'RELEASE_ONE', errors };
+  if (k.has('JOIN')) return { scenario: 'ADD_TENANTS', errors };
+  return { scenario: 'RENEGOTIATE', errors };
+}
 /** Which amendment statuses may be applied. Signed always; Approved only when the deployment allows applying on approval. */
 export function canApply(statusKey, { applyOnApproval = false } = {}) { return statusKey === 'SIGNED' || (applyOnApproval && statusKey === 'APPROVED'); }

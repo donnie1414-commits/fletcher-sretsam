@@ -17,7 +17,7 @@
  */
 import { addDays, compare, monthsBetweenFraction, monthsBetweenCeil } from './dates.js';
 
-export { CHANGE_STATES, CHANGE_PATHS, MECHANISMS, AMEND_TYPES, AMEND_STATUSES, END_REASONS, keyFromLabel, CHANGE_SCENARIOS, scenarioByKey, canApply } from './leaseChangeMeta.js';
+export { CHANGE_STATES, CHANGE_PATHS, MECHANISMS, AMEND_TYPES, AMEND_STATUSES, END_REASONS, keyFromLabel, CHANGE_SCENARIOS, scenarioByKey, canApply, CHANGE_CONDITIONS, routeConditions } from './leaseChangeMeta.js';
 import { CHANGE_STATES, CHANGE_PATHS, MECHANISMS, scenarioByKey } from './leaseChangeMeta.js';
 
 /** Where a lease stands. `lease` is a normalized lease (shared/rules/lease.js). */

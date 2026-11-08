@@ -107,3 +107,12 @@ test('whole group released on a signed lease: terminated with a reason; tenants 
   assert.equal(iso(S[LEASE.TYPE][100][LEASE.END]), '2027-11-30'); assert.equal(nameOf(AMEND.END_REASON_LIST, S[LEASE.TYPE][100][LEASE_CHAIN.END_REASON]), 'Released early');
   assert.equal(S[CUSTOMER.TYPE][1].entitystatus, 25);
 });
+
+test('ticked conditions route on the server: rent + tenant leaving on a signed lease files a release-and-amend', () => {
+  const { lc, scope, S } = build();
+  const r = lc.submit(scope, { changeId: 'c9', leaseId: '100', conditions: ['LEAVE', 'RENT'], input: { effective: '2027-10-01', tenantsRemoved: ['3'], newRent: 2000 } });
+  assert.equal(r.ok, true, r.error); assert.equal(r.plan.scenario, 'RELEASE_ONE'); assert.equal(r.plan.mechanism, 'SUPERSEDE');
+  const a = S[AMEND.TYPE][r.amendmentId]; assert.equal(a[AMEND.SCENARIO], 'RELEASE_ONE'); assert.deepEqual(JSON.parse(a[AMEND.PLAN]).conditions, ['LEAVE', 'RENT']);
+  const bad = lc.submit(scope, { changeId: 'c10', leaseId: '100', conditions: ['END', 'RENT'], input: { effective: '2027-10-01' } });
+  assert.equal(bad.ok, false); assert.match(bad.plan.errors.join(), /cannot be combined/);
+});

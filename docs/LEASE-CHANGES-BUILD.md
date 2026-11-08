@@ -6,6 +6,20 @@ This is the running list of everything the lease-change workflows need. It is up
 
 ## 1. How it works
 
+The agent opens **⇄ Change lease** and ticks **everything that applies**: tenant(s) leaving (optionally moving to another of our leases), tenant(s) joining, rent changes, dates change, provisions added, group moves to a different house or unit, lease ends early / whole group released. The hub routes the ticks to one of the nine workflows (`routeConditions` in `leaseChangeMeta.js`) and shows "Routes to …" before Preview:
+
+| Ticked | Routes to |
+|---|---|
+| Lease ends early (alone; cannot be combined) | 6 · Entire group released |
+| Group moves (with any leaving / joining / rent) | 1 · Group moves to a different house |
+| Leaving + "moving to another of our leases" | 2 · One tenant moves to another lease |
+| Leaving + joining | 3 · Tenant replaced |
+| Leaving (with or without rent / dates / provisions) | 5 · One tenant released |
+| Joining (with or without rent / provisions) | 7 · Tenants added |
+| Only rent / dates / provisions | 4 · Terms renegotiated (8 · mid-term adjustment is the same workflow) |
+
+Scenario 9 (tenant added after sending) is "Joining" on an unsigned lease. The amendment stores both the ticks and the workflow they routed to.
+
 | Lease state | Path | What happens |
 |---|---|---|
 | No status, never sent | **Edit** | The hub changes the lease directly and logs the change as an Applied amendment. |
@@ -155,14 +169,14 @@ Leasing roles: Custom Record › Lease Amendment = Edit; Lists › Customers = E
 ## 6. Sandbox test script (once 3.1–3.6 exist)
 
 1. Hub › Setup: every "Lease changes" row reads Created.
-2. A draft lease (no status): Change lease › 9 › add a tenant › Preview › Make the change. The tenant is on the lease, the change is listed as Applied.
-3. An In Process lease: 4 › new rent › Make the change. Rent and total updated, stage Lease Revisions, "To do: void and resend" shown.
-4. A Fully Executed lease: 4 › effective date + new rent › File amendment. The lease is unchanged; the amendment is Pending approval.
+2. A draft lease (no status): Change lease › tick Tenant(s) joining › add a tenant › Preview › Make the change. The tenant is on the lease, the change is listed as Applied.
+3. An In Process lease: tick Rent changes › new rent › Make the change. Rent and total updated, stage Lease Revisions, "To do: void and resend" shown.
+4. A Fully Executed lease: tick Rent changes › effective date + new rent › File amendment. The lease is unchanged; the amendment is Pending approval.
 5. Approve, Mark sent, Mark signed. The workflow applies it: old lease ends the day before, new lease linked with Supersedes and group Amendment, amendment Applied with the resulting lease.
-6. Repeat with 3 (replace a tenant, same terms): roster changes on the same lease, the old tenant is Released.
-7. 6 (whole group released) after the start date: terminated with Released early; before the start date: inactivated, Cancelled before start.
-8. 1 (move house): tenants gain the new property, old lease Transferred, new lease at the target with group Transfers.
-9. 2 (one tenant to another lease): removed here, added there.
+6. Tick Leaving + Joining (replace a tenant, same terms): roster changes on the same lease, the old tenant is Released.
+7. Tick Lease ends early, after the start date: terminated with Released early; before the start date: inactivated, Cancelled before start.
+8. Tick Group moves: tenants gain the new property, old lease Transferred, new lease at the target with group Transfers.
+9. Tick Leaving + "moving to another of our leases": removed here, added there.
 10. Run Apply on an already Applied amendment: nothing changes.
 11. Reporting: the superseding lease does not appear in Weekly "sent / signed this week"; beds are counted once.
 
@@ -172,3 +186,4 @@ Leasing roles: Custom Record › Lease Amendment = Edit; Lists › Customers = E
 |---|---|
 | 2026-11-08 | First build: planner, executor, hub route and dialog, Workflow Action Script, setup checks, tests (153 passing). Objects in §3 specified; none created yet (no browser access to the sandbox from this session). Salora's PandaDoc build (Send Contract V2, hourly Status Check, Lease Documents subtab) folded in: §4 lists what it still needs. |
 | 2026-11-08 | Cowork prompt now reads the files from `Desktop\Leasing JS` (OneDrive), checks MANIFEST.json for build e1f82f529b0d before uploading, and ignores older files in that folder. |
+| 2026-11-08 | Change lease is now **tick all that apply** (7 conditions) instead of picking one of nine scenarios; the hub routes the ticks to the workflow (table in §1). Build **034ae66b3299**: re-upload the three hub files (`amicus_leasing_sl.js`, `amicus_leasing_app.js`, `amicus_leasing_app.css`) over the sandbox copies; `ad_wa_apply_amend.js` is unchanged in behaviour (re-upload too so the build ids match). Test script §6 reworded for the ticks. |
