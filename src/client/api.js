@@ -60,14 +60,14 @@ async function previewGet(route, params) {
     }
     case 'leasechange': {
       // Preview: the lease from the pipeline snapshot, tenants redacted; plans are computed in the browser by the shared rules.
-      const full = await pick(`pipeline-${combo}`); let row = null, l = null;
-      for (const r of full.rows) { const hit = [...r.leases, ...(r.draftLease ? [r.draftLease] : [])].find((x) => String(x.id) === String(params.lease)); if (hit) { row = r; l = hit; break; } }
+      let full = null, row = null, l = null;
+      for (const c of [combo, ...pv.combos.filter((x) => x !== combo)]) { if (!has(`pipeline-${c}`)) continue; const f = await load(`pipeline-${c}`); for (const r of f.rows) { const hit = [...r.leases, ...(r.draftLease ? [r.draftLease] : [])].find((x) => String(x.id) === String(params.lease)); if (hit) { full = f; row = r; l = hit; break; } } if (l) break; }
       if (!l) throw Object.assign(new Error('lease not in the preview'), { status: 404 });
       const statusKey = l.status || 'NONE'; const state = statusKey === 'EXECUTED' ? 'EXECUTED' : statusKey === 'IN_PROCESS' || l.sent ? 'SENT' : 'DRAFT';
       const tenants = Array.from({ length: l.tenants || row.beds || 1 }, (_, i) => ({ id: `p${l.id}-${i + 1}`, name: `Tenant ${i + 1} (redacted)` }));
       const props = new Map(); for (const r of full.rows) { if (!r.unitId) continue; if (!props.has(r.propertyId)) props.set(r.propertyId, { id: r.propertyId, name: r.property, units: [] }); props.get(r.propertyId).units.push({ id: r.unitId, name: r.unit }); }
-      const siblings = full.rows.flatMap((r) => r.leases.filter((x) => String(x.id) !== String(l.id)).map((x) => ({ id: x.id, name: x.name, start: x.start, end: x.end, statusKey: x.status, typeKey: x.type, monthly: x.monthly, propertyId: r.propertyId, propertyName: r.property, state: x.status === 'EXECUTED' ? 'EXECUTED' : 'SENT' }))).slice(0, 400);
-      return { lease: { id: l.id, name: l.name, start: l.start, end: l.end, statusKey, typeKey: l.type, monthly: l.monthly, total: null, sent: l.sent, signed: l.signed, tenants, propertyId: row.propertyId, propertyName: row.property }, state, path: state === 'EXECUTED' ? 'AMEND' : state === 'SENT' ? 'REVISE' : 'EDIT', scenarios: [], amendments: [], ready: { amendments: false, lists: {} }, applyOnApproval: false, siblings, properties: [...props.values()].sort((a, b) => a.name.localeCompare(b.name)) };
+      const siblings = full.rows.flatMap((r) => r.leases.filter((x) => String(x.id) !== String(l.id)).map((x) => ({ id: x.id, name: x.name, start: x.start, end: x.end, statusKey: x.status, typeKey: x.type, monthly: x.monthly, sent: x.sent, propertyId: r.propertyId, unitId: r.unitId, propertyName: r.property, state: x.status === 'EXECUTED' ? 'EXECUTED' : 'SENT' }))).slice(0, 400);
+      return { lease: { id: l.id, name: l.name, start: l.start, end: l.end, statusKey, typeKey: l.type, monthly: l.monthly, total: null, sent: l.sent, signed: l.signed, tenants, propertyId: row.propertyId, propertyName: row.property, unitId: row.unitId }, state, path: state === 'EXECUTED' ? 'AMEND' : state === 'SENT' ? 'REVISE' : 'EDIT', scenarios: [], amendments: [], ready: { amendments: false, lists: {} }, applyOnApproval: false, siblings, properties: [...props.values()].sort((a, b) => a.name.localeCompare(b.name)) };
     }
     case 'notes': { const full = await pick(`pipeline-${combo}`); const row = full.rows.find((r) => r.rowId === String(params.row)); return { rowId: params.row, legacy: row ? row.notes : null, notes: row && row.lastNote ? [row.lastNote] : [] }; }
     case 'team': return { me: '42', team: [{ id: '42', name: 'Preview (administrator scope)' }, { id: '43', name: 'Second Agent' }], available: true };
@@ -99,12 +99,25 @@ export function invalidate(prefix) { for (const k of [...cache.keys()]) if (!pre
 export async function post(route, body) {
   if (isPreview()) {
     if (route === 'reprobe') return { degraded: [] };
+    if (route === 'leasechange') return previewLeaseChange(body);
     if (route === 'savedviews') { try { let views = JSON.parse(localStorage.getItem('al.views') || '[]'); const v = body.view; if (body.delete) views = views.filter((x) => x.id !== v.id); else if (v.id) views = views.map((x) => (x.id === v.id ? { ...x, ...v } : x)); else views.push({ ...v, id: String(Date.now()), mine: true }); localStorage.setItem('al.views', JSON.stringify(views)); } catch (e) { /* ignore */ } invalidate('savedviews'); return { results: [{ ok: true }] }; }
     return { results: (body.changes || []).map((c) => ({ changeId: c.changeId, ok: false, code: 'PREVIEW', message: 'Preview mode: nothing is written to NetSuite.' })), deferred: [] };
   }
   const u = new URL(scriptBase()); u.searchParams.set('route', route);
   const res = await fetch(u.toString(), { method: 'POST', headers: { 'X-Requested-With': 'AmicusLeasing', 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify(body) });
   return res.json();
+}
+/** Preview: plan a lease change with the shared planner (plan.js, loaded by the preview page only). Nothing is written. */
+async function previewLeaseChange(body) {
+  const P = window.__AL_PLAN; if (!P || body.action === 'apply') return { ok: false, error: 'Preview: nothing is written to NetSuite.' };
+  const d = await previewGet('leasechange', { lease: body.leaseId });
+  const L = (x, tenantIds) => ({ id: x.id, name: x.name, inactive: false, statusKey: x.statusKey || 'NONE', sentDate: x.sent || null, start: x.start, end: x.end, monthlyRent: x.monthly, totalRent: x.total ?? null, tenantIds, propertyId: x.propertyId, unitId: x.unitId || null, typeKey: x.typeKey, ayFieldRaw: null, provisions: '', version: null });
+  const o = body.otherLeaseId ? d.siblings.find((x) => String(x.id) === String(body.otherLeaseId)) : null;
+  const pid = body.targetPropertyId || (d.properties.find((p) => p.units.some((u) => String(u.id) === String(body.targetUnitId))) || {}).id;
+  const p = pid ? d.properties.find((x) => String(x.id) === String(pid)) : null; const u = p && body.targetUnitId ? p.units.find((x) => String(x.id) === String(body.targetUnitId)) : null;
+  const plan = P.planChange({ scenario: body.scenario, lease: L(d.lease, d.lease.tenants.map((t) => t.id)), input: body.input || {}, other: o ? L(o, []) : null, target: p ? { propertyId: p.id, unitId: u ? u.id : null, name: u ? u.name : p.name, typeKey: u ? 'UNIT' : 'WH' } : null });
+  if (body.action === 'plan' || !plan.ok) return { ok: plan.ok, plan };
+  return { ok: true, preview: true, plan, applied: plan.path !== 'AMEND', todo: plan.steps.filter((s) => s.op === 'manual').map((s) => s.text), warnings: plan.warnings };
 }
 export function recordUrl(type, id, { edit = false } = {}) {
   if (!id) return null;

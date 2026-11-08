@@ -36,12 +36,11 @@ export function ChangeLeaseDialog({ leaseId, title, onClose }) {
 
   const doPreview = async () => {
     setBusy(true);
-    try { setPreview(isPreview() ? { ok: false, error: 'Preview: NetSuite works out the plan. Open the hub to see exactly what would change.' } : await post('leasechange', body('plan'))); } finally { setBusy(false); }
+    try { setPreview(await post('leasechange', body('plan'))); } finally { setBusy(false); }
   };
   const submit = async () => {
     setBusy(true);
     try {
-      if (isPreview()) { setDone({ ok: false, error: 'Preview mode: nothing is written to NetSuite.' }); return; }
       const r = await post('leasechange', { ...body('submit'), changeId: `${leaseId}:${scenario}:${Date.now().toString(36)}` });
       setDone(r); if (r.ok) { invalidate('pipeline'); invalidate('leasechange'); invalidate('unithistory'); }
     } finally { setBusy(false); }
@@ -96,7 +95,7 @@ export function ChangeLeaseDialog({ leaseId, title, onClose }) {
               </>}
             </div>}
             {done && <div className={cx('lc-done', done.ok ? 'ok' : 'bad')} role="status">
-              {done.ok ? (done.applied ? <span>Done. The lease was changed{done.amendmentId ? ' and the change logged' : ''}.</span> : done.already ? <span>Already applied.</span> : done.resultLeaseId ? <span>Applied. New lease <a className="link" href={recordUrl('lease', done.resultLeaseId)} target="_blank" rel="noreferrer">#{done.resultLeaseId}</a>.</span> : <span>Amendment filed for approval{done.amendmentId ? ` (#${done.amendmentId})` : ''}. The approval workflow takes it from here.</span>) : <span>Not saved: {done.error || (done.plan && done.plan.errors.join('; ')) || 'unknown error'}</span>}
+              {done.ok && done.preview ? <span><b>Preview only, nothing was written.</b> In NetSuite this would {done.applied ? 'change the lease now and log the change as Applied' : 'file a Lease Amendment at Pending approval; the lease stays as it is until the addendum is signed and the amendment is applied'}.</span> : done.ok ? (done.applied ? <span>Done. The lease was changed{done.amendmentId ? ' and the change logged' : ''}.</span> : done.already ? <span>Already applied.</span> : done.resultLeaseId ? <span>Applied. New lease <a className="link" href={recordUrl('lease', done.resultLeaseId)} target="_blank" rel="noreferrer">#{done.resultLeaseId}</a>.</span> : <span>Amendment filed for approval{done.amendmentId ? ` (#${done.amendmentId})` : ''}. The approval workflow takes it from here.</span>) : <span>Not saved: {done.error || (done.plan && done.plan.errors.join('; ')) || 'unknown error'}</span>}
               {(done.todo || []).map((t, i) => <div key={i}><b>To do:</b> {t}</div>)}
               {(done.warnings || []).map((w, i) => <div key={`w${i}`} className="muted small">⚠ {w}</div>)}
             </div>}

@@ -65,6 +65,8 @@ const t0 = JSON.parse(call({ route: 'tenants', view: 'all', pageSize: '500' }));
 const trows = [...t0.rows]; for (let pg = 1; pg * 500 < t0.total; pg++) trows.push(...JSON.parse(call({ route: 'tenants', view: 'all', pageSize: '500', page: String(pg) })).rows);
 write('tenants', { ...t0, rows: trows, page: 0 }); files.push('tenants'); console.log(`tenants ${trows.length} rows`);
 fs.copyFileSync('dist/amicus_leasing_app.js', path.join(out, 'app.js')); fs.copyFileSync('dist/amicus_leasing_app.css', path.join(out, 'app.css'));
+// Preview only: the lease-change planner, so Change lease can show real plans without NetSuite (the hub bundle leaves it on the server).
+{ const esbuild = await import('esbuild'); await esbuild.build({ entryPoints: ['src/shared/rules/leaseChange.js'], bundle: true, format: 'iife', globalName: '__AL_PLAN', minify: true, target: ['es2018'], outfile: path.join(out, 'plan.js'), logLevel: 'silent' }); }
 const bootJson = JSON.stringify(boot).replace(/<\/(script)/gi, '<\\/$1');
 const html = `<title>Leasing Hub</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -74,6 +76,7 @@ const html = `<title>Leasing Hub</title>
 <div class="pv-note">Preview of the rebuilt workspace running the real engine over the NetSuite snapshot of ${today} (people redacted). Nothing here writes to NetSuite.</div>
 <script type="application/json" id="al-bootstrap">${bootJson}</script>
 <script>window.__AL_PREVIEW = ${JSON.stringify({ base: 'data/', files, combos, weeks: previewWeeks.slice().sort(), defaultAy: boot.defaultAy })};</script>
+<script src="plan.js"></script>
 <script src="app.js"></script>
 `;
 fs.writeFileSync(path.join(out, 'index.html'), html);
