@@ -171,3 +171,4 @@ Leasing roles: Custom Record › Lease Amendment = Edit; Lists › Customers = E
 | Date | Change |
 |---|---|
 | 2026-11-08 | First build: planner, executor, hub route and dialog, Workflow Action Script, setup checks, tests (153 passing). Objects in §3 specified; none created yet (no browser access to the sandbox from this session). Salora's PandaDoc build (Send Contract V2, hourly Status Check, Lease Documents subtab) folded in: §4 lists what it still needs. |
+| 2026-11-08 | Cowork prompt now reads the files from `Desktop\Leasing JS` (OneDrive), checks MANIFEST.json for build e1f82f529b0d before uploading, and ignores older files in that folder. |
