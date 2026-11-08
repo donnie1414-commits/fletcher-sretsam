@@ -90,7 +90,7 @@ export function rentQuality(run, { keep = () => true, targets = run.targets || [
     const monthly = l.monthlyRent || 0;
     if (monthly <= 0) { push('RENT_MISSING', 'Monthly rent is blank or zero', 2, `${l.statusKey === 'EXECUTED' ? 'Fully Executed' : 'In Process'} · ${r.coveredBeds || 0} beds`, 'Enter the monthly rent on the lease.'); continue; }
     if (l.totalRent == null || l.totalRent <= 0) push('RENT_TOTAL_MISSING', 'Total Rent is blank', 1, `Monthly ${money(monthly)}${l.termMonths ? ` × ${l.termMonths} months = ${money(monthly * l.termMonths)}` : ''}`, 'Enter Total Rent (monthly × term).');
-    else if (l.termMonths) {
+    else if (l.termMonths && !l.endReason && !l.supersedes) { // a lease ended or started by an amendment keeps its contract total; the amendment explains it
       const expected = monthly * l.termMonths, diff = l.totalRent - expected;
       if (Math.abs(diff) > Math.max(RENT_RULES.totalFloor, expected * RENT_RULES.totalTolerance)) {
         const oneYearOfTwo = l.isTwoYear && Math.abs(l.totalRent - monthly * 12) <= Math.max(RENT_RULES.totalFloor, monthly * 12 * RENT_RULES.totalTolerance);

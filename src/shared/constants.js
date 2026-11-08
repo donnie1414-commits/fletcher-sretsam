@@ -383,6 +383,53 @@ export const TOUR_OUTCOMES = Object.freeze([
   { key: 'CANCELLED', label: 'Cancelled' },
   { key: 'LEASED',    label: 'Leased' },
 ]);
+/**
+ * Lease changes (docs/LEASE-CHANGES-BUILD.md). The Lease Amendment record is a child of the Lease; every change after a
+ * lease is drafted is one row. PLAN holds the ordered steps (JSON) the apply step runs, so the Suitelet and the Workflow
+ * Action Script apply exactly what was approved.
+ */
+export const AMEND = Object.freeze({
+  TYPE: 'customrecord_ad_lease_amend',
+  LEASE: 'custrecord_ad_am_lease',            // List/Record → Lease (Record is Parent)
+  KIND: 'custrecord_ad_am_type',              // List → customlist_ad_amend_type
+  STATUS: 'custrecord_ad_am_status',          // List → customlist_ad_amend_status
+  SCENARIO: 'custrecord_ad_am_scenario',      // Free-Form Text (scenario key)
+  EFFECTIVE: 'custrecord_ad_am_effective',    // Date
+  REASON: 'custrecord_ad_am_reason',          // Long Text
+  ADDED: 'custrecord_ad_am_tenants_added',    // Multiple Select → Customer
+  REMOVED: 'custrecord_ad_am_tenants_removed',// Multiple Select → Customer
+  OLD_RENT: 'custrecord_ad_am_old_rent',      // Currency
+  NEW_RENT: 'custrecord_ad_am_new_rent',      // Currency
+  FEE: 'custrecord_ad_am_fee',                // Currency
+  PROVISIONS: 'custrecord_ad_am_provisions',  // Long Text
+  BEFORE: 'custrecord_ad_am_before',          // Long Text (JSON snapshot of the lease)
+  PLAN: 'custrecord_ad_am_plan',              // Long Text (JSON steps)
+  OTHER_LEASE: 'custrecord_ad_am_other_lease',// List/Record → Lease (scenario 2)
+  TARGET_UNIT: 'custrecord_ad_am_target_unit',// List/Record → Units/Bedrooms (scenario 1)
+  RESULT_LEASE: 'custrecord_ad_am_result_lease', // List/Record → Lease (the lease the apply step created)
+  REQUESTED_BY: 'custrecord_ad_am_requested_by', // List/Record → Employee
+  APPROVED_BY: 'custrecord_ad_am_approved_by',   // List/Record → Employee (set by the approval workflow)
+  APPLIED: 'custrecord_ad_am_applied',        // Date/Time
+  DOCUMENT: 'custrecord_ad_am_document',      // Free-Form Text: PandaDoc document id of the signed addendum
+  RESULT: 'custrecord_ad_am_result',          // Long Text: what the apply step did, or why it failed
+  TYPE_LIST: 'customlist_ad_amend_type',
+  STATUS_LIST: 'customlist_ad_amend_status',
+  END_REASON_LIST: 'customlist_ad_end_reason',
+});
+/** Lease fields the change chain adds, plus the existing ones a change may rewrite. */
+export const LEASE_CHAIN = Object.freeze({
+  SUPERSEDES: 'custrecord_ad_lease_supersedes', // List/Record → Lease
+  END_REASON: 'custrecord_ad_lease_end_reason', // List → customlist_ad_end_reason
+  VERSION: 'custrecord_ad_lease_version',       // Integer
+  TOTAL: 'custrecord_serp_rent_actual_total',
+  MONTHS: 'custrecord_serp_lease_duration_options',
+  GROUP_TYPE: 'custrecord_serp_group_type',
+  PROVISIONS: 'custrecord_serp_additional_provisions',
+  TYPE: 'custrecord_serp_lease_type_test',
+  GROUP_TYPE_LIST: 'customlist_lease_group_type',
+  RELEASED_STATUS: 'Released',                  // customer status (stage Customer, shown "Tenant-Released"), looked up by name in entitystatus
+  APPLY_ON_APPROVAL_PARAM: 'custscript_al_amend_apply_on_approval',
+});
 export const AUDIT = Object.freeze({
   TYPE: 'customrecord_ad_write_audit',
   WHO: 'custrecord_ad_wa_who',

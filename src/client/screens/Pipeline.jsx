@@ -12,6 +12,7 @@ import { HistoryDrawer, UnitHistory } from './pipeline/HistoryDrawer.jsx';
 import { TourDialog } from './people/TourDialog.jsx';
 import { NotesDrawer } from './pipeline/NotesDrawer.jsx';
 import { LeaseDialog } from './pipeline/LeaseDialog.jsx';
+import { ChangeLeaseDialog } from './pipeline/ChangeLeaseDialog.jsx';
 
 const PICKER = pickerStages().map((s) => ({ value: s.key, label: s.label }));
 /** One muted colour per stage (CSS .st-<KEY>), shared by the pills, the distribution bar and the legend. */
@@ -94,12 +95,13 @@ export function Pipeline({ sel, setSel, density, isMobile, bootstrap, openExcept
         {r.editable ? <Select small ariaLabel="Leasing stage" value={v} onChange={(x) => onEdit(r.key, 'stage', x)} options={PICKER} renderValue={(o) => <StagePill stageKey={o.value} />} renderOption={(o) => <StagePill stageKey={o.value} />} /> : <StagePill stageKey={v} days={r.daysInStage} />}
         {!r.editable && <span className="stage-line"><span className="muted small">{r.unitId ? 'set by lease' : 'no unit record'}</span></span>}
       </span> },
-    { key: 'actions', label: 'Actions', width: 156, sortable: false, render: (v, r) => {
+    { key: 'actions', label: 'Actions', width: 176, sortable: false, render: (v, r) => {
       const lease = r.leases[0] || r.draftLease; const st = stageOf(r);
       return <span className="act-cell">
         {r.unitId && <button type="button" className={cx('btn btn-sm btn-act', r.leaseTerms && 'done')} title={r.leaseTerms ? 'Lease terms captured; open to create the lease record' : r.leases.length ? 'A further lease for months the current one does not cover' : 'Capture lease terms and create the lease record'} onClick={(e) => { e.stopPropagation(); setDrawer({ kind: 'lease', row: r }); }}>{r.leaseTerms ? '✓ Lease terms' : r.leases.length ? '+ Another lease' : '+ Add lease'}</button>}
         {lease && st !== 'LEASE_REVISIONS' && (r.unitId || r.rowId) && <button type="button" className="btn btn-sm btn-act warn" title="Mark the lease as needing revisions and open the lease record to edit" onClick={(e) => { e.stopPropagation(); revise(r); }}>✎ Revisions</button>}
         {lease && st === 'LEASE_REVISIONS' && <a className="btn btn-sm btn-act warn" href={recordUrl('lease', lease.id, { edit: true })} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>✎ Open lease</a>}
+        {lease && <button type="button" className="btn btn-sm btn-act" title="Tenants moving, released or added; rent or dates renegotiated; a signed lease amended" onClick={(e) => { e.stopPropagation(); setDrawer({ kind: 'change', row: r, leaseId: lease.id, title: lease.name }); }}>⇄ Change lease</button>}
       </span>;
     } },
     { key: 'issue', label: 'Issues', width: 150, title: (v, r) => (r.issue ? r.issue.list.map((x) => `${x.excludes ? 'Excluded' : 'Flag'}: ${x.label} (${x.leaseName})`).join('\n') : r.draftLease ? 'A lease with no status: out of every statistic' : ''), value: (r) => (r.issue ? r.issue.count : r.draftLease ? 1 : 0), render: (v, r) => (r.issue || r.draftLease ? <button type="button" className={cx('issue-pill', (r.issue && r.issue.excluded) || r.draftLease ? 'excl' : 'flag')} onClick={(e) => { e.stopPropagation(); openExceptions && openExceptions(); }}>{(r.issue && r.issue.excluded) || r.draftLease ? 'Excluded' : 'Exception'}{r.issue && r.issue.count > 1 ? ` · ${r.issue.count}` : ''}<span className="issue-why">{r.issue ? r.issue.top : 'No lease status'}</span></button> : <span className="muted">–</span>) },
@@ -124,7 +126,7 @@ export function Pipeline({ sel, setSel, density, isMobile, bootstrap, openExcept
         <label className="field"><span className="field-label">Stage</span><select value={e.stage || r.stage} disabled={!r.editable} onChange={(ev) => onEdit(r.key, 'stage', ev.target.value)}>{PICKER.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
         <label className="field"><span className="field-label">Follow-up</span><input type="date" value={e.followup ?? r.followup ?? ''} disabled={!r.editable} onChange={(ev) => onEdit(r.key, 'followup', ev.target.value)} /></label>
       </div>
-      <div className="card-row"><Button small onClick={() => setDrawer({ kind: 'history', row: r })}>History</Button><Button small onClick={() => setDrawer({ kind: 'notes', row: r })}>Notes {r.noteCount || ''}</Button>{r.unitId && <Button small onClick={() => setDrawer({ kind: 'tour', row: r })}>Tour…</Button>}{r.unitId && <Button small onClick={() => setDrawer({ kind: 'lease', row: r })}>{r.leases.length ? 'Add another lease…' : 'Add lease…'}</Button>}{(r.leases[0] || r.draftLease) && <Button small onClick={() => revise(r)}>Revisions…</Button>}</div>
+      <div className="card-row"><Button small onClick={() => setDrawer({ kind: 'history', row: r })}>History</Button><Button small onClick={() => setDrawer({ kind: 'notes', row: r })}>Notes {r.noteCount || ''}</Button>{r.unitId && <Button small onClick={() => setDrawer({ kind: 'tour', row: r })}>Tour…</Button>}{r.unitId && <Button small onClick={() => setDrawer({ kind: 'lease', row: r })}>{r.leases.length ? 'Add another lease…' : 'Add lease…'}</Button>}{(r.leases[0] || r.draftLease) && <Button small onClick={() => revise(r)}>Revisions…</Button>}{(r.leases[0] || r.draftLease) && <Button small onClick={() => setDrawer({ kind: 'change', row: r, leaseId: (r.leases[0] || r.draftLease).id, title: (r.leases[0] || r.draftLease).name })}>Change lease…</Button>}</div>
     </div>
   );
   const toggleFilter = (k) => setView((v) => ({ ...v, [k]: v[k] ? '' : '1', page: 0 }));
@@ -160,6 +162,7 @@ export function Pipeline({ sel, setSel, density, isMobile, bootstrap, openExcept
       {drawer && drawer.kind === 'history' && <HistoryDrawer row={drawer.row} sel={sel} onClose={() => setDrawer(null)} onOpenNotes={(r) => setDrawer({ kind: 'notes', row: r })} onOpenLease={(r) => setDrawer({ kind: 'lease', row: r })} />}
       {drawer && drawer.kind === 'notes' && <NotesDrawer row={{ ...drawer.row, ayId }} sel={sel} today={data ? data.today : bootstrap.session.today} onClose={() => setDrawer(null)} />}
       {drawer && drawer.kind === 'lease' && <LeaseDialog row={drawer.row} sel={sel} onClose={() => setDrawer(null)} />}
+      {drawer && drawer.kind === 'change' && <ChangeLeaseDialog leaseId={drawer.leaseId} title={drawer.title} onClose={() => setDrawer(null)} />}
       {drawer && drawer.kind === 'tour' && <TourDialog unit={{ unitId: drawer.row.unitId, unit: drawer.row.unit, propertyId: drawer.row.propertyId, property: drawer.row.property }} sel={sel} bootstrap={bootstrap} onClose={() => setDrawer(null)} onDone={() => invalidate('pipeline')} />}
     </div>
   );

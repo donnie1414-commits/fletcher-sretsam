@@ -261,3 +261,12 @@ table.dense th { background:var(--surface); } table.dense tfoot td { background:
 
 .setup-tbl td, .setup-tbl th { vertical-align:top; } .setup-tbl code { font-size:11px; }
 th.sortable { cursor:pointer; user-select:none; } th.sortable:hover { color:var(--accent); } .sort-arrow { font-size:10px; color:var(--accent); }
+/* Change lease (docs/LEASE-CHANGES-BUILD.md) */
+.lc { display:flex; flex-direction:column; gap:var(--s2); } .lc-head { display:flex; flex-wrap:wrap; align-items:center; gap:var(--s2); }
+.lc-types { border:1px solid var(--rule); border-radius:var(--radius); padding:var(--s2); display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:4px var(--s3); margin:0; } .lc-types legend { font-weight:600; padding:0 4px; }
+.lc-type { display:flex; gap:6px; align-items:flex-start; padding:4px 6px; border-radius:var(--radius); cursor:pointer; } .lc-type.on { background:var(--row-hover); } .lc-type input { margin-top:3px; }
+.lc-inputs.form-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:var(--s2) var(--s3); } .lc-inputs label, .lc-field { display:flex; flex-direction:column; gap:3px; font-size:var(--t1); font-weight:600; } .lc-inputs .wide { grid-column:1 / -1; }
+.lc-inputs input, .lc-inputs textarea { font:inherit; font-weight:400; border:1px solid var(--rule); border-radius:var(--radius); padding:5px 8px; background:var(--bg); color:inherit; } .lc-field .check { font-weight:400; flex-direction:row; align-items:center; gap:6px; display:flex; } .lc-field .linkish { text-align:left; }
+.lc-plan { border:1px solid var(--rule); border-radius:var(--radius); padding:var(--s2) var(--s3); background:var(--bg-sunken); } .lc-plan-head { display:flex; gap:var(--s2); align-items:center; flex-wrap:wrap; } .lc-steps { margin:var(--s2) 0; padding-left:20px; display:flex; flex-direction:column; gap:3px; }
+.lc-done { border-radius:var(--radius); padding:var(--s2) var(--s3); border-left:3px solid var(--ok, #2e7d32); background:var(--bg-sunken); } .lc-done.bad { border-left-color:var(--bad, #c62828); }
+.lc-history h4 { margin:var(--s2) 0 4px; } .lc-history .tbl { width:100%; border-collapse:collapse; } .lc-history th, .lc-history td { text-align:left; padding:3px 6px; border-bottom:1px solid var(--rule); }

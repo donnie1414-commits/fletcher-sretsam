@@ -2,7 +2,7 @@
  * DAO — properties, units, leases, targets, academic years, lists. One function per query. No rules.
  * Column aliases match the fixture shape so the engine and the snapshot are interchangeable.
  */
-import { LEASE, PROPERTY, UNIT, CUSTOMER, UAS, STAGE_LIST } from '../../shared/constants.js';
+import { LEASE, LEASE_CHAIN, AMEND, PROPERTY, UNIT, CUSTOMER, UAS, STAGE_LIST } from '../../shared/constants.js';
 import { sqlIn } from './suiteql.js';
 
 export function createPortfolioDao({ sq, schema }) {
@@ -13,7 +13,7 @@ export function createPortfolioDao({ sq, schema }) {
   }
   function lists() {
     const out = {};
-    for (const list of [STAGE_LIST, 'customlist_ad_stage_source', 'customlist_serp_lease_type_list', 'customlist_serp_lease_status', 'customlist_lease_group_type', 'customlist_serp_hear_us_list', 'customlist830', 'customlist_serp_schools', 'customlist_serp_cities', 'customlist_ad_tour_outcome']) {
+    for (const list of [STAGE_LIST, 'customlist_ad_stage_source', 'customlist_serp_lease_type_list', 'customlist_serp_lease_status', 'customlist_lease_group_type', 'customlist_serp_hear_us_list', 'customlist830', 'customlist_serp_schools', 'customlist_serp_cities', 'customlist_ad_tour_outcome', AMEND.STATUS_LIST, AMEND.TYPE_LIST, AMEND.END_REASON_LIST]) {
       try { out[list] = sq.few(`SELECT id, name, isinactive FROM ${list} ORDER BY id`); } catch (e) { out[list] = []; }
     }
     return out;
@@ -69,6 +69,10 @@ export function createPortfolioDao({ sq, schema }) {
       { field: 'custrecord_serp_gaselectric_included', as: 'gas_included', optional: true, feature: 'utilities' },
       { field: 'custrecord_serp_additional_provisions', as: 'provisions', optional: true },
       { field: LEASE.RR_UNIT_ID, as: 'rr_unit_id', optional: true },
+      // lease-change chain (docs/LEASE-CHANGES-BUILD.md)
+      { field: LEASE_CHAIN.SUPERSEDES, as: 'supersedes', optional: true, feature: 'lease chain' },
+      { field: LEASE_CHAIN.END_REASON, as: 'end_reason_name', optional: true, expr: `BUILTIN.DF(${LEASE_CHAIN.END_REASON})`, feature: 'lease chain' },
+      { field: LEASE_CHAIN.VERSION, as: 'version', optional: true, feature: 'lease chain' },
       { field: 'created' }, { field: 'lastmodified' },
     ];
   function leases(ayIds, { includeInactive = false } = {}) {

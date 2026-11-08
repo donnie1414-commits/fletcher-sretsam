@@ -30,8 +30,10 @@ import { routeSavedViews } from './routes/savedViews.js';
 import { routeWrite } from './routes/write.js';
 import { routeLeaseDialog } from './routes/leaseDialog.js';
 import { routeNotes } from './routes/notes.js';
+import { routeLeaseChange } from './routes/leaseChange.js';
+import { createLeaseChange } from './leaseChange.js';
 import { renderShell, serveAsset } from './shell.js';
-import { MARKETS, UAS, LEASE, CUSTOMER, TOUR, SAVED_VIEW, FEATURE_FLAGS, LEAD } from '../shared/constants.js';
+import { MARKETS, UAS, LEASE, CUSTOMER, TOUR, SAVED_VIEW, AMEND, LEASE_CHAIN, FEATURE_FLAGS, LEAD } from '../shared/constants.js';
 
 export function createApp(N) {
   const log = N.log;
@@ -82,10 +84,11 @@ export function createApp(N) {
       stageOf: (id) => dao.people.stageOf(id), notify: (args) => notifyMentions(N, ctx, args), overlapsFor: (fields) => leaseOverlaps(ctx, fields),
       defaultSubsidiaryId: () => { const subs = dao.portfolio.subsidiaries(); const hit = subs.find((x) => String(x.name).trim().toLowerCase() === LEAD.SUBSIDIARY_NAME.toLowerCase()) || subs.find((x) => x.parent == null); return hit ? Number(hit.id) : null; },
       findByEmail: (email) => dao.people.byEmail(email) });
+    ctx.leaseChange = createLeaseChange({ sq, writes: ctx.writes, log, applyOnApproval: readFlag(N.runtime, LEASE_CHAIN.APPLY_ON_APPROVAL_PARAM, false) });
     return ctx;
   }
 
-  const routes = { bootstrap: routeBootstrap, lists: routeLists, summary: routeSummary, portfolio: routePortfolio, weekly: routeWeekly, velocity: routeVelocity, pipeline: routePipeline, unithistory: routeUnitHistory, team: routeTeam, tenants: routeTenants, leads: routeLeads, tours: routeTours, reprobe: routeReprobe, setup: routeSetup, exceptions: routeExceptions, today: routeToday, savedviews: routeSavedViews, write: routeWrite, leasedialog: routeLeaseDialog, notes: routeNotes };
+  const routes = { bootstrap: routeBootstrap, lists: routeLists, summary: routeSummary, portfolio: routePortfolio, weekly: routeWeekly, velocity: routeVelocity, pipeline: routePipeline, unithistory: routeUnitHistory, team: routeTeam, tenants: routeTenants, leads: routeLeads, tours: routeTours, reprobe: routeReprobe, setup: routeSetup, exceptions: routeExceptions, today: routeToday, savedviews: routeSavedViews, write: routeWrite, leasedialog: routeLeaseDialog, notes: routeNotes, leasechange: routeLeaseChange };
 
   function handle(context) {
     const route = String((context.request.parameters || {}).route || '').toLowerCase();
@@ -143,6 +146,7 @@ export function marketOf(ctx, type, id, fields) {
     return ctx.scope.all ? 'unknown' : ctx.scope.marketIds[0] || null;
   }
   if (type === SAVED_VIEW.TYPE) return ctx.scope.all ? 'unknown' : ctx.scope.marketIds[0] || null; // owner-scoped, checked in the route
+  if (type === AMEND.TYPE) { const lease = fields[AMEND.LEASE] ?? (id ? (sq.one(`SELECT ${AMEND.LEASE} AS lease FROM ${AMEND.TYPE} WHERE id = ?`, [Number(id)]) || {}).lease : null); return lease ? marketOf(ctx, LEASE.TYPE, lease, {}) : null; }
   return null;
 }
 /**

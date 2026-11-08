@@ -23,16 +23,16 @@ const args = new Set(process.argv.slice(2));
 fs.mkdirSync('dist', { recursive: true });
 
 /** The build id is the hash of the client files; the Suitelet puts it in the asset URLs so browsers never keep a stale bundle after a re-upload. */
-async function buildServer() {
+async function buildServer(entry = 'src/server/suitelet.js', exportName = 'onRequest') {
   // Built with the placeholder; the id is stamped afterwards so a server-only change still produces a new build id.
   const r = await esbuild.build({
-    entryPoints: ['src/server/suitelet.js'], bundle: true, write: false, format: 'cjs', platform: 'neutral', target: ['es2020'],
+    entryPoints: [entry], bundle: true, write: false, format: 'cjs', platform: 'neutral', target: ['es2020'],
     external: N_MODULES, legalComments: 'none', minify: false, treeShaking: true, charset: 'utf8', logLevel: 'silent', define: { __AL_BUILD__: JSON.stringify(BUILD_PLACEHOLDER) },
   });
   const code = r.outputFiles[0].text;
   const used = N_MODULES.filter((m) => code.includes(`require("${m}")`));
-  const header = fs.readFileSync('src/server/suitelet.js', 'utf8').match(/\/\*\*[\s\S]*?\*\//)[0];
-  const wrapped = `${header}\ndefine(${JSON.stringify(used)}, function (${used.map((m, i) => `__n${i}`).join(', ')}) {\n  'use strict';\n  var __N = {${used.map((m, i) => `${JSON.stringify(m)}: __n${i}`).join(', ')}};\n  var require = function (id) { if (Object.prototype.hasOwnProperty.call(__N, id)) return __N[id]; throw new Error('module not available in the server bundle: ' + id); };\n  var module = { exports: {} }; var exports = module.exports;\n${code}\n  if (typeof module.exports.onRequest !== 'function') throw new Error('bundle does not export onRequest');\n  return module.exports;\n});\n`;
+  const header = fs.readFileSync(entry, 'utf8').match(/\/\*\*[\s\S]*?\*\//)[0];
+  const wrapped = `${header}\ndefine(${JSON.stringify(used)}, function (${used.map((m, i) => `__n${i}`).join(', ')}) {\n  'use strict';\n  var __N = {${used.map((m, i) => `${JSON.stringify(m)}: __n${i}`).join(', ')}};\n  var require = function (id) { if (Object.prototype.hasOwnProperty.call(__N, id)) return __N[id]; throw new Error('module not available in the server bundle: ' + id); };\n  var module = { exports: {} }; var exports = module.exports;\n${code}\n  if (typeof module.exports.${exportName} !== 'function') throw new Error('bundle does not export ${exportName}');\n  return module.exports;\n});\n`;
   return wrapped.replace(/\r\n/g, '\n');
 }
 async function buildClient() {
@@ -47,13 +47,13 @@ async function buildClient() {
   // client, the Suitelet and MANIFEST.json all carry the same id and the app can tell when the uploaded files disagree.
   return { raw, cssText };
 }
-function loadCheck() {
+function loadCheck(file = 'dist/amicus_leasing_sl.js', exportName = 'onRequest') {
   // §8.7 — node --check is not evidence a module loads. Execute the AMD wrapper with fake N modules.
-  const src = fs.readFileSync('dist/amicus_leasing_sl.js', 'utf8');
+  const src = fs.readFileSync(file, 'utf8');
   let exported = null;
   const define = (deps, factory) => { exported = factory(...deps.map((d) => ({ __fake: d }))); };
   new Function('define', src)(define);
-  if (!exported || typeof exported.onRequest !== 'function') throw new Error('load check failed: onRequest is not a function');
+  if (!exported || typeof exported[exportName] !== 'function') throw new Error(`load check failed: ${file} ${exportName} is not a function`);
   return Object.keys(exported);
 }
 async function engineLoadCheck() {
@@ -72,9 +72,13 @@ function lineEndings(p) { const s = fs.readFileSync(p, 'utf8'); return s.include
     const buildId = crypto.createHash('sha256').update(raw).update(cssText).update(serverRaw).digest('hex').slice(0, 12);
     const code = raw.split(BUILD_PLACEHOLDER).join(buildId);
     fs.writeFileSync('dist/amicus_leasing_app.js', code); fs.writeFileSync('dist/amicus_leasing_app.css', cssText); fs.writeFileSync('dist/amicus_leasing_sl.js', serverRaw.split(BUILD_PLACEHOLDER).join(buildId));
+    // The lease-amendment Workflow Action Script shares the executor and write module with the Suitelet (same build id).
+    const waRaw = await buildServer('src/server/wa_apply_amend.js', 'onAction');
+    fs.writeFileSync('dist/ad_wa_apply_amend.js', waRaw.split(BUILD_PLACEHOLDER).join(buildId));
     console.log(`build ${buildId} · server bundle ${Buffer.byteLength(serverRaw)} B · client ${Buffer.byteLength(code)} B min (${(Buffer.byteLength(code) / 1024).toFixed(0)} KB) · css ${Buffer.byteLength(cssText)} B · initial gzip ${zlib.gzipSync(code).length + zlib.gzipSync(cssText).length} B`);
   }
   const exportsSeen = loadCheck();
+  const waExports = loadCheck('dist/ad_wa_apply_amend.js', 'onAction');
   await engineLoadCheck();
   // §8.7 — the client and the Suitelet must carry the same build id (the app warns the user when NetSuite serves a mismatched pair).
   const clientText = fs.readFileSync('dist/amicus_leasing_app.js', 'utf8'); const serverText = fs.readFileSync('dist/amicus_leasing_sl.js', 'utf8');
@@ -89,10 +93,10 @@ function lineEndings(p) { const s = fs.readFileSync(p, 'utf8'); return s.include
   if (gz > BUDGET.initialGzipBytes) failures.push(`initial payload ${gz} B gzipped exceeds ${BUDGET.initialGzipBytes} B`);
   const manifest = {
     builtAt: new Date().toISOString(), build, budgets: BUDGET, files: {},
-    roles: { 'dist/amicus_leasing_sl.js': 'suitelet-entry', 'dist/amicus_leasing_app.js': 'client-bundle', 'dist/amicus_leasing_app.css': 'client-styles' },
+    roles: { 'dist/amicus_leasing_sl.js': 'suitelet-entry', 'dist/amicus_leasing_app.js': 'client-bundle', 'dist/amicus_leasing_app.css': 'client-styles', 'dist/ad_wa_apply_amend.js': 'workflow-action (Apply Lease Amendment)' },
   };
   for (const f of Object.keys(manifest.roles)) manifest.files[f] = { bytes: fs.statSync(f).size, sha256: sha256(f), lineEndings: lineEndings(f) };
   fs.writeFileSync('dist/MANIFEST.json', JSON.stringify(manifest, null, 2));
-  console.log(`load check: server exports [${exportsSeen.join(', ')}]; engine exports OK; build ${build}; manifest written`);
+  console.log(`load check: server exports [${exportsSeen.join(', ')}]; workflow action exports [${waExports.join(', ')}]; engine exports OK; build ${build}; manifest written`);
   if (failures.length) { console.error('BUDGET FAILURE:\n  ' + failures.join('\n  ')); process.exit(1); }
 })().catch((e) => { console.error(e); process.exit(1); });

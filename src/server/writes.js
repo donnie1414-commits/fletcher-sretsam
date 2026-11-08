@@ -11,7 +11,7 @@
  *  - Lease Tenants multiselect: pre-screen the whole set against the Property/AY filter, and
  *    capture-and-restore around any Academic Year or Property change (§5.5.1 rules 2 and 3).
  */
-import { UAS, UAS_NOTE, LEASE, CUSTOMER, TOUR, TOUR_OUTCOMES, LEAD, LEAD_STATUS_IDS, SAVED_VIEW, AUDIT, GOVERNANCE, foldStage, stageByKey, STAGE_OWNER } from '../shared/constants.js';
+import { UAS, UAS_NOTE, LEASE, CUSTOMER, TOUR, TOUR_OUTCOMES, LEAD, LEAD_STATUS_IDS, SAVED_VIEW, AUDIT, AMEND, LEASE_CHAIN, GOVERNANCE, foldStage, stageByKey, STAGE_OWNER } from '../shared/constants.js';
 import { validateHumanStageChange } from '../shared/rules/stages.js';
 
 /** record type → { create: bool, fields: Set(field ids) } */
@@ -21,13 +21,19 @@ export const ALLOWLIST = Object.freeze({
   [UAS_NOTE.TYPE]: { create: true, fields: new Set(['custrecord_ad_note_status', 'custrecord_ad_note_text', 'custrecord_ad_note_date', 'custrecord_ad_note_author', 'custrecord_ad_note_mentions', 'name']) },
   [LEASE.TYPE]: { create: true, fields: new Set([LEASE.UNIT, LEASE.PROPERTY, 'custrecord_serp_lease_type_test', LEASE.START, LEASE.END, LEASE.AY, LEASE.STATUS, 'isinactive', LEASE.TENANTS,
     // creation-only fields (lease dialog): checked in applyCreate, never on update
-    'name', 'custrecord_serp_lease_duration_options', LEASE.MONTHLY_RENT, 'custrecord_serp_rent_actual_total', LEASE.TENANT_COUNT, 'custrecord_serp_group_type', 'custrecord_rent_target_per_bed', 'custrecord_serp_watersewer_included', 'custrecord_serp_gaselectric_included', 'custrecord_serp_additional_provisions', 'custrecord_serp_academic_start_date', 'custrecord_academic_end_date']) },
+    'name', 'custrecord_serp_lease_duration_options', LEASE.MONTHLY_RENT, 'custrecord_serp_rent_actual_total', LEASE.TENANT_COUNT, 'custrecord_serp_group_type', 'custrecord_rent_target_per_bed', 'custrecord_serp_watersewer_included', 'custrecord_serp_gaselectric_included', 'custrecord_serp_additional_provisions', 'custrecord_serp_academic_start_date', 'custrecord_academic_end_date',
+    // lease-change chain (docs/LEASE-CHANGES-BUILD.md): set on create by the apply step, and on update only by it (LEASE_CHANGE_UPDATE)
+    LEASE_CHAIN.SUPERSEDES, LEASE_CHAIN.END_REASON, LEASE_CHAIN.VERSION]) },
   // create = a new lead from the hub (A-22): the identity fields are creation-only; updates stay limited to the triage fields
   [CUSTOMER.TYPE]: { create: true, fields: new Set(['entitystatus', CUSTOMER.PROPERTY, CUSTOMER.AY, 'custentity12', 'custentity9', 'custentity3', 'custentity_desired_location', 'custentity_serp_notes', 'custentity_serp_howdid_you_hear_about_us', 'custentity_serp_schools', LEAD.UNITS, ...LEAD.CREATE_FIELDS]) },
   [TOUR.TYPE]: { create: true, fields: new Set(['title', 'startdate', 'starttime', 'endtime', 'timedevent', 'accesslevel', 'company', 'organizer', 'location', 'message', 'status', TOUR.UNIT, TOUR.OUTCOME, TOUR.AY]) },
   // App-owned record (§4.2 saved views): not in the §5.9 table, declared here explicitly rather than smuggled in.
   [SAVED_VIEW.TYPE]: { create: true, fields: new Set([SAVED_VIEW.OWNER, SAVED_VIEW.WORKSPACE, SAVED_VIEW.NAME, SAVED_VIEW.JSON, SAVED_VIEW.IS_DEFAULT, SAVED_VIEW.SHARED_MARKETS, 'isinactive', 'name']) },
+  // Lease amendments: written only by the lease-change route and the apply script (internal), never by the generic write route.
+  [AMEND.TYPE]: { create: true, internal: true, fields: new Set([...Object.entries(AMEND).filter(([k]) => !k.endsWith('_LIST') && k !== 'TYPE').map(([, v]) => v), 'name']) },
 });
+/** Lease fields only a lease change may rewrite on an existing lease (money, roster size, the chain). */
+const LEASE_CHANGE_UPDATE = new Set([LEASE.MONTHLY_RENT, LEASE_CHAIN.TOTAL, LEASE.TENANT_COUNT, LEASE_CHAIN.PROVISIONS, LEASE_CHAIN.END_REASON, LEASE_CHAIN.SUPERSEDES, LEASE_CHAIN.VERSION, LEASE_CHAIN.GROUP_TYPE, LEASE_CHAIN.MONTHS]);
 const UAS_CREATE_ONLY = new Set([UAS.UNIT, UAS.AY, UAS.PROPERTY, 'name']);
 const CUSTOMER_CREATE_ONLY = new Set(LEAD.CREATE_FIELDS);
 const LEASE_UPDATE_FIELDS = new Set([LEASE.UNIT, LEASE.PROPERTY, 'custrecord_serp_lease_type_test', LEASE.START, LEASE.END, LEASE.AY, LEASE.STATUS, 'isinactive', LEASE.TENANTS]);
@@ -47,8 +53,9 @@ export class WriteError extends Error { constructor(code, message, extra = {}) {
  *   clock() → ISO timestamp (injected so tests are deterministic)
  */
 /** Fields NetSuite stores as dates: the client sends ISO 'YYYY-MM-DD'; record.setValue needs a Date (a string is an INVALID_FLD_VALUE). */
-const DATE_FIELDS = new Set([UAS.FOLLOWUP, UAS.STAGE_DATE, LEASE.START, LEASE.END, 'custrecord_ad_note_date', 'custrecord_serp_academic_start_date', 'custrecord_academic_end_date', 'custrecord_serp_lease_sent_date', 'custrecord_effective_date', 'startdate', 'custentity9']);
+const DATE_FIELDS = new Set([AMEND.EFFECTIVE, UAS.FOLLOWUP, UAS.STAGE_DATE, LEASE.START, LEASE.END, 'custrecord_ad_note_date', 'custrecord_serp_academic_start_date', 'custrecord_academic_end_date', 'custrecord_serp_lease_sent_date', 'custrecord_effective_date', 'startdate', 'custentity9']);
 const TIME_FIELDS = new Set(['starttime', 'endtime']);
+const DATETIME_FIELDS = new Set([AMEND.APPLIED]);
 /** "HH:MM" on a given ISO date → a local Date carrying that time of day (NetSuite time-of-day fields take a Date). */
 export function localTime(hm, isoDate) { if (hm instanceof Date) return hm; const m = /^(\d{1,2}):(\d{2})/.exec(String(hm || '')); if (!m) return hm; const d = localDate(isoDate || '1970-01-01'); return new Date(d.getFullYear(), d.getMonth(), d.getDate(), Number(m[1]), Number(m[2])); }
 export function localDate(v) {
@@ -60,6 +67,7 @@ function nsValue(field, v, ctxDate = null) {
   if (v == null || v === '') return '';
   if (Array.isArray(v)) return v.map(Number);
   if (DATE_FIELDS.has(field)) return localDate(v);
+  if (DATETIME_FIELDS.has(field)) return v instanceof Date ? v : new Date(v);
   if (TIME_FIELDS.has(field)) return localTime(v, ctxDate);
   return v;
 }
@@ -148,17 +156,18 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
       return target;
     } catch (e) { log && log.error && log.error({ title: 'lead status step failed', details: `${company}: ${e && e.message}` }); return null; }
   }
-  function validateChange(change) {
+  function validateChange(change, opts = {}) {
     if (!change || typeof change !== 'object') throw new WriteError('BAD_CHANGE', 'change is not an object');
     if (!change.changeId || String(change.changeId).length > 80) throw new WriteError('BAD_CHANGE', 'changeId is required');
     const rule = ALLOWLIST[change.recordType];
     if (!rule) throw new WriteError('DENIED_RECORD', `writes to ${change.recordType} are not allowed`);
+    if (rule.internal && !opts.internal) throw new WriteError('DENIED_RECORD', `${change.recordType} is written by the lease-change step only`);
     const isCreate = change.recordId == null;
     if (isCreate && !rule.create) throw new WriteError('DENIED_CREATE', `creating ${change.recordType} is not allowed`);
     const fields = change.fields || {};
     for (const f of Object.keys(fields)) {
       if (!rule.fields.has(f)) throw new WriteError('DENIED_FIELD', `field ${f} on ${change.recordType} is not allowed`, { field: f });
-      if (!isCreate && change.recordType === LEASE.TYPE && !LEASE_UPDATE_FIELDS.has(f)) throw new WriteError('DENIED_FIELD', `field ${f} may only be set when creating a lease`, { field: f });
+      if (!isCreate && change.recordType === LEASE.TYPE && !LEASE_UPDATE_FIELDS.has(f) && !(opts.internal && LEASE_CHANGE_UPDATE.has(f))) throw new WriteError('DENIED_FIELD', `field ${f} may only be set when creating a lease`, { field: f });
       if (!isCreate && change.recordType === UAS.TYPE && UAS_CREATE_ONLY.has(f)) throw new WriteError('DENIED_FIELD', `field ${f} may only be set when provisioning a status row`, { field: f });
       if (!isCreate && change.recordType === CUSTOMER.TYPE && CUSTOMER_CREATE_ONLY.has(f)) throw new WriteError('DENIED_FIELD', `field ${f} may only be set when creating a lead; edit the customer record for changes`, { field: f });
     }
@@ -281,7 +290,7 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
    * apply(changes[], scope) → { results: [{changeId, ok, …}], deferred: [changeId…] }
    * Never throws for a per-row problem; the row's result carries code + message.
    */
-  function apply(changes, scope) {
+  function apply(changes, scope, opts = {}) {
     const results = [], deferred = [];
     for (let i = 0; i < changes.length; i++) {
       const change = changes[i];
@@ -289,7 +298,7 @@ export function createWrites({ record, sq, runtime, log, schema, auth, marketOf,
       try {
         const prior = priorResult(change && change.changeId);
         if (prior) { results.push({ changeId: change.changeId, ...prior }); continue; }
-        const { isCreate, fields } = validateChange(change);
+        const { isCreate, fields } = validateChange(change, opts);
         // '$prev' links a change to the record the previous change in this batch created (a note on a freshly provisioned status row)
         for (const [f, v] of Object.entries(fields)) if (v === '$prev') { const prev = results[results.length - 1]; if (!prev || !prev.ok || !prev.recordId) throw new WriteError('BAD_CHANGE', `${f} refers to the previous change, which did not create a record`); fields[f] = Number(prev.recordId); }
         const market = marketOf(change.recordType, change.recordId, fields);

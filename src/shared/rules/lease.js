@@ -51,6 +51,8 @@ export function normalizeLease(raw, lookups = {}) {
     ayFieldYear: ayYearFromLabel(raw.ay_name) ?? (lookups.ayYears ? lookups.ayYears[S(raw.ay)] ?? null : null),
     groupType: raw.group_type ?? null, targetPerBed: num(raw.target_per_bed), targetMonthly: num(raw.target_monthly),
     rrUnitId: raw.rr_unit_id || null, created: toISO(raw.created), lastModified: toISO(raw.lastmodified),
+    // lease-change chain (docs/LEASE-CHANGES-BUILD.md): optional fields, absent until the sandbox objects exist
+    provisions: raw.provisions || '', supersedes: S(raw.supersedes), endReason: raw.end_reason_name || raw.end_reason || null, version: num(raw.version),
   };
   if (l.tenantCount === 0 && l.tenantIds.length) l.tenantCount = l.tenantIds.length;
 
